@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nykro-Sonic Studio Academy | Acoustic Mastery</title>
+    <style>
+        :root {
+            --neon-green: #00ff95;
+            --psy-red: #e94560;
+            --dark-bg: #0d0d0d;
+            --panel-bg: #16213e;
+            --text-gray: #b2bec3;
+            --wood-finish: #a0522d;
+            --wood-dark: #5d2e0a;
+            --gold: #f1c40f;
+            --theory-purple: #9b59b6;
+        }
+
+        body { 
+            background: var(--dark-bg); 
+            color: var(--neon-green); 
+            font-family: 'Courier New', Courier, monospace; 
+            text-align: center; 
+            padding: 20px; 
+            margin: 0; 
+        }
+
+        /* Selector de Idioma */
+        .lang-control {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2000;
+            display: flex;
+            gap: 10px;
+        }
+        .lang-btn {
+            background: #000;
+            color: var(--neon-green);
+            border: 2px solid var(--psy-red);
+            padding: 5px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            transition: 0.3s;
+        }
+        .lang-btn.active { background: var(--psy-red); color: white; }
+        
+        .header { border-bottom: 2px solid var(--psy-red); margin-bottom: 40px; padding-bottom: 20px; }
+        h1 { font-size: 2em; color: var(--psy-red); text-transform: uppercase; letter-spacing: 4px; margin: 0; }
+        .subtitle { color: #4ecca3; font-size: 1em; letter-spacing: 3px; }
+
+        .social-float { position: fixed; bottom: 20px; right: 15px; display: flex; flex-direction: column; gap: 12px; z-index: 1000; }
+        .btn-social { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 14px; font-weight: bold; transition: 0.3s; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .fb-btn { background: #1877F2; border: 2px solid #1877F2; }
+        .sc-btn { background: #FF5500; border: 2px solid #FF5500; }
+        .sh-btn { background: #4ecca3; border: 2px solid #4ecca3; color: #1a1a2e; }
+        .btn-social:hover { transform: scale(1.1); filter: brightness(1.2); }
+
+        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 30px; }
+
+        .bottom-grid { 
+            max-width: 1200px; margin: 30px auto; 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 30px; 
+        }
+
+        .panel { 
+            background: var(--panel-bg); 
+            border: 2px solid #0f3460; 
+            padding: 30px; 
+            border-radius: 20px; 
+            text-align: left;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .step-tag { 
+            background: var(--psy-red); color: white; padding: 6px 20px; 
+            border-radius: 50px; font-size: 0.8em; font-weight: bold; 
+            position: absolute; top: -15px; left: 20px;
+            box-shadow: 0 4px 10px rgba(233, 69, 96, 0.4);
+        }
+
+        .lesson-card {
+            background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px;
+            margin: 15px 0; border: 1px dashed var(--neon-green);
+        }
+        .lesson-card b { color: #fff; display: block; margin-bottom: 5px; }
+        .lesson-card p { font-size: 0.85em; margin: 0; color: var(--text-gray); }
+
+        .input-group { margin-bottom: 20px; position: relative; }
+        label { display: block; font-size: 0.8em; color: var(--psy-red); font-weight: bold; margin-bottom: 8px; }
+        input { 
+            background: #000; border: 2px solid #222; color: var(--neon-green); 
+            padding: 12px; width: 100%; border-radius: 8px; font-size: 1.2em; box-sizing: border-box; transition: 0.3s;
+        }
+
+        .schroeder-box, .rt60-box {
+            background: linear-gradient(45deg, #000, #0a0a0a); border: 2px solid var(--neon-green); 
+            border-radius: 15px; padding: 20px; text-align: center; margin: 20px 0;
+        }
+
+        .mode-list { background: #000; border-radius: 10px; max-height: 180px; overflow-y: auto; border: 1px solid #333; }
+        .mode-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #222; font-size: 0.85em; }
+        .critico { background: rgba(233, 69, 96, 0.2); color: #ff4d4d; animation: pulse 2s infinite; }
+
+        .diff-frame { 
+            background: #050505; 
+            padding: 40px 15px; 
+            border-radius: 15px; 
+            border: 2px solid #333; 
+            margin-top: 15px;
+            position: relative;
+        }
+        .diff-viz { display: flex; align-items: flex-end; justify-content: center; height: 180px; gap: 10px; border-bottom: 4px solid #444; }
+        .well { background: linear-gradient(135deg, var(--wood-finish), var(--wood-dark)); width: 12%; position: relative; border-radius: 4px 4px 0 0; transition: height 0.6s; }
+        .well-val { position: absolute; top: -30px; width: 100%; font-size: 11px; color: #fff; text-align: center; background: var(--psy-red); border-radius: 3px; font-weight: bold; }
+
+        .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
+        .eq-display, .waterfall-display { 
+            background: #050505; border: 1px solid #333; height: 180px; position: relative; border-radius: 8px; overflow: hidden; 
+        }
+        .eq-node { position: absolute; width: 10px; height: 10px; background: var(--psy-red); border-radius: 50%; box-shadow: 0 0 10px var(--psy-red); transform: translate(-50%, -50%); }
+        .waterfall-bar { position: absolute; bottom: 0; background: linear-gradient(to top, var(--psy-red), transparent); width: 4px; transition: 0.5s; opacity: 0.7; }
+        .display-label { position: absolute; top: 5px; left: 10px; font-size: 10px; color: #4ecca3; text-transform: uppercase; }
+
+        .build-steps { font-size: 0.8em; color: #fff; padding-left: 20px; list-style-type: square; }
+        .build-steps li { margin-bottom: 8px; color: var(--text-gray); }
+        .build-steps b { color: var(--neon-green); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #080808; font-size: 0.75em; }
+        th { background: #111; color: var(--psy-red); padding: 10px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #222; }
+
+        .room-map-container {
+            background: #000;
+            border: 2px solid #333;
+            border-radius: 10px;
+            height: 300px;
+            position: relative;
+            margin-top: 15px;
+            overflow: hidden;
+            background-image: radial-gradient(#1a1a1a 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .reflection-zone {
+            position: absolute;
+            background: rgba(0, 255, 149, 0.3);
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+        .speaker {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: var(--psy-red);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            box-shadow: 0 0 10px var(--psy-red);
+        }
+        .listener {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            border: 2px solid var(--psy-red);
+        }
+
+        .meter-container { width: 100%; background: #222; height: 10px; border-radius: 5px; margin-top: 10px; overflow: hidden; }
+        .meter-bar { height: 100%; background: var(--gold); width: 0%; transition: 0.8s; }
+
+        /* NUEVOS ESTILOS PASO 9 */
+        .wave-canvas { 
+            width: 100%; height: 150px; background: #000; border-radius: 10px; border: 1px solid #333; margin-top: 10px; 
+        }
+
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        @media (max-width: 900px) { .bottom-grid, .analysis-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="lang-control">
+        <button class="lang-btn active" id="btn-es" onclick="setLanguage('es')">ES</button>
+        <button class="lang-btn" id="btn-en" onclick="setLanguage('en')">EN</button>
+    </div>
+
+    <div class="social-float">
+        <a href="https://sites.google.com/view/nykronds/shop?authuser=0" target="_blank" class="btn-social sh-btn">SHOP</a>
+        <a href="https://www.facebook.com/nykrodelic" target="_blank" class="btn-social fb-btn">FB</a>
+        <a href="https://soundcloud.com/nykronds" target="_blank" class="btn-social sc-btn">SC</a>
+    </div>
+
+    <div class="header">
+        <h1 id="txt-title">Nykro-Sonic Studio Academy 🔊</h1>
+        <p class="subtitle" id="txt-subtitle">Guía Interactiva de Ingeniería Acústica DIY</p>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <span class="step-tag" id="txt-step1">PASO 1: Mapeo Físico del Studio</span>
+            <div class="lesson-card">
+                <b id="txt-instr-title">📏 Instrucciones de Relleno:</b>
+                <p id="txt-instr-desc">Ingresa las medidas en <b>metros</b> usando puntos para decimales (ej. 4.5). Mide de pared a pared (superficie rígida).</p>
+            </div>
+            <div class="input-group">
+                <label id="txt-labelL">1. LARGO (Profundidad total de la sala, medir detras de tus monitores hacia atras de tu espalda, profundidad.)</label>
+                <input type="number" id="L" value="4.5" step="0.1" oninput="updateAll()">
+            </div>
+            <div class="input-group">
+                <label id="txt-labelW">2. ANCHO (Distancia entre paredes laterales)</label>
+                <input type="number" id="W" value="3.5" step="0.1" oninput="updateAll()">
+            </div>
+            <div class="input-group">
+                <label id="txt-labelH">3. ALTO (Del suelo al techo real)</label>
+                <input type="number" id="H" value="2.6" step="0.1" oninput="updateAll()">
+            </div>
+        </div>
+
+        <div class="panel">
+            <span class="step-tag" id="txt-step2">PASO 2: Diagnóstico Schroeder</span>
+            <div class="lesson-card">
+                <b id="txt-schroeder-title">🤔 Límite Schroeder:</b>
+                <p id="txt-schroeder-desc">Donde tu sala deja de resonar y empieza a comportarse de forma controlada.
+                En una habitación de casa estándar, el límite suele estar por los 200 Hz.</p>
+
+<p>Todo lo que esté por DEBAJO de 200 Hz: Es territorio de las ondas gigantes (modos).
+</p>
+<p >lo que esté por ENCIMA de 200 Hz: Es territorio de los rebotes tipo espejo (reflexiones).</p>
+            </div>
+            <div class="schroeder-box">
+                <div style="font-size: 0.7em; color: var(--psy-red);" id="txt-reliable">BAJOS FIABLES A PARTIR DE:</div>
+                <div style="font-size: 2.2em; font-weight: bold; color: #fff;" id="sch-val">185 Hz</div>
+            </div>
+            <div class="mode-list" id="mode-list"></div>
+        </div>
+
+        <div class="panel">
+            <span class="step-tag" id="txt-step3">PASO 3: Plan de Corte y Materiales DIY</span>
+            <div class="lesson-card">
+                <b id="txt-calc-title">🛠️ Calculadora de Fabricación:</b>
+                <p><span id="txt-based">Basado en tus dimensiones de</span> <b><span id="room-size-label">4.5x3.5</span>m</b>, <span id="txt-calc-desc">estas son las piezas para tus paneles:</span></p>
+            </div>
+            <ul class="build-steps" id="material-list"></ul>
+            <div class="lesson-card" style="border-color: #4ecca3;">
+                <b id="txt-tip-title">💡 Tip de Montaje:</b>
+                <p style="font-size: 0.8em;" id="txt-tip-desc">Corta listones de madera de 10cm de ancho para el marco. Deja un espacio de aire (Air Gap).</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-grid">
+        <div class="panel">
+            <span class="step-tag" id="txt-step4">PASO 4: Difusor QRD (Guía de Construcción)</span>
+            <div class="lesson-card">
+                <b id="txt-diff-title">🎓 ¿Qué es la Difusión?</b>
+                <p id="txt-diff-desc">Es como un "espejo roto". En lugar de que el sonido rebote como un eco fuerte, estos escalones lo dispersan en muchas direcciones.</p>
+            </div>
+            
+            <div class="diff-frame">
+                <div style="text-align: center; font-size: 0.7em; margin-bottom: 10px; color: var(--psy-red); font-weight: bold;" id="txt-depth-guide">PROFUNDIDAD DE CADA BLOQUE (en cm):</div>
+                <div class="diff-viz" id="diff-viz"></div>
+            </div>
+
+            <div class="lesson-card" style="border-color: var(--wood-finish); margin-top: 15px;">
+                <b id="txt-build-qrd-title">🔨 Cómo armarlo:</b>
+                <p style="font-size: 0.8em;" id="txt-build-qrd-desc">Usa 7 listones de madera de 6cm de ancho cada uno. Córtalos según las profundidades indicadas arriba y pégalos uno junto al otro.</p>
+            </div>
+        </div>
+
+        <div class="panel">
+            <span class="step-tag" id="txt-step5">PASO 5: Zonas de Retumbo (Nodos)</span>
+            <div class="lesson-card">
+                <b id="txt-node-title">⚠️ ¿Por qué mi bajo suena "falso"?</b>
+                <p id="txt-node-desc">Tu cuarto tiene frecuencias donde el bajo se amontona por el rebote de las paredes. Estas son las que van a retumbar más en tu studio:</p>
+            </div>
+            
+            <table>
+                <thead><tr id="txt-table-head"><th>Hz</th><th>Nota</th><th>Pared</th><th>Acción</th></tr></thead>
+                <tbody id="advice-table"></tbody>
+            </table>
+
+            <div class="lesson-card" style="border-color: var(--psy-red); margin-top: 15px;">
+                <b id="txt-fix-title">🚀 Guía para arreglarlo:</b>
+                <p id="txt-fix-desc">
+                    1. Mira la fila <b>"Frontal"</b>: Pon trampas de bajo detrás de tus bocinas.<br>
+                    2. Mira la fila <b>"Lateral"</b>: Pon paneles gruesos a tus lados.<br>
+                    3. Mira la fila <b>"Techo"</b>: Ahí es donde necesitas una "nube" acústica.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 30px;">
+        <div class="panel" style="grid-column: 1 / -1; border-color: var(--neon-green);">
+            <span class="step-tag" id="txt-step6" style="background: var(--neon-green); color: #000;">PASO 6: Guía de Ajuste y Limpieza de Audio</span>
+            
+            <div class="analysis-grid">
+                <div>
+                    <div class="lesson-card">
+                        <b id="txt-analysis-title">🔊 ¿Cómo suena el problema?</b>
+                        <p id="txt-analysis-desc">Las barras de la derecha muestran cómo el bajo "rebota" y se queda sonando de más en tu cuarto.</p>
+                    </div>
+                    <div class="waterfall-display" id="waterfall-display">
+                        <span class="display-label" id="txt-wf-label">Resonancia en tu sala (Simulación)</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="lesson-card" style="border-color: var(--psy-red);">
+                        <b id="txt-eq-title">🧹 Cómo limpiarlo (Guía Pro):</b>
+                        <ul class="build-steps" id="step6-guide-list">
+                            <li><b>1. Escucha:</b> Pon una canción con mucho bajo que conozcas bien.</li>
+                            <li><b>2. El EQ:</b> Abre un ecualizador en tu Master.</li>
+                            <li><b>3. Limpia:</b> Busca las frecuencias rojas que te marca la tabla del PASO 5.</li>
+                            <li><b>4. Aplica:</b> Baja -3dB con una campana estrecha (Q alta).</li>
+                        </ul>
+                    </div>
+                    <div class="eq-display" id="eq-display">
+                        <span class="display-label" id="txt-eq-label">Puntos de corte sugeridos</span>
+                        <div style="position:absolute; width:100%; height:1px; background:rgba(0,255,149,0.3); top:50%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 30px;">
+        <div class="panel" style="grid-column: 1 / -1;">
+            <span class="step-tag" id="txt-step7">PASO 7: Mapa de Primeras Reflexiones (Vista Superior)</span>
+            <div class="lesson-card">
+                <b id="txt-map-title">👁️ Cómo encontrar los puntos exactos:</b>
+                <p id="txt-map-desc">Siéntate en tu silla. Pide a alguien que deslice un ESPEJO por la pared. En el punto donde veas el monitor reflejado, AHÍ va el panel.</p>
+            </div>
+            
+            <div class="room-map-container" id="room-map">
+                <div id="refl-left" class="reflection-zone">PUNTO<br>ESPEJO</div>
+                <div id="refl-right" class="reflection-zone">PUNTO<br>ESPEJO</div>
+                <div class="speaker" id="spk-l">L</div>
+                <div class="speaker" id="spk-r">R</div>
+                <div class="listener"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 30px;">
+        <div class="panel" style="grid-column: 1 / -1; border-color: var(--gold);">
+            <span class="step-tag" id="txt-step8" style="background: var(--gold); color: #000;">PASO 8: Calculadora RT60 (Eco de la Sala)</span>
+            <div class="analysis-grid">
+                <div>
+                    <div class="lesson-card">
+                        <b id="txt-rt60-title">⏳ ¿Cuánto tiempo tarda en morir el sonido?</b>
+                        <p id="txt-rt60-desc">Para producir música, tu cuarto debe tener un RT60 entre <b>0.3s y 0.5s</b>. Si es más alto, tus mezclas sonarán sucias.</p>
+                    </div>
+                    <div class="rt60-box">
+                        <div style="font-size: 0.7em; color: var(--gold);" id="txt-rt60-current">TU REVERBERACIÓN ACTUAL ESTIMADA:</div>
+                        <div style="font-size: 2.2em; font-weight: bold; color: #fff;" id="rt60-val">0.85s</div>
+                        <div class="meter-container"><div class="meter-bar" id="rt60-bar"></div></div>
+                        <div style="font-size: 0.6em; margin-top: 10px; color: var(--text-gray);" id="txt-rt60-status">¡SALA MUY BRILLANTE! NECESITAS ABSORCIÓN.</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="lesson-card" style="border-color: var(--gold);">
+                        <b id="txt-rt60-fix-title">🧱 Cuántos paneles necesitas comprar:</b>
+                        <p id="txt-rt60-fix-desc">Para llegar al estándar profesional de 0.4s, necesitas cubrir esta superficie con paneles de lana de roca:</p>
+                        <div style="font-size: 2em; color: var(--gold); margin: 15px 0; font-weight: bold;" id="area-needed">12.5 m²</div>
+                        <p style="font-size: 0.75em; color: var(--text-gray);" id="txt-rt60-panels-count">Aproximadamente 18 paneles de 1.20m x 0.60m.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 30px; margin-bottom: 50px;">
+        <div class="panel" style="grid-column: 1 / -1; border-color: var(--theory-purple);">
+            <span class="step-tag" id="txt-step9" style="background: var(--theory-purple); color: #fff;">PASO 9: Simulador de Modos Axiales (Visualizador de Ondas)</span>
+            <div class="analysis-grid">
+                <div>
+                    <div class="lesson-card">
+                        <b id="txt-wave-title">🌊 ¿Cómo se estira el sonido?</b>
+                        <p id="txt-wave-desc">"Cada línea representa un Modo Axial (la forma en que el bajo rebota entre la pared frontal y trasera).
+
+• Línea Roja (1ª Armónica): Es la frecuencia más grave. Si pones tu silla en el centro del cuarto, este bajo desaparecerá por completo (Nodo).
+• Líneas Verde y Amarilla: Muestran dónde se cancelan los medios-bajos.
+
+REGLA DE ORO: Evita los puntos donde las líneas cruzan el eje central (0), ya que ahí estarás mezclando 'a ciegas', sin escuchar la realidad de tus bajos."</div>
+                </div>
+                <div>
+                    <canvas id="waveCanvas" class="wave-canvas"></canvas>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.7em; padding: 5px; color: var(--text-gray);">
+                        <span>Pared Frontal</span>
+                        <span>Centro</span>
+                        <span>Pared Trasera</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            es: {
+                title: "Nykro-Sonic Studio Academy 🔊",
+                subtitle: "Guía Interactiva de Ingeniería Acústica DIY",
+                step1: "PASO 1: Mapeo Físico del Studio",
+                step2: "PASO 2: Diagnóstico Schroeder",
+                step3: "PASO 3: Plan de Corte y Materiales DIY",
+                step4: "PASO 4: Difusor QRD (Guía de Construcción)",
+                step5: "PASO 5: Zonas de Retumbo (Nodos)",
+                step6: "PASO 6: Guía de Ajuste y Limpieza de Audio",
+                step7: "PASO 7: Mapa de Primeras Reflexiones (Planta)",
+                step8: "PASO 8: Calculadora RT60 (Eco de la Sala)",
+                step9: "PASO 9: Simulador de Modos Axiales",
+                rt60Title: "⏳ ¿Cuánto tiempo tarda en morir el sonido?",
+                rt60Desc: "Para producir música, tu cuarto debe tener un RT60 entre 0.3s y 0.5s. Si es más alto, tus mezclas sonarán sucias.",
+                rt60Current: "TU REVERBERACIÓN ACTUAL ESTIMADA:",
+                rt60FixTitle: "🧱 Cuántos paneles necesitas comprar:",
+                rt60FixDesc: "Para llegar al estándar profesional de 0.4s, necesitas cubrir esta superficie con paneles:",
+                rt60StatusBad: "¡SALA MUY BRILLANTE! NECESITAS ABSORCIÓN.",
+                rt60StatusGood: "¡EXCELENTE! TU SALA ESTÁ CONTROLADA.",
+                instrTitle: "📏 Instrucciones de Relleno:",
+                instrDesc: "Ingresa las medidas en metros usando puntos para decimales (ej. 4.5). Mide de pared a pared (superficie rígida).",
+                labelL: "1. LARGO (Profundidad total de la sala)",
+                labelW: "2. ANCHO (Distancia entre paredes laterales)",
+                labelH: "3. ALTO (Del suelo al techo real)",
+                schTitle: "🤔 Límite Schroeder:",
+                schDesc: "Donde tu sala deja de resonar y empieza a comportarse de forma controlada.",
+                reliable: "BAJOS FIABLES A PARTIR DE:",
+                calcTitle: "🛠️ Calculadora de Fabricación:",
+                based: "Basado en tus dimensiones de",
+                calcDesc: "estas son las piezas para tus paneles de lana de roca:",
+                tipTitle: "💡 Tip de Montaje:",
+                tipDesc: "Corta listones de madera de 10cm de ancho para el marco. Deja un espacio de aire (Air Gap).",
+                diffTitle: "🎓 ¿Qué es la Difusión?",
+                diffDesc: "Es como un 'espejo roto'. Dispersa el sonido para que el cuarto no tenga ecos metálicos pero no suene muerto.",
+                depthGuide: "PROFUNDIDAD DE CADA BLOQUE (en cm):",
+                buildQrdTitle: "🔨 Cómo armarlo:",
+                buildQrdDesc: "Usa 7 listones de madera de 6cm de ancho cada uno. Córtalos según las profundidades indicadas arriba y pégalos.",
+                nodeTitle: "⚠️ ¿Por qué mi bajo suena 'falso'?",
+                nodeDesc: "Tu cuarto tiene frecuencias donde el bajo se amontona por el rebote de las paredes. Estas son las que van a retumbar más en tu studio:",
+                tableHead: "<th>Hz</th><th>Nota</th><th>Pared</th><th>Acción</th>",
+                fixTitle: "🚀 Guía para arreglarlo:",
+                fixDesc: "1. Mira la fila <b>'Frontal'</b>: Pon trampas detrás de las bocinas.<br>2. Mira la fila <b>'Lateral'</b>: Pon paneles a tus lados.<br>3. Mira la fila <b>'Techo'</b>: Necesitas una nube acústica.",
+                mapTitle: "👁️ Cómo encontrar los puntos exactos:",
+                mapDesc: "Siéntate en tu silla. Pide a alguien que mueva un ESPEJO por la pared. Donde veas tu bocina reflejada, ¡Ahí va el panel!",
+                analysisTitle: "🔊 ¿Cómo suena el problema?",
+                analysisDesc: "Las barras muestran cómo el bajo se queda 'atrapado' y retumba en tu sala.",
+                eqTitle: "🧹 Cómo limpiarlo (Guía Pro):",
+                eqLabel: "Cortes de EQ sugeridos",
+                wfLabel: "Retumbe de Bajos (Waterfall)",
+                axes: { front: "Frontal", side: "Lateral", ceiling: "Techo" },
+                mats: ["Paneles:", "unidades", "Marcos:", "piezas de", "Lana:", "paquetes", "Tela:", "metros"],
+                step6List: [
+                    "<li><b>1. Escucha:</b> Pon una canción con mucho bajo que conozcas bien.</li>",
+                    "<li><b>2. El EQ:</b> Abre un ecualizador en tu Master (como FabFilter o el de tu DAW).</li>",
+                    "<li><b>3. Limpia:</b> Busca las frecuencias rojas que te marca la tabla del PASO 5.</li>",
+                    "<li><b>4. Aplica:</b> Baja -3dB con una campana estrecha (Q alta) en esos puntos exactos.</li>"
+                ],
+                panelsText: "Aproximadamente {n} paneles de 1.20m x 0.60m.",
+                waveTitle: "🌊 ¿Cómo se estira el sonido?",
+                waveDesc: "Las líneas representan la presión del bajo según el largo de tu cuarto. Cuando la línea toca el centro (0), el bajo **desaparece**. ¡No pongas tu silla ahí!"
+            },
+            en: {
+                title: "Nykro-Sonic Studio Academy 🔊",
+                subtitle: "Interactive DIY Acoustic Engineering Guide",
+                step1: "STEP 1: Physical Studio Mapping",
+                step2: "STEP 2: Schroeder Diagnosis",
+                step3: "STEP 3: Cut Plan & DIY Materials",
+                step4: "STEP 4: QRD Diffuser (Build Guide)",
+                step5: "STEP 5: Bass Rumble Zones (Nodes)",
+                step6: "STEP 6: Audio Tuning & Cleaning Guide",
+                step7: "STEP 7: First Reflection Map (Top View)",
+                step8: "STEP 8: RT60 Calculator (Room Echo)",
+                step9: "STEP 9: Axial Mode Simulator",
+                rt60Title: "⏳ How long does it take for sound to die?",
+                rt60Desc: "For music production, your room should have an RT60 between 0.3s and 0.5s. Any higher, and your mixes will sound muddy.",
+                rt60Current: "ESTIMATED CURRENT REVERB:",
+                rt60FixTitle: "🧱 How many panels you need to buy:",
+                rt60FixDesc: "To reach the 0.4s professional standard, you need to cover this area with rockwool panels:",
+                rt60StatusBad: "ROOM IS TOO BRIGHT! NEEDS ABSORPTION.",
+                rt60StatusGood: "EXCELLENT! YOUR ROOM IS CONTROLLED.",
+                instrTitle: "📏 Input Instructions:",
+                instrDesc: "Enter measurements in meters using dots for decimals (e.g., 4.5). Measure from rigid wall to wall.",
+                labelL: "1. LENGTH (Total room depth)",
+                labelW: "2. WIDTH (Distance between side walls)",
+                labelH: "3. HEIGHT (Floor to actual ceiling)",
+                schTitle: "🤔 Schroeder Limit:",
+                schDesc: "Where your room stops resonating and starts behaving predictably.",
+                reliable: "RELIABLE BASS STARTING AT:",
+                calcTitle: "🛠️ Fabrication Calculator:",
+                based: "Based on your room size",
+                calcDesc: "these are the pieces needed for your panels:",
+                tipTitle: "💡 Pro Tip:",
+                tipDesc: "Use 10cm wide wood slats for the frame. Leave an Air Gap equal to the panel thickness.",
+                diffTitle: "🎓 What is Diffusion?",
+                diffDesc: "It's like a 'broken mirror'. Scatters sound so the room doesn't have metallic echoes but doesn't sound dead.",
+                depthGuide: "DEPTH OF EACH BLOCK (in cm):",
+                buildQrdTitle: "🔨 How to build it:",
+                buildQrdDesc: "Use 7 wood slats (6cm wide each). Cut them according to the depths shown above and glue them.",
+                nodeTitle: "⚠️ Why does my bass sound 'fake'?",
+                nodeDesc: "Your room has frequencies where bass builds up due to wall reflections. These are the ones that will rumble most in your studio:",
+                tableHead: "<th>Hz</th><th>Note</th><th>Wall</th><th>Action</th>",
+                fixTitle: "🚀 How to fix it:",
+                fixDesc: "1. Check <b>'Frontal'</b>: Put traps behind your speakers.<br>2. Check <b>'Side'</b>: Put panels on your left/right.<br>3. Check <b>'Ceiling'</b>: You need an acoustic cloud.",
+                mapTitle: "👁️ Finding the exact spots:",
+                mapDesc: "Sit in your chair. Have someone move a MIRROR along the wall. Where you see your speaker reflected, that's where the panel goes!",
+                analysisTitle: "🔊 How does it sound?",
+                analysisDesc: "The bars show how the bass gets 'trapped' and rumbles in your room.",
+                eqTitle: "🧹 How to clean it (Pro Guide):",
+                eqLabel: "Suggested EQ Cuts",
+                wfLabel: "Bass Rumble (Waterfall)",
+                axes: { front: "Front", side: "Side", ceiling: "Ceiling" },
+                mats: ["Paneles:", "units", "Frames:", "pieces of", "Rockwool:", "packs", "Fabric:", "meters"],
+                step6List: [
+                    "<li><b>1. Listen:</b> Play a bass-heavy song you know well.</li>",
+                    "<li><b>2. EQ:</b> Open an EQ on your Master.</li>",
+                    "<li><b>3. Clean:</b> Look for the red frequencies marked in STEP 5.</li>",
+                    "<li><b>4. Apply:</b> Lower -3dB with a tight bell (high Q).</li>"
+                ],
+                panelsText: "Approximately {n} panels of 1.20m x 0.60m.",
+                waveTitle: "🌊 How does sound stretch?",
+                waveDesc: "Lines show bass pressure. Where the line hits center (0), bass **disappears**. Don't put your seat there!"
+            }
+        };
+
+        let currentLang = 'es';
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + lang).classList.add('active');
+            
+            const t = translations[lang];
+            document.getElementById('txt-title').innerText = t.title;
+            document.getElementById('txt-subtitle').innerText = t.subtitle;
+            document.getElementById('txt-step1').innerText = t.step1;
+            document.getElementById('txt-step2').innerText = t.step2;
+            document.getElementById('txt-step3').innerText = t.step3;
+            document.getElementById('txt-step4').innerText = t.step4;
+            document.getElementById('txt-step5').innerText = t.step5;
+            document.getElementById('txt-step6').innerText = t.step6;
+            document.getElementById('txt-step7').innerText = t.step7;
+            document.getElementById('txt-step8').innerText = t.step8;
+            document.getElementById('txt-step9').innerText = t.step9;
+            document.getElementById('txt-instr-title').innerText = t.instrTitle;
+            document.getElementById('txt-instr-desc').innerText = t.instrDesc;
+            document.getElementById('txt-labelL').innerText = t.labelL;
+            document.getElementById('txt-labelW').innerText = t.labelW;
+            document.getElementById('txt-labelH').innerText = t.labelH;
+            document.getElementById('txt-schroeder-title').innerText = t.schTitle;
+            document.getElementById('txt-schroeder-desc').innerText = t.schDesc;
+            document.getElementById('txt-reliable').innerText = t.reliable;
+            document.getElementById('txt-calc-title').innerText = t.calcTitle;
+            document.getElementById('txt-based').innerText = t.based;
+            document.getElementById('txt-calc-desc').innerText = t.calcDesc;
+            document.getElementById('txt-tip-title').innerText = t.tipTitle;
+            document.getElementById('txt-tip-desc').innerText = t.tipDesc;
+            document.getElementById('txt-diff-title').innerText = t.diffTitle;
+            document.getElementById('txt-diff-desc').innerText = t.diffDesc;
+            document.getElementById('txt-depth-guide').innerText = t.depthGuide;
+            document.getElementById('txt-build-qrd-title').innerText = t.buildQrdTitle;
+            document.getElementById('txt-build-qrd-desc').innerText = t.buildQrdDesc;
+            document.getElementById('txt-node-title').innerText = t.nodeTitle;
+            document.getElementById('txt-node-desc').innerText = t.nodeDesc;
+            document.getElementById('txt-table-head').innerHTML = t.tableHead;
+            document.getElementById('txt-fix-title').innerText = t.fixTitle;
+            document.getElementById('txt-fix-desc').innerHTML = t.fixDesc;
+            document.getElementById('txt-map-title').innerText = t.mapTitle;
+            document.getElementById('txt-map-desc').innerText = t.mapDesc;
+            document.getElementById('txt-analysis-title').innerText = t.analysisTitle;
+            document.getElementById('txt-analysis-desc').innerText = t.analysisDesc;
+            document.getElementById('txt-eq-title').innerText = t.eqTitle;
+            document.getElementById('txt-eq-label').innerText = t.eqLabel;
+            document.getElementById('txt-wf-label').innerText = t.wfLabel;
+            document.getElementById('step6-guide-list').innerHTML = t.step6List.join('');
+            document.getElementById('txt-rt60-title').innerText = t.rt60Title;
+            document.getElementById('txt-rt60-desc').innerText = t.rt60Desc;
+            document.getElementById('txt-rt60-current').innerText = t.rt60Current;
+            document.getElementById('txt-rt60-fix-title').innerText = t.rt60FixTitle;
+            document.getElementById('txt-rt60-fix-desc').innerText = t.rt60FixDesc;
+            document.getElementById('txt-wave-title').innerText = t.waveTitle;
+            document.getElementById('txt-wave-desc').innerText = t.waveDesc;
+
+            updateAll();
+        }
+
+        const notas = [
+            {n: "C", f: 16.35}, {n: "C#", f: 17.32}, {n: "D", f: 18.35}, {n: "D#", f: 19.45},
+            {n: "E", f: 20.60}, {n: "F", f: 21.83}, {n: "F#", f: 23.12}, {n: "G", f: 24.50},
+            {n: "G#", f: 25.96}, {n: "A", f: 27.50}, {n: "A#", f: 29.14}, {n: "B", f: 30.87}
+        ];
+
+        function getNote(freq) {
+            let f = freq; while(f > 32) f /= 2;
+            let cercana = notas.reduce((prev, curr) => Math.abs(curr.f - f) < Math.abs(prev.f - f) ? curr : prev);
+            return cercana.n;
+        }
+
+        // FUNCION PARA DIBUJAR ONDAS ESTACIONARIAS (NUEVA)
+        function drawWaves(L) {
+            const canvas = document.getElementById('waveCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Eje central
+            ctx.strokeStyle = '#222';
+            ctx.beginPath(); ctx.moveTo(0, canvas.height/2); ctx.lineTo(canvas.width, canvas.height/2); ctx.stroke();
+
+            const harmonics = [
+                { h: 1, color: '#e94560', label: '1ra' },
+                { h: 2, color: '#00ff95', label: '2da' },
+                { h: 3, color: '#f1c40f', label: '3ra' }
+            ];
+
+            harmonics.forEach(harm => {
+                ctx.beginPath();
+                ctx.strokeStyle = harm.color;
+                ctx.lineWidth = 2;
+                for (let x = 0; x <= canvas.width; x++) {
+                    const angle = (x / canvas.width) * Math.PI * harm.h;
+                    const y = (canvas.height / 2) + Math.sin(angle) * (canvas.height / 3);
+                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            });
+        }
+
+        function updateAll() {
+            const L = parseFloat(document.getElementById('L').value) || 1;
+            const W = parseFloat(document.getElementById('W').value) || 1;
+            const H = parseFloat(document.getElementById('H').value) || 1;
+            const v = 343;
+            const t = translations[currentLang];
+
+            document.getElementById('room-size-label').innerText = `${L}x${W}`;
+            
+            // Calculo Schroeder
+            const sch = 2000 * Math.sqrt(0.5 / (L * W * H));
+            document.getElementById('sch-val').innerText = Math.round(sch) + " Hz";
+
+            // Calculo RT60 (Fórmula de Sabine real correlacionada con Paso 1)
+            const volume = L * W * H;
+            const surfaceArea = 2 * ( (L * W) + (L * H) + (W * H) );
+            
+            // Coeficiente medio de absorción para una sala vacía estándar (0.05 a 0.08)
+            const alphaVacia = 0.06; 
+            const rt60Vacia = (0.161 * volume) / (surfaceArea * alphaVacia);
+            
+            document.getElementById('rt60-val').innerText = rt60Vacia.toFixed(2) + "s";
+            
+            // Barra de progreso dinámica (Max 2.0s para el 100%)
+            const barWidth = Math.min((rt60Vacia / 1.8) * 100, 100);
+            document.getElementById('rt60-bar').style.width = barWidth + "%";
+            
+            // Estatus de la sala dinámico
+            document.getElementById('txt-rt60-status').innerText = rt60Vacia > 0.5 ? t.rt60StatusBad : t.rt60StatusGood;
+
+            // Área necesaria para llegar a 0.4s (Target Studio Estándar)
+            const targetRT = 0.45; 
+            const absorptionTotalNeeded = (0.161 * volume) / targetRT;
+            const absorptionCurrent = surfaceArea * alphaVacia;
+            const extraAbsorptionNeeded = Math.max(0, absorptionTotalNeeded - absorptionCurrent);
+            
+            // Asumiendo Paneles de Lana de Roca con coeficiente ~0.95
+            const areaPaneles = (extraAbsorptionNeeded / 0.95).toFixed(1);
+            document.getElementById('area-needed').innerText = areaPaneles + " m²";
+
+            // Cálculo dinámico de cantidad de paneles físicos (1.2m x 0.6m = 0.72m2 cada uno)
+            const numPanelesRT = Math.ceil(areaPaneles / 0.72);
+            document.getElementById('txt-rt60-panels-count').innerText = t.panelsText.replace("{n}", numPanelesRT);
+
+            // Modos y otros pasos
+            let m = [];
+            for(let i=1; i<=3; i++) {
+                m.push({ f: (v*i)/(2*L), t: t.axes.front, d: 100/(i*1.2) });
+                m.push({ f: (v*i)/(2*W), t: t.axes.side, d: 90/(i*1.2) });
+                m.push({ f: (v*i)/(2*H), t: t.axes.ceiling, d: 80/(i*1.2) });
+            }
+            m.sort((a,b) => a.f - b.f);
+
+            const listEl = document.getElementById('mode-list');
+            const adviceEl = document.getElementById('advice-table');
+            const eqDisp = document.getElementById('eq-display');
+            const waterDisp = document.getElementById('waterfall-display');
+            
+            listEl.innerHTML = ''; adviceEl.innerHTML = '';
+            eqDisp.querySelectorAll('.eq-node').forEach(e => e.remove());
+            waterDisp.querySelectorAll('.waterfall-bar').forEach(e => e.remove());
+
+            m.forEach((mode, i) => {
+                if(mode.f > 220) return;
+                let critico = (i > 0 && Math.abs(mode.f - m[i-1].f) < 4);
+                listEl.innerHTML += `<div class="mode-item ${critico?'critico':''}"><span>${mode.t}</span><span>${mode.f.toFixed(1)} Hz</span></div>`;
+                
+                if(i < 6) {
+                    adviceEl.innerHTML += `<tr><td>${mode.f.toFixed(1)}</td><td>${getNote(mode.f)}</td><td>${mode.t}</td><td style="color:var(--psy-red); font-weight:bold;">¡BAJAR!</td></tr>`;
+                    const posX = (mode.f / 220) * 100;
+                    const node = document.createElement('div');
+                    node.className = 'eq-node';
+                    node.style.left = posX + '%';
+                    node.style.top = '75%';
+                    eqDisp.appendChild(node);
+
+                    for(let j=0; j<5; j++) {
+                        const bar = document.createElement('div');
+                        bar.className = 'waterfall-bar';
+                        bar.style.left = (posX - (j*1.5)) + '%';
+                        bar.style.height = (mode.d - (j*15)) + '%';
+                        bar.style.opacity = 1 - (j*0.2);
+                        waterDisp.appendChild(bar);
+                    }
+                }
+            });
+
+            // Materiales del Paso 3
+            const numPanelesBasicos = Math.ceil((L + W) * 1.5); 
+            document.getElementById('material-list').innerHTML = `
+                <li>${t.mats[0]} <b>${numPanelesBasicos} ${t.mats[1]}</b>.</li>
+                <li>${t.mats[2]} <b>${numPanelesBasicos * 2}</b> (1.20m) / <b>${numPanelesBasicos * 2}</b> (0.60m).</li>
+                <li>${t.mats[4]} <b>${Math.ceil(numPanelesBasicos/2)} ${t.mats[5]}</b>.</li>
+                <li>${t.mats[6]} <b>${(numPanelesBasicos * 1.2).toFixed(1)} ${t.mats[7]}</b>.</li>
+            `;
+
+            // Difusor
+            const diffViz = document.getElementById('diff-viz');
+            diffViz.innerHTML = '';
+            const residuos = [0, 1, 4, 2, 2, 4, 1];
+            residuos.forEach((r) => {
+                const well = document.createElement('div');
+                well.className = 'well';
+                const depthCm = (r * 3.5).toFixed(1); 
+                well.style.height = (r * 25 + 15) + 'px';
+                well.innerHTML = `<div class="well-val">${depthCm}</div>`;
+                diffViz.appendChild(well);
+            });
+
+            // ACTUALIZAR VISUALIZADOR DE ONDAS (PASO 9)
+            drawWaves(L);
+
+            document.getElementById('refl-left').style.left = '0';
+            document.getElementById('refl-right').style.right = '0';
+        }
+        window.onload = updateAll;
+    </script>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYKRONDS | NEURAL OPERATING SYSTEM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #00ffa3;
+            --accent-bright: #00ffff;
+            --error: #ff3e3e;
+            --bg: #030303;
+            --card: rgba(10, 10, 10, 0.9);
+            --glow: rgba(0, 255, 163, 0.3);
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg);
+            color: #fff;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(0, 255, 163, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 163, 0.05) 1px, transparent 1px),
+                radial-gradient(circle at center, #0a1a14 0%, #030303 100%);
+            background-size: 30px 30px, 30px 30px, cover;
+        }
+
+        /* --- EFECTO GLITCH GLOBAL --- */
+        .glitch-alert {
+            animation: screenShake 0.2s infinite;
+            filter: hue-rotate(90deg) brightness(1.5);
+        }
+
+        @keyframes screenShake {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(2px, -2px); }
+            50% { transform: translate(-2px, 2px); }
+            75% { transform: translate(1px, -1px); }
+            100% { transform: translate(0,0); }
+        }
+
+        /* --- EFECTO SCANLINE --- */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 5px;
+            background: rgba(0, 255, 163, 0.1);
+            box-shadow: 0 0 20px var(--accent);
+            z-index: 15;
+            pointer-events: none;
+            animation: scanline 6s linear infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes scanline {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 2px);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* --- TERMINAL LOG --- */
+        #neural-log {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 280px;
+            height: 100px;
+            font-family: monospace;
+            font-size: 9px;
+            color: var(--accent);
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 20;
+            text-shadow: 0 0 5px var(--accent);
+            opacity: 0.7;
+            border-left: 1px solid var(--accent);
+            padding-left: 10px;
+        }
+
+        /* --- OVERLAY DE SEGURIDAD --- */
+        #lock-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(15px);
+        }
+
+        .lock-box {
+            text-align: center;
+            padding: 50px;
+            border: 1px solid var(--accent);
+            background: var(--card);
+            box-shadow: 0 0 50px var(--glow);
+            max-width: 450px;
+            position: relative;
+        }
+
+        .social-link {
+            display: block;
+            margin: 15px 0;
+            padding: 15px;
+            color: #fff;
+            text-decoration: none;
+            border: 1px solid rgba(0, 255, 163, 0.3);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            transition: all 0.3s;
+            letter-spacing: 2px;
+        }
+
+        .social-link.active {
+            border-color: var(--accent);
+            background: rgba(0, 255, 163, 0.1);
+            color: var(--accent);
+        }
+
+        .social-link.loading {
+            border-color: var(--accent-bright);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        #unlock-btn {
+            margin-top: 30px;
+            background: transparent;
+            color: #444;
+            border: 1px solid #444;
+            padding: 12px 25px;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            transition: all 0.5s;
+            width: 100%;
+        }
+
+        #unlock-btn.ready {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        #status-msg {
+            font-size: 10px;
+            color: var(--error);
+            margin-top: 15px;
+            height: 30px;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        /* --- DISEÑO --- */
+        .header { text-align: center; margin-bottom: 30px; z-index: 5; }
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            letter-spacing: 20px;
+            margin: 0;
+            color: var(--accent);
+            text-shadow: 0 0 15px var(--accent), 0 0 30px var(--glow);
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .system-status {
+            font-size: 10px;
+            letter-spacing: 4px;
+            color: var(--accent);
+            opacity: 0.6;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        .grid-launcher {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 95%;
+            max-width: 1000px;
+            z-index: 5;
+        }
+
+        .module-card {
+            background: var(--card);
+            border: 1px solid rgba(0, 255, 163, 0.1);
+            padding: 25px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-left: 4px solid var(--accent);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card:hover {
+            background: rgba(0, 255, 163, 0.05);
+            border-color: var(--accent);
+            transform: scale(1.02);
+            box-shadow: 0 0 30px var(--glow);
+        }
+
+        /* NUEVO ESTILO: BOTÓN VOLVER A BIO */
+        .bio-btn {
+            grid-column: span 3; /* Ocupa todo el ancho */
+            margin-top: 10px;
+            border-left: 4px solid #fff;
+            opacity: 0.8;
+        }
+
+        .bio-btn h2 { color: #fff !important; }
+
+        .live-stat {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 7px;
+            color: var(--accent);
+            opacity: 0.5;
+            letter-spacing: 1px;
+        }
+
+        .module-card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            margin: 10px 0 5px 0;
+            letter-spacing: 2px;
+            color: var(--accent);
+            text-align: center;
+        }
+
+        .module-card p {
+            font-size: 9px;
+            color: #555;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .icon-alien {
+            font-size: 25px;
+            margin-bottom: 5px;
+            animation: alienNeon 2s infinite alternate ease-in-out;
+            letter-spacing: 3px;
+        }
+
+        @keyframes alienNeon {
+            0% { color: var(--accent); text-shadow: 0 0 8px var(--accent); }
+            50% { color: var(--accent-bright); text-shadow: 0 0 15px var(--accent-bright); transform: scale(1.08); }
+            100% { color: #ffffff; text-shadow: 0 0 20px var(--accent-bright); }
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 9px;
+            color: rgba(0, 255, 163, 0.2);
+            letter-spacing: 8px;
+            z-index: 5;
+        }
+
+        @media (max-width: 800px) {
+            .grid-launcher { grid-template-columns: repeat(2, 1fr); }
+            .bio-btn { grid-column: span 2; }
+        }
+    </style>
+</head>
+<body id="main-body">
+
+    <audio id="bg-music" loop preload="auto">
+        <source src="TU_AUDIO_FONDO.mp3" type="audio/mp3">
+    </audio>
+    <audio id="snd-hover" preload="auto">
+        <source src="TU_AUDIO_HOVER.mp3" type="audio/wav">
+    </audio>
+    <audio id="snd-click" preload="auto">
+        <source src="TU_AUDIO_CLICK.mp3" type="audio/wav">
+    </audio>
+
+    <div id="neural-log"></div>
+
+    <div id="lock-overlay">
+        <div class="lock-box">
+            <div id="lock-icon" class="icon-alien">🔒</div>
+            <h2 id="lock-title" class="alien-data" style="font-size: 1.2rem; margin-bottom: 10px;">NEURAL VERIFICATION</h2>
+            
+            <div id="phase-1-ui">
+                <p id="phase-1-msg" style="font-size: 9px; letter-spacing: 2px; color: #888; margin-bottom: 25px;">UPLINK REQUIRED: FOLLOW ON FACEBOOK TO VALIDATE IDENTITY</p>
+                <a href="https://www.facebook.com/nykrodelic" target="_blank" class="social-link" id="link-fb" onclick="verify('fb'); playClickSnd();">UPLINK FACEBOOK</a>
+                
+                <a href="https://www.facebook.com/nykrodelic" target="_blank" class="social-link" id="link-fb-trap" style="display:none; border-color: var(--error);" onclick="verify('fb-trap'); playClickSnd();">DALE FOLLOW AL FACEBOOK PARA DESBLOQUEAR TU ENTRADA </a>
+            </div>
+
+            <div id="phase-2-ui" style="display: none;">
+                <p style="font-size: 9px; letter-spacing: 2px; color: #888; margin-bottom: 25px;">UPLINK SOUNDCLOUD: FULL INTERACTION REQUIRED</p>
+                <a href="https://soundcloud.com/nykronds/nykronds-nebula-prisma-multidimensional-music-v-a-nebula-prisma" target="_blank" class="social-link" id="sc-play" onclick="verify('play'); playClickSnd();">GIVE PLAY TRACK</a>
+                <a href="https://soundcloud.com/nykronds/nykronds-nebula-prisma-multidimensional-music-v-a-nebula-prisma" target="_blank" class="social-link" id="sc-comment" onclick="verify('comment'); playClickSnd();">LEAVE A COMMENT</a>
+                <a href="https://soundcloud.com/nykronds" target="_blank" class="social-link" id="sc-follow" onclick="verify('sc-follow'); playClickSnd();">FOLLOW ARTIST PROFILE</a>
+            </div>
+            
+            <button id="unlock-btn" onclick="grantAccess(); playClickSnd();">[ INITIALIZE NEURAL SCAN ]</button>
+            <div id="status-msg"></div>
+        </div>
+    </div>
+
+    <div class="header">
+        <p class="system-status">DECODING NEURAL FREQUENCIES...</p>
+        <h1 id="main-title" class="alien-data" onmouseenter="playHoverSnd()" onmouseleave="stopHoverSnd()">ИYКЯОИDS</h1>
+    </div>
+
+    <div class="grid-launcher">
+        <a href="audio to midi.html" class="module-card" onmouseenter="terminalLog('ACCESSING NYKRODELIC ENGINE...'); playHoverSnd();" onmouseleave="stopHoverSnd()" onclick="playClickSnd()">
+            <span class="live-stat">CPU: 24%</span>
+            <div class="icon-alien alien-data">ΞΠΦ</div>
+            <h2 class="alien-data">NYKRODELIC</h2>
+            <p>AUDIO TO MIDI // NEURAL ENGINE</p>
+        </a>
+
+        <div onclick="triggerLock('nykro-sonic alignment hub.html', 'hub'); playClickSnd();" class="module-card" onmouseenter="terminalLog('SYNCING WITH ALIGNMENT HUB...'); playHoverSnd();" onmouseleave="stopHoverSnd()">
+            <span class="live-stat">SYNC: OK</span>
+            <div class="icon-alien alien-data">∆∇∆</div>
+            <h2 class="alien-data">ALIGNMENT HUB</h2>
+            <p>SONIC ALIGNMENT // FREQUENCY HUB</p>
+        </div>
+
+        <div onclick="triggerLock('granulizer.html', 'gran'); playClickSnd();" class="module-card" onmouseenter="terminalLog('HEATING GRANULAR CORES...'); playHoverSnd();" onmouseleave="stopHoverSnd()">
+            <span class="live-stat">CORE: IDLE</span>
+            <div class="icon-alien alien-data">0000</div>
+            <h2 class="alien-data">GRANULIZER</h2>
+            <p>GRANULAR SYNTHESIS // CORE</p>
+        </div>
+
+        <div onclick="triggerLock('NYKROARPSEQONLINE.html', 'arpseq'); playClickSnd();" class="module-card" onmouseenter="terminalLog('FETCHING SEQUENTIAL DATA...'); playHoverSnd();" onmouseleave="stopHoverSnd()">
+            <span class="live-stat">ARP: ACTIVE</span>
+            <div class="icon-alien alien-data">ᛗᛟᛞ</div>
+            <h2 class="alien-data">NYKROARPSEQONLINE</h2>
+            <p>SEQUENTIAL DATA // NEURAL ARP</p>
+        </div>
+
+        <div onclick="triggerLock('Nykro-Sonic Studio Academy.html', 'acad'); playClickSnd();" class="module-card" onmouseenter="terminalLog('ESTABLISHING SOCIAL UPLINK...'); playHoverSnd();" onmouseleave="stopHoverSnd()">
+            <span class="live-stat">ACAD: ONLINE</span>
+            <div class="icon-alien alien-data">>>>></div>
+            <h2 class="alien-data">Studio Academy</h2>
+            <p>SOCIAL UPLINK // TRAINING CORE</p>
+        </div>
+
+        <div onclick="triggerLock('quintas and QandR.html', 'quintas'); playClickSnd();" class="module-card" onmouseenter="terminalLog('QUERYING QUINTAS DATABASE...'); playHoverSnd();" onmouseleave="stopHoverSnd()">
+            <span class="live-stat">DATA: 99%</span>
+            <div class="icon-alien alien-data">◬⌬</div>
+            <h2 class="alien-data">quintas and QandR</h2>
+            <p>NEURAL QUINTAS // Q&R CORE</p>
+        </div>
+
+        <div onclick="triggerLock('NYKROARCHITECH.html', 'archi'); playClickSnd();" class="module-card" onmouseenter="terminalLog('VERIFYING STRUCTURAL INTEGRITY...'); playHoverSnd();" onmouseleave="stopHoverSnd()">
+            <span class="live-stat">ARCH: STABLE</span>
+            <div class="icon-alien alien-data">ᚴᛖᛃ</div>
+            <h2 class="alien-data">NYKROARCHITECH</h2>
+            <p>STRUCTURAL DESIGN // NEURAL ARCH</p>
+        </div>
+
+        <a href="index.html" class="module-card bio-btn" onmouseenter="terminalLog('REDIRECTING TO BIO PROFILE...'); playHoverSnd();" onmouseleave="stopHoverSnd()" onclick="playClickSnd()">
+            <div class="icon-alien alien-data">∇</div>
+            <h2 class="alien-data">RETURN TO BIO</h2>
+            <p>BACK TO MAIN PROFILE // BIO HUB</p>
+        </a>
+    </div>
+
+    <div class="footer alien-data">NYKRONDS OPERATING SYSTEM V.2026</div>
+
+    <script>
+        const glyphs = "ᚴᛖᛃᚻᚱᛗᛟᛞᚦᚨᛒᚷᛉᚧᚩᚬᚮᚰᚱᚳᚥᚧᚩᚬᚮᚰ∆∇ΞΠΦΨΩ01";
+        let currentPhase = 1, fbClicked = false, fbTrapClicked = false, scPlayClicked = false, scCommentClicked = false, scFollowClicked = false;
+        let trapActivatedPhase1 = false, trapActivatedPhase2 = false; 
+        let targetPath = "", currentModuleID = "";
+        let audioUnlocked = false;
+        let isWaitingForTrap = false; 
+
+        const bgMusic = document.getElementById('bg-music');
+        const sndHover = document.getElementById('snd-hover');
+        const sndClick = document.getElementById('snd-click');
+
+        function unlockAudio() {
+            if(!audioUnlocked) {
+                sndHover.loop = true; 
+                bgMusic.volume = 0.4;
+                let playPromise = bgMusic.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                        audioUnlocked = true;
+                        terminalLog("NEURAL AUDIO LINK ESTABLISHED.");
+                        document.removeEventListener('mousemove', unlockAudio);
+                        document.removeEventListener('mousedown', unlockAudio);
+                        document.removeEventListener('keydown', unlockAudio);
+                        document.removeEventListener('touchstart', unlockAudio);
+                    }).catch(e => {
+                        terminalLog("OS WAITING FOR NEURAL INTERFACE INPUT...");
+                    });
+                }
+            }
+        }
+
+        document.addEventListener('mousemove', unlockAudio, { once: true });
+        document.addEventListener('mousedown', unlockAudio, { once: true });
+        document.addEventListener('keydown', unlockAudio, { once: true });
+        document.addEventListener('touchstart', unlockAudio, { once: true });
+
+        function playHoverSnd() { if(audioUnlocked) { sndHover.volume = 0.3; sndHover.play().catch(()=>{}); } }
+        function stopHoverSnd() { if(audioUnlocked) { sndHover.pause(); } }
+        function playClickSnd() { if(audioUnlocked) { sndClick.currentTime = 0; sndClick.volume = 0.6; sndClick.play().catch(()=>{}); } }
+
+        function terminalLog(text) {
+            const logContainer = document.getElementById('neural-log');
+            const newLine = document.createElement('div');
+            newLine.innerText = "> " + text;
+            logContainer.appendChild(newLine);
+            if(logContainer.childNodes.length > 6) logContainer.removeChild(logContainer.firstChild);
+        }
+
+        function scrambleText(element) {
+            if (!element) return;
+            const originalText = element.innerText;
+            let iterations = 0;
+            const interval = setInterval(() => {
+                element.innerText = originalText.split("").map((char, index) => {
+                    if(index < iterations) return originalText[index];
+                    return glyphs[Math.floor(Math.random() * glyphs.length)];
+                }).join("");
+                if(iterations >= originalText.length) clearInterval(interval);
+                iterations += 1 / 3;
+            }, 30);
+        }
+
+        function triggerLock(url, moduleID) {
+            if (localStorage.getItem('unlocked_' + moduleID) === 'true') { window.location.href = url; return; }
+            targetPath = url; currentModuleID = moduleID; currentPhase = 1; fbClicked = false; fbTrapClicked = false;
+            trapActivatedPhase1 = false; trapActivatedPhase2 = false; isWaitingForTrap = false;
+            scPlayClicked = false; scCommentClicked = false; scFollowClicked = false;
+            
+            document.getElementById('lock-overlay').style.display = 'flex';
+            document.getElementById('link-fb').style.display = 'block';
+            document.getElementById('link-fb-trap').style.display = 'none';
+            document.getElementById('phase-1-ui').style.display = 'block';
+            document.getElementById('phase-2-ui').style.display = 'none';
+            document.getElementById('unlock-btn').classList.remove('ready');
+            scrambleText(document.getElementById('lock-title'));
+            terminalLog("SECURITY LOCK ENGAGED: MODULE " + moduleID.toUpperCase());
+        }
+
+        function verify(type) {
+            const msg = document.getElementById('status-msg');
+            const trapLink = document.getElementById('link-fb-trap');
+
+            if(type === 'fb') { 
+                fbClicked = true; 
+                document.getElementById('link-fb').classList.add('active'); 
+                terminalLog("UPLINK FB: ATTEMPTING..."); 
+            }
+            
+            if(type === 'fb-trap') { 
+                isWaitingForTrap = true;
+                trapLink.classList.add('loading');
+                terminalLog("SECURITY CHECK: SCANNING FOLLOW STATUS (5s)...");
+                msg.innerText = "VERIFICANDO FOLLOW... NO CIERRES FACEBOOK";
+                
+                setTimeout(() => {
+                    fbTrapClicked = true;
+                    isWaitingForTrap = false;
+                    trapLink.classList.remove('loading');
+                    trapLink.classList.add('active');
+                    terminalLog("FOLLOW VERIFIED. ACCESS READY.");
+                    msg.innerText = "SISTEMA VERIFICADO CORRECTAMENTE";
+                    checkReady();
+                }, 5000); 
+            }
+
+            if(type === 'play') { scPlayClicked = true; document.getElementById('sc-play').classList.add('active'); }
+            if(type === 'comment') { scCommentClicked = true; document.getElementById('sc-comment').classList.add('active'); }
+            if(type === 'sc-follow') { scFollowClicked = true; document.getElementById('sc-follow').classList.add('active'); }
+            
+            checkReady();
+        }
+
+        function checkReady() {
+            const btn = document.getElementById('unlock-btn');
+            if (isWaitingForTrap) { btn.classList.remove('ready'); return; }
+
+            if(currentPhase === 1) {
+                if(!trapActivatedPhase1 && fbClicked) btn.classList.add('ready');
+                else if(trapActivatedPhase1 && fbTrapClicked) btn.classList.add('ready');
+                else btn.classList.remove('ready');
+            } else if(currentPhase === 2) {
+                if(scPlayClicked && scCommentClicked && scFollowClicked) btn.classList.add('ready');
+                else btn.classList.remove('ready');
+            }
+        }
+
+        function grantAccess() {
+            const btn = document.getElementById('unlock-btn');
+            const msg = document.getElementById('status-msg');
+            
+            if(currentPhase === 1) {
+                if(!fbClicked) { msg.innerText = "ERROR: UPLINK MISSING"; return; }
+                if(!trapActivatedPhase1) {
+                    btn.innerText = "SCANNING...";
+                    setTimeout(() => { 
+                        msg.innerText = "NO SE RECONOCE QUE DIERAS FOLLOW... RE-INTENTA"; 
+                        document.getElementById('link-fb').style.display = 'none';
+                        document.getElementById('link-fb-trap').style.display = 'block';
+                        trapActivatedPhase1 = true; 
+                        btn.innerText = "[ INITIALIZE NEURAL SCAN ]";
+                        btn.classList.remove('ready');
+                        terminalLog("!! AUTHENTICATION FAILED - RETRY REQUIRED !!");
+                    }, 2000);
+                    return;
+                }
+                if(isWaitingForTrap) return;
+                if(!fbTrapClicked) { msg.innerText = "ERROR: ESPERA LA VERIFICACIÓN Y ASEGURA DE DARLE FOLLOW PARA DESBLOQUEAR"; return; }
+
+                currentPhase = 2;
+                document.getElementById('phase-1-ui').style.display = 'none';
+                document.getElementById('phase-2-ui').style.display = 'block';
+                scrambleText(document.getElementById('lock-title'));
+                terminalLog("PHASE 1 CLEARED. INITIALIZING PHASE 2...");
+                btn.classList.remove('ready'); 
+                msg.innerText = "";
+            } else if (currentPhase === 2) {
+                if(!scPlayClicked || !scCommentClicked || !scFollowClicked) { 
+                    msg.innerText = "ERROR: SOUNDCLOUD LINKS REMAINING"; 
+                    return; 
+                }
+                
+                if(!trapActivatedPhase2) {
+                    btn.innerText = "VERIFYING TRACK INTERACTION...";
+                    btn.classList.remove('ready');
+                    setTimeout(() => {
+                        msg.innerText = "ERROR: NO SE DETECTA REPRODUCCIÓN O COMENTARIO. INTENTA DE NUEVO.";
+                        terminalLog("!! SOUNDCLOUD VERIFICATION FAILED !!");
+                        btn.innerText = "[ INITIALIZE NEURAL SCAN ]";
+                        trapActivatedPhase2 = true;
+                    }, 2500);
+                    return;
+                }
+
+                terminalLog("ACCESS GRANTED. REDIRECTING...");
+                localStorage.setItem('unlocked_' + currentModuleID, 'true');
+                window.location.href = targetPath;
+            }
+        }
+
+        window.onload = () => {
+            unlockAudio();
+            document.querySelectorAll('.alien-data').forEach(el => {
+                scrambleText(el);
+                setInterval(() => { if(Math.random() > 0.95) scrambleText(el); }, 4000);
+            });
+            terminalLog("SYSTEM READY. WELCOME OPERATOR.");
+        };
+    </script>
+</body>
+</html>

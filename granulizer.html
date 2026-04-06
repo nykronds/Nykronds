@@ -1,0 +1,457 @@
+<!DOCTYPE HTML>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ULTRA GRANULIZER - PRECISION POWER</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/dist/Midi.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Courier New', monospace; background: #050505; color: #00ff88; padding: 20px; text-align: center; }
+        .container { background: #111; padding: 25px; border: 2px solid #00ff88; border-radius: 20px; display: inline-block; box-shadow: 0 0 50px rgba(0,255,136,0.3); }
+        .drop-zone { border: 2px dashed #444; padding: 10px; margin: 5px 0; border-radius: 10px; background: #1a1a1a; font-size: 0.7em; transition: 0.3s; color: #666; cursor: pointer; }
+        .drop-zone:hover { border-color: #00ff88; color: #00ff88; }
+        .drop-zone.loaded { border-color: #00ff88; background: #002211; color: #fff; box-shadow: inset 0 0 10px #00ff88; }
+        
+        .grid { display: flex; gap: 4px; margin: 10px 0; justify-content: center; }
+        .step { width: 28px; height: 28px; border: 1px solid #222; cursor: pointer; background: #151515; border-radius: 4px; }
+        .kick-row .step.active { background: #00ff88; box-shadow: 0 0 12px #00ff88; }
+        .snare-row .step.active { background: #ff0077; box-shadow: 0 0 12px #ff0077; }
+        .extra-row .step.active { background: #00ccff; box-shadow: 0 0 12px #00ccff; }
+        .hat-row .step.active { background: #ffff00; box-shadow: 0 0 12px #ffff00; }
+        .step.highlight { border: 2px solid #fff; filter: brightness(1.8); transform: scale(1.1); }
+
+        .knob-section { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 25px; background: #1a1a1a; padding: 15px; border-radius: 15px; border: 1px solid #333; }
+        .knob-group { display: flex; flex-direction: column; align-items: center; background: #222; padding: 10px; border-radius: 10px; }
+        
+        input[type=range].knob { appearance: none; width: 45px; height: 45px; background: #000; border-radius: 50%; border: 2px solid #00ff88; cursor: pointer; transform: rotate(-90deg); }
+        input[type=range].knob::-webkit-slider-thumb { appearance: none; width: 15px; height: 15px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #00ff88; }
+
+        .amt-fader { width: 45px; height: 8px; appearance: none; background: #333; border-radius: 5px; margin-top: 8px; accent-color: #ff0077; cursor: pointer; }
+        .amt-label { font-size: 0.4em !important; color: #ff0077 !important; margin-top: 4px; font-weight: bold; }
+
+        label { font-size: 0.5em; margin-bottom: 5px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .val-display { font-size: 0.5em; color: #00ff88; margin-top: 4px; font-weight: bold; text-shadow: 0 0 5px #00ff88; }
+        
+        #playBtn { background: #00ff88; color: #000; width: 100%; padding: 15px; font-weight: bold; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border:none; font-size: 1.1em; }
+        .btn-tool { background: #222; color: #00ff88; border: 1px solid #00ff88; padding: 8px; cursor: pointer; border-radius: 5px; font-size: 0.7em; transition: 0.2s; }
+        .btn-tool:hover { background: #00ff88; color: #000; }
+        #randomBtn.active { background: #ffaa00; color: #000; border-color: #fff; }
+
+        .bpm-control { background: #000; padding: 5px 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+        .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #333; }
+        .btn-rec { grid-column: span 2; background: #ff4444; color: #fff; padding: 12px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-rec.recording { background: #ff0000; animation: pulse 1s infinite; }
+        .btn-exp { background: #222; color: #00ff88; border: 1px solid #00ff88; padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.7em; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* --- ESTILOS PARA REDES SOCIALES --- */
+        .social-sidebar {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .social-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 22px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        }
+
+        .social-btn:hover {
+            transform: scale(1.1) translateX(-5px);
+            box-shadow: 0 0 25px currentColor;
+        }
+
+        /* Colores de las redes solicitadas */
+        .soundcloud { background: #ff5500; }
+        .shop       { background: #4285f4; } /* Azul Google para el Site */
+        .facebook   { background: #1877f2; }
+
+        @media (max-width: 768px) {
+            .social-sidebar {
+                position: relative;
+                flex-direction: row;
+                justify-content: center;
+                top: 0;
+                right: 0;
+                transform: none;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="social-sidebar">
+        <a href="https://soundcloud.com/nykronds" target="_blank" class="social-btn soundcloud" title="SoundCloud"><i class="fab fa-soundcloud"></i></a>
+        <a href="https://sites.google.com/view/nykronds/shop?authuser=0&fbclid=IwY2xjawQRajZleHRuA2FlbQIxMABicmlkETEwY2FvNllZVER2RnlVSjhvc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHtaGq7HTSsw-TU-U36fWlmO9guhEwsiWxrdBAhdtYJKNayNuKRx-sjaS2pFu_aem_Qh8tqT1Rq5GxiBd4bdgG2w" target="_blank" class="social-btn shop" title="Shop"><i class="fas fa-shopping-cart"></i></a>
+        <a href="https://www.facebook.com/nykrodelic" target="_blank" class="social-btn facebook" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+    </div>
+
+    <h1>Nykro-ULTRA GRANULIZER: PRECISION ⚡</h1>
+    
+    <div class="container">
+        <button id="playBtn">▶ START ENGINE</button>
+        
+        <div class="bpm-control">
+            <label style="margin:0; font-size: 0.7em;">TEMPO:</label>
+            <input type="range" id="bpmKnob" min="40" max="220" step="1" value="120" style="accent-color: #00ff88;">
+            <div id="bpmVal" class="val-display" style="font-size: 0.8em; width: 50px;">120 BPM</div>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <button id="randomBtn" class="btn-tool">🎲 AUTO-GEN</button>
+            <button id="clearBtn" class="btn-tool">🗑️ CLEAR ALL</button>
+        </div>
+        
+        <div id="sequencer">
+            <div id="kickDrop" class="drop-zone">DROP KICK HERE</div>
+            <div class="grid kick-row" id="kickRow"></div>
+            <div id="snareDrop" class="drop-zone">DROP SNARE HERE</div>
+            <div class="grid snare-row" id="snareRow"></div>
+            <div id="extraDrop" class="drop-zone">DROP EXTRA HERE</div>
+            <div class="grid extra-row" id="extraRow"></div>
+            <div id="hatDrop" class="drop-zone">DROP HAT HERE</div>
+            <div class="grid hat-row" id="hatRow"></div>
+        </div>
+
+        <div class="knob-section">
+            <div class="knob-group">
+                <label>Grain Size</label>
+                <input type="range" id="grainKnob" class="knob" min="0.001" max="0.8" step="0.001" value="0.2">
+                <div id="grainVal" class="val-display">0.2s</div>
+            </div>
+            <div class="knob-group">
+                <label>Spray (Chaos)</label>
+                <input type="range" id="sprayKnob" class="knob" min="0" max="4" step="0.01" value="0">
+                <div id="sprayVal" class="val-display">0.0</div>
+                <label class="amt-label">INTENSITY</label>
+                <input type="range" id="sprayAmt" class="amt-fader" min="0" max="1" step="0.01" value="1">
+            </div>
+            <div class="knob-group">
+                <label>Density (Power)</label>
+                <input type="range" id="overlapKnob" class="knob" min="0.1" max="10" step="0.1" value="0.1">
+                <div id="overlapVal" class="val-display">0.1</div>
+                <label class="amt-label">INTENSITY</label>
+                <input type="range" id="overlapAmt" class="amt-fader" min="0" max="1" step="0.01" value="1">
+            </div>
+            <div class="knob-group">
+                <label>Detune</label>
+                <input type="range" id="detuneKnob" class="knob" min="-2400" max="2400" step="10" value="0">
+                <div id="detuneVal" class="val-display">0</div>
+            </div>
+
+            <div class="knob-group">
+                <label>Slow Repeat</label>
+                <input type="range" id="slowKnob" class="knob" min="1" max="4" step="1" value="1">
+                <div id="slowVal" class="val-display">1/1</div>
+            </div>
+            <div class="knob-group">
+                <label>Fast Stutter</label>
+                <input type="range" id="repeatKnob" class="knob" min="1" max="8" step="1" value="1">
+                <div id="repeatVal" class="val-display">OFF</div>
+            </div>
+            <div class="knob-group">
+                <label>Bit Destroy</label>
+                <input type="range" id="crushKnob" class="knob" min="0" max="1" step="0.01" value="0">
+                <div id="crushVal" class="val-display">OFF</div>
+                <label class="amt-label">INTENSITY</label>
+                <input type="range" id="crushAmt" class="amt-fader" min="0" max="1" step="0.01" value="1">
+            </div>
+            <div class="knob-group">
+                <label>Glitch Mix</label>
+                <input type="range" id="glitchMixKnob" class="knob" min="0" max="1" step="0.01" value="0">
+                <div id="glitchVal" class="val-display">0%</div>
+            </div>
+
+            <div class="knob-group">
+                <label>Reverse Prob</label>
+                <input type="range" id="revKnob" class="knob" min="0" max="1" step="0.1" value="0">
+                <div id="revVal" class="val-display">0%</div>
+            </div>
+            <div class="knob-group">
+                <label>Master Space</label>
+                <input type="range" id="reverbKnob" class="knob" min="0" max="1" step="0.01" value="0.1">
+                <div id="reverbVal" class="val-display">10%</div>
+            </div>
+            <div class="knob-group">
+                <label>Filter LFO</label>
+                <input type="range" id="lfoKnob" class="knob" min="0" max="20" step="0.1" value="0">
+                <div id="lfoVal" class="val-display">OFF</div>
+            </div>
+            <div class="knob-group">
+                <label>Warp Speed</label>
+                <input type="range" id="warpKnob" class="knob" min="0.5" max="2" step="0.01" value="1">
+                <div id="warpVal" class="val-display">1.0x</div>
+            </div>
+        </div>
+
+        <div class="export-grid">
+            <button id="masterRec" class="btn-rec">⏺ LIVE RECORD AUDIO (START)</button>
+            <button id="expMidi" class="btn-exp">🎹 EXPORT MIDI</button>
+            <button id="expWav" class="btn-exp">🔊 SAVE RECORDED WAV</button>
+        </div>
+    </div>
+
+    <script>
+        const recorder = new Tone.Recorder();
+        const finalOut = Tone.getDestination();
+        const masterLimiter = new Tone.Limiter(-1).connect(finalOut);
+        
+        masterLimiter.connect(recorder);
+
+        const reverb = new Tone.Reverb({decay: 4, wet: 0.1}).connect(masterLimiter);
+        const crusher = new Tone.BitCrusher(16).connect(reverb);
+        const masterGain = new Tone.Gain(1).connect(crusher);
+        const glitchMix = new Tone.Gain(0).connect(reverb);
+        const dist = new Tone.Distortion(0.8).connect(glitchMix); 
+        const filter = new Tone.Filter(4000, "lowpass").connect(dist);
+        const lfo = new Tone.LFO(0, 400, 4000).connect(filter.frequency);
+        lfo.start();
+
+        const channels = {
+            kick: new Tone.GrainPlayer(),
+            snare: new Tone.GrainPlayer(),
+            extra: new Tone.GrainPlayer(),
+            hat: new Tone.GrainPlayer()
+        };
+
+        Object.values(channels).forEach(p => { 
+            p.connect(masterGain); 
+            p.connect(filter);
+        });
+
+        let isRandomMode = false;
+        let revProb = 0;
+        let internalStepCount = 0;
+
+        function setupDrop(id, player, label) {
+            const el = document.getElementById(id);
+            el.ondragover = e => { e.preventDefault(); el.style.borderColor = "#00ff88"; };
+            el.ondragleave = () => { if (!el.classList.contains('loaded')) el.style.borderColor = "#444"; };
+            el.ondrop = e => {
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    const url = URL.createObjectURL(file);
+                    player.buffer = new Tone.ToneAudioBuffer(url, () => {
+                        el.classList.add("loaded");
+                        el.innerText = "✅ " + label;
+                        updateEngine();
+                    });
+                }
+            };
+        }
+
+        ["kick", "snare", "extra", "hat"].forEach(k => setupDrop(k+"Drop", channels[k], k.toUpperCase()));
+
+        function updateEngine() {
+            const gSize = parseFloat(document.getElementById('grainKnob').value);
+            const rawSpray = parseFloat(document.getElementById('sprayKnob').value);
+            const sprayAmt = parseFloat(document.getElementById('sprayAmt').value);
+            const gSpray = rawSpray * sprayAmt;
+            const rawOverlap = parseFloat(document.getElementById('overlapKnob').value);
+            const overlapAmt = parseFloat(document.getElementById('overlapAmt').value);
+            const gOverlap = 0.1 + ((rawOverlap - 0.1) * overlapAmt);
+            const gDetune = parseFloat(document.getElementById('detuneKnob').value);
+            const warp = parseFloat(document.getElementById('warpKnob').value);
+
+            const rawCrush = parseFloat(document.getElementById('crushKnob').value);
+            const crushAmt = parseFloat(document.getElementById('crushAmt').value);
+            const effectiveCrush = rawCrush * crushAmt;
+            const bitRes = effectiveCrush === 0 ? 16 : Math.max(1, 16 - (effectiveCrush * 15.5));
+            crusher.bits.value = bitRes;
+            document.getElementById('crushVal').innerText = effectiveCrush === 0 ? "OFF" : Math.round(bitRes) + " bits";
+
+            Object.values(channels).forEach(p => {
+                if (p.loaded) {
+                    p.grainSize = gSize;
+                    p.drift = gSpray;
+                    p.overlap = gOverlap;
+                    p.detune = gDetune;
+                    p.playbackRate = warp;
+                }
+            });
+        }
+
+        const rows = ["kickRow", "snareRow", "extraRow", "hatRow"];
+        rows.forEach(id => {
+            const row = document.getElementById(id);
+            for (let i = 0; i < 16; i++) {
+                const step = document.createElement('div');
+                step.classList.add('step');
+                step.onclick = () => step.classList.toggle('active');
+                row.appendChild(step);
+            }
+        });
+
+        Tone.Transport.scheduleRepeat((time) => {
+            const slowVal = parseInt(document.getElementById('slowKnob').value);
+            const fastStutter = parseInt(document.getElementById('repeatKnob').value);
+            
+            if (internalStepCount % slowVal === 0) {
+                let currentStep = Math.floor(internalStepCount / slowVal) % 16;
+                
+                if (isRandomMode && currentStep === 0) {
+                    rows.forEach(r => [...document.getElementById(r).children].forEach(s => s.classList.toggle('active', Math.random() < 0.25)));
+                }
+
+                Object.keys(channels).forEach(key => {
+                    const row = document.getElementById(key + "Row").children;
+                    if (row[currentStep].classList.contains('active') && channels[key].loaded) {
+                        const interval = Tone.Time("16n").toSeconds() / fastStutter;
+                        for(let i = 0; i < fastStutter; i++) {
+                            const subTime = time + (i * interval);
+                            channels[key].reverse = Math.random() < revProb;
+                            channels[key].start(subTime, 0);
+                        }
+                    }
+                });
+
+                Tone.Draw.schedule(() => {
+                    document.querySelectorAll('.step').forEach(s => s.classList.remove('highlight'));
+                    rows.forEach(id => document.getElementById(id).children[currentStep].classList.add('highlight'));
+                }, time);
+            }
+            internalStepCount++;
+        }, "16n");
+
+        document.getElementById('playBtn').onclick = async () => {
+            await Tone.start();
+            if (Tone.Transport.state === "started") {
+                Tone.Transport.stop();
+                internalStepCount = 0;
+                document.getElementById('playBtn').innerText = "▶ START ENGINE";
+                document.getElementById('playBtn').style.background = "#00ff88";
+            } else {
+                Tone.Transport.start();
+                document.getElementById('playBtn').innerText = "■ STOP ENGINE";
+                document.getElementById('playBtn').style.background = "#ff4444";
+            }
+        };
+
+        document.getElementById('bpmKnob').oninput = e => {
+            Tone.Transport.bpm.value = e.target.value;
+            document.getElementById('bpmVal').innerText = e.target.value + " BPM";
+        };
+
+        document.getElementById('slowKnob').oninput = e => {
+            const val = e.target.value;
+            document.getElementById('slowVal').innerText = `1/${val}`;
+        };
+
+        document.getElementById('repeatKnob').oninput = e => {
+            const val = e.target.value;
+            document.getElementById('repeatVal').innerText = val > 1 ? `x${val}` : "OFF";
+        };
+
+        document.getElementById('reverbKnob').oninput = e => {
+            reverb.wet.value = e.target.value;
+            document.getElementById('reverbVal').innerText = Math.round(e.target.value * 100) + "%";
+        };
+
+        document.getElementById('lfoKnob').oninput = e => {
+            lfo.frequency.value = e.target.value;
+            document.getElementById('lfoVal').innerText = e.target.value > 0 ? e.target.value + "Hz" : "OFF";
+        };
+
+        document.getElementById('revKnob').oninput = e => {
+            revProb = parseFloat(e.target.value);
+            document.getElementById('revVal').innerText = Math.round(revProb * 100) + "%";
+        };
+
+        document.getElementById('warpKnob').oninput = e => {
+            document.getElementById('warpVal').innerText = e.target.value + "x";
+            updateEngine();
+        };
+
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => {
+                document.getElementById('grainVal').innerText = document.getElementById('grainKnob').value + "s";
+                document.getElementById('sprayVal').innerText = document.getElementById('sprayKnob').value;
+                document.getElementById('overlapVal').innerText = document.getElementById('overlapKnob').value;
+                document.getElementById('detuneVal').innerText = document.getElementById('detuneKnob').value;
+                updateEngine();
+            });
+        });
+
+        document.getElementById('glitchMixKnob').oninput = e => {
+            glitchMix.gain.rampTo(e.target.value, 0.05);
+            document.getElementById('glitchVal').innerText = Math.round(e.target.value * 100) + "%";
+        };
+
+        document.getElementById('randomBtn').onclick = e => { isRandomMode = !isRandomMode; e.target.classList.toggle('active'); };
+        document.getElementById('clearBtn').onclick = () => document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+
+        let isRecording = false;
+        document.getElementById('masterRec').onclick = async () => {
+            if (!isRecording) {
+                recorder.start();
+                isRecording = true;
+                document.getElementById('masterRec').innerText = "⏹ STOP RECORDING";
+                document.getElementById('masterRec').classList.add('recording');
+            } else {
+                const recording = await recorder.stop();
+                window.lastRecording = recording;
+                isRecording = false;
+                document.getElementById('masterRec').innerText = "⏺ LIVE RECORD AUDIO (START)";
+                document.getElementById('masterRec').classList.remove('recording');
+                alert("Grabación lista. Haz clic en 'SAVE RECORDED WAV'.");
+            }
+        };
+
+        document.getElementById('expWav').onclick = () => {
+            if (!window.lastRecording) return alert("Primero graba algo.");
+            const url = URL.createObjectURL(window.lastRecording);
+            const anchor = document.createElement("a");
+            anchor.download = "granulizer_session.wav";
+            anchor.href = url;
+            anchor.click();
+        };
+
+        document.getElementById('expMidi').onclick = () => {
+            const midi = new Midi();
+            const track = midi.addTrack();
+            const noteMap = [36, 38, 42, 46]; 
+            const rowsNames = ["kickRow", "snareRow", "extraRow", "hatRow"];
+
+            rowsNames.forEach((rowId, idx) => {
+                const steps = document.getElementById(rowId).children;
+                [...steps].forEach((s, i) => {
+                    if (s.classList.contains('active')) {
+                        track.addNote({
+                            midi: noteMap[idx],
+                            time: i * Tone.Time("16n").toSeconds(),
+                            duration: "16n"
+                        });
+                    }
+                });
+            });
+
+            const blob = new Blob([midi.toArray()], {type: "audio/midi"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.download = "pattern.mid";
+            a.href = url;
+            a.click();
+        };
+
+    </script>
+</body>
+</html>

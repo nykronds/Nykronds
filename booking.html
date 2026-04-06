@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>NYKRONDS // UPLINK_PROTOCOL_v47</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@100;300;500;800&display=swap');
+
+        :root {
+            --neon: #ff0000;
+            --neon-dim: #660000;
+            --bg: #030000;
+            --panel: rgba(10, 0, 0, 0.98);
+            --border: rgba(255, 0, 0, 0.3);
+            --glow: 0 0 15px rgba(255, 0, 0, 0.4);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            color: #888;
+            padding: 8px 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            text-decoration: none;
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 0, 0, 0.15);
+            color: var(--neon);
+            border-color: var(--neon);
+            box-shadow: var(--glow);
+        }
+
+        .nav-btn.active {
+            background: var(--neon);
+            color: #000;
+            font-weight: bold;
+            border-color: var(--neon);
+        }
+
+        * { cursor: crosshair; box-sizing: border-box; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-dim); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon); }
+
+        body {
+            background-color: var(--bg);
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            margin: 0;
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at center, #1a0000 0%, #000 100%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,0,0,0.03) 2px, rgba(255,0,0,0.03) 3px);
+        }
+
+        body::before {
+            content: " ";
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 9999;
+            pointer-events: none;
+            background-size: 100% 3px, 3px 100%;
+        }
+
+        .interface-frame {
+            width: 98vw;
+            height: 96vh;
+            border: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 280px 1fr 350px;
+            gap: 1px;
+            background: var(--border);
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,1);
+        }
+
+        .pane { background: var(--bg); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+
+        .header-tag {
+            font-size: 10px; color: var(--neon); letter-spacing: 3px;
+            margin-bottom: 20px; padding: 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between;
+            background: rgba(40,0,0,0.1);
+            text-shadow: var(--glow);
+            font-weight: bold;
+        }
+
+        .main-content { padding: 30px; overflow-y: auto; scroll-behavior: smooth; }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        @keyframes cardEntry {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .card-wrapper { 
+            position: relative; 
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: cardEntry 0.5s ease-out forwards;
+        }
+
+        .card-wrapper:hover { transform: scale(1.02); z-index: 10; }
+
+        .event-card {
+            background: linear-gradient(135deg, rgba(30,0,0,0.9), rgba(5,0,0,1));
+            border: 1px solid #333;
+            display: flex;
+            height: 110px;
+            text-decoration: none; color: inherit;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .featured-node {
+            border: 1px solid var(--neon) !important;
+            box-shadow: inset 0 0 15px rgba(255,0,0,0.2);
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: var(--neon); }
+            50% { border-color: #fff; }
+        }
+
+        .status-tag {
+            font-size: 8px; font-weight: 800; background: var(--neon); color: #000;
+            padding: 2px 6px; width: fit-content; margin-bottom: 5px;
+        }
+
+        .event-img {
+            width: 110px; height: 100%; object-fit: cover;
+            filter: grayscale(1) sepia(1) hue-rotate(-50deg) brightness(0.6);
+            border-right: 1px solid var(--border);
+            transition: 0.5s;
+        }
+
+        .event-card:hover .event-img { filter: grayscale(0) brightness(1); }
+
+        .event-info { padding: 15px; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+        .event-date { color: var(--neon); font-family: 'Orbitron'; font-size: 20px; letter-spacing: 1px; font-weight: 700; }
+        .event-venue { font-size: 11px; color: #ccc; text-transform: uppercase; margin-top: 4px; }
+
+        .delete-btn {
+            display: none; position: absolute; top: -8px; right: -8px;
+            background: var(--neon); color: #000; border: none; 
+            padding: 4px 8px; font-size: 9px; cursor: pointer; z-index: 3000;
+            font-family: 'Orbitron'; font-weight: bold; border-radius: 2px;
+        }
+        body.admin-mode .delete-btn { display: block; }
+
+        #admin-panel {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: var(--panel);
+            border: 2px solid var(--neon); padding: 30px; 
+            z-index: 5000; width: 420px; box-shadow: 0 0 150px #000; backdrop-filter: blur(10px);
+        }
+
+        .input-box {
+            width: 100%; background: #000; border: 1px solid #333;
+            padding: 12px; color: #fff; font-family: 'JetBrains Mono'; 
+            font-size: 11px; margin-bottom: 12px; outline: none;
+        }
+        .btn-send {
+            width: 100%; background: transparent; color: var(--neon); border: 1px solid var(--neon);
+            padding: 15px; font-family: 'Orbitron'; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; letter-spacing: 2px; font-weight: bold;
+        }
+        .btn-send:hover { background: var(--neon); color: #000; box-shadow: var(--glow); }
+
+        @media (max-width: 1100px) { .interface-frame { grid-template-columns: 1fr; } .sidebar-left, .sidebar-right { display: none; } }
+    </style>
+</head>
+<body>
+
+    <div id="admin-panel">
+        <div class="header-tag"><span>UPLINK_COMMAND_CENTER</span></div>
+        <div style="padding: 10px 0;">
+            <input type="text" id="ev-date" class="input-box" placeholder="FECHA (ej: OCT 31)">
+            <input type="text" id="ev-venue" class="input-box" placeholder="LUGAR (ej: CYBER_CLUB)">
+            <input type="text" id="ev-link" class="input-box" placeholder="LINK_EVENTO">
+            <input type="text" id="ev-img" class="input-box" placeholder="URL_FLYER_IMG">
+            <button class="btn-send" onclick="addEvent()">CONFIRM_UPLOAD</button>
+            <button class="btn-send" onclick="exportData()" style="margin-top:8px; font-size:10px; color:#666; border-color:#333;">EXPORT_DATABASE</button>
+            <button class="btn-send" onclick="toggleAdmin()" style="margin-top:8px; font-size:10px; border-color:#440000; color:#440000;">CLOSE_CONSOLE</button>
+        </div>
+    </div>
+
+    <div class="interface-frame">
+        <aside class="pane sidebar-left" style="padding: 30px 20px;">
+            <div class="header-tag"><span>IDENTITY_MODULE</span></div>
+            <div style="font-size: 11px; line-height: 2.2; color: #888;">
+                [<span style="color:var(--neon)">USER</span>] NYKRONDS<br>
+                [<span style="color:var(--neon)">PERM</span>] ROOT_ACCESS<br>
+                [<span style="color:var(--neon)">PORT</span>] 8080_ACTIVE<br>
+                [<span style="color:var(--neon)">LOC</span>] GRID_NODE_MX
+            </div>
+            
+            <div style="margin-top: auto;">
+                <div class="header-tag"><span>CONSOLE_FEED</span></div>
+                <div id="logs" style="font-size: 9px; color: #440000; font-family: 'JetBrains Mono'; height: 100px; overflow-y: hidden;">
+                    >> INITIALIZING...<br>
+                    >> AUTO_PURGE: ENABLED<br>
+                    >> CTRL+SHIFT+K TO ADMIN
+                </div>
+            </div>
+        </aside>
+
+        <main class="pane main-content">
+            <div class="header-tag">
+                <span>TRANSMISSION_GRID // 2026</span>
+                <span id="clock" style="color: #fff;">00:00:00</span>
+            </div>
+
+            <nav class="nav-tabs">
+                <a href="#" class="nav-btn active">01_EVENTO</a>
+                <a href="index.html" class="nav-btn">02_BIO_PRESSKIT_</a>
+            </nav>
+            <div class="events-grid" id="events-container"></div>
+        </main>
+
+        <aside class="pane sidebar-right" style="padding: 30px 20px;">
+            <div class="header-tag"><span>BOOKING_HERE</span></div>
+            <form id="booking-form">
+                <input type="text" name="name" id="name" class="input-box" placeholder="SENDER_ID (Nombre)" required>
+                <input type="email" name="email" id="email" class="input-box" placeholder="RETURN_PATH (Email)" required>
+                <input type="text" name="location" id="location" class="input-box" placeholder="TARGET_NODE (Ciudad/Lugar)">
+                <textarea name="message" id="message" class="input-box" rows="6" placeholder="DATA_STREAM (Mensaje...)" required></textarea>
+                
+                <button type="submit" class="btn-send" id="submit-btn">EXECUTE_SEND</button>
+            </form>
+            
+            <div style="margin-top: 15px; font-size: 8px; color: #333; text-align: center;">
+                ENCRYPTION_PROTOCOL: AES-256_ACTIVE
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let events = JSON.parse(localStorage.getItem('nykronds_events')) || [
+            { date: 'MAR 24', venue: 'NEURAL_FEST // MX', link: '#', img: 'https://via.placeholder.com/150/220000/ff0000?text=NYK' }
+        ];
+
+        // LÓGICA DE ENVÍO DE CORREO MEJORADA (AJAX)
+        document.getElementById('booking-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const logs = document.getElementById('logs');
+            const originalText = btn.innerText;
+
+            btn.innerText = "TRANSMITTING...";
+            btn.disabled = true;
+            logs.innerHTML += `<br>>> ATTEMPTING_UPLINK...`;
+
+            const data = new FormData(this);
+            
+            fetch("https://formsubmit.co/ajax/nykrondsbooking@gmail.com", {
+                method: "POST",
+                body: data,
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(response => response.ok ? response.json() : Promise.reject())
+            .then(() => {
+                logs.innerHTML += `<br><span style="color:var(--neon)">>> UPLINK_SUCCESS.</span>`;
+                btn.innerText = "SENT_COMPLETED";
+                this.reset();
+                setTimeout(() => { 
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }, 3000);
+            })
+            .catch(() => {
+                logs.innerHTML += `<br><span style="color:var(--neon)">>> CONNECTION_ERROR.</span>`;
+                btn.innerText = "RETRY_SEND";
+                btn.disabled = false;
+            });
+        });
+
+        function isEventExpired(eventDateStr) {
+            const months = { 'JAN':0, 'FEB':1, 'MAR':2, 'APR':3, 'MAY':4, 'JUN':5, 'JUL':6, 'AUG':7, 'SEP':8, 'OCT':9, 'NOV':10, 'DEC':11 };
+            const parts = eventDateStr.split(' ');
+            if(parts.length < 2) return false;
+            const month = months[parts[0].toUpperCase()];
+            const day = parseInt(parts[1]);
+            const now = new Date();
+            const eventDate = new Date(now.getFullYear(), month, day, 23, 59, 59);
+            return now > eventDate;
+        }
+
+        function renderEvents() {
+            const container = document.getElementById('events-container');
+            container.innerHTML = '';
+            const activeEvents = events.filter(ev => !isEventExpired(ev.date) || document.body.classList.contains('admin-mode'));
+
+            activeEvents.forEach((ev, index) => {
+                const expired = isEventExpired(ev.date);
+                const isFirst = index === 0 && !expired;
+                const delay = index * 0.1;
+
+                container.innerHTML += `
+                    <div class="card-wrapper" style="animation-delay: ${delay}s">
+                        <button class="delete-btn" onclick="deleteEvent(${index})">X</button>
+                        <a href="${ev.link}" target="_blank" class="event-card ${isFirst ? 'featured-node' : ''}" 
+                           style="${expired ? 'opacity: 0.4; filter: sepia(1);' : ''}">
+                            <img src="${ev.img}" class="event-img" onerror="this.src='https://via.placeholder.com/150/110000/330000?text=NO_DATA'">
+                            <div class="event-info">
+                                ${isFirst ? '<div class="status-tag">UPLINK_LIVE</div>' : ''}
+                                <div class="event-date">${ev.date}</div>
+                                <div class="event-venue">${ev.venue}</div>
+                                ${expired ? '<div style="font-size:8px; color:var(--neon); margin-top:5px;">[DATA_CORRUPTED]</div>' : ''}
+                            </div>
+                        </a>
+                    </div>
+                `;
+            });
+            localStorage.setItem('nykronds_events', JSON.stringify(events));
+        }
+
+        function addEvent() {
+            const date = document.getElementById('ev-date').value.toUpperCase();
+            const venue = document.getElementById('ev-venue').value;
+            const link = document.getElementById('ev-link').value;
+            const img = document.getElementById('ev-img').value;
+            if(date && venue) {
+                events.push({ date, venue, link: link || '#', img: img || '' });
+                renderEvents();
+                ['ev-date', 'ev-venue', 'ev-link', 'ev-img'].forEach(id => document.getElementById(id).value = '');
+            }
+        }
+
+        function deleteEvent(index) {
+            if(confirm("TERMINATE_DATA_NODE?")) {
+                events.splice(index, 1);
+                renderEvents();
+            }
+        }
+
+        function exportData() {
+            navigator.clipboard.writeText(JSON.stringify(events, null, 4));
+            alert("DATABASE_COPIED_TO_CLIPBOARD");
+        }
+
+        function toggleAdmin() {
+            const panel = document.getElementById('admin-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            document.body.classList.toggle('admin-mode');
+            renderEvents();
+        }
+
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toTimeString().split(' ')[0];
+        }, 1000);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'K') toggleAdmin();
+        });
+
+        renderEvents();
+    </script>
+</body>
+</html>

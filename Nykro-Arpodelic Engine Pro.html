@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmony Engine Pro v2.7 - Layered Edition</title>
+    <style>
+        /* Estilos base */
+        body { font-family: 'Inter', sans-serif; background-color: #0f0f0f; color: #e0e0e0; display: flex; flex-direction: column; align-items: center; padding: 15px; margin: 0; }
+        
+        /* Encabezado Horizontal */
+        .main-header { 
+            display: flex; 
+            width: 95vw; 
+            max-width: 1600px; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 10px; 
+            background: #111; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            border: 1px solid #333;
+        }
+        h1 { color: #ffcc00; margin: 0; font-size: 1.2rem; white-space: nowrap; }
+        #status-midi { font-size: 0.7rem; color: #2ecc71; padding: 5px 10px; border-radius: 4px; background: #1a1a1a; border: 1px solid #444; margin: 0; }
+
+        .container { display: flex; gap: 30px; align-items: flex-start; justify-content: center; width: 95vw; max-width: 1600px; }
+        
+        #sequencer-container { width: 95vw; max-width: 1600px; background: #151515; border: 1px solid #333; border-radius: 8px; margin-bottom: 20px; overflow: hidden; display: flex; flex-direction: column; }
+        .seq-header { background: #222; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 10px; }
+        
+        #midi-grid-scroll { width: 100%; background: #0a0a0a; cursor: crosshair; overflow: hidden; position: relative; }
+        #midi-grid { display: grid; grid-template-columns: 60px repeat(32, 1fr); height: 200px; position: relative; user-select: none; } 
+        
+        .grid-cell { border-right: 1px solid #252525; border-bottom: 1px solid #252525; position: relative; transition: background 0.1s; }
+        .grid-cell.playing-now { background: rgba(255, 204, 0, 0.4) !important; z-index: 1; border-left: 2px solid #ffcc00; } 
+        .grid-cell.out-of-loop { opacity: 0.1; background: #000 !important; } 
+        .grid-cell.in-loop { background: #111; border-top: 1px solid rgba(255, 204, 0, 0.05); }
+        
+        .note-label { font-size: 0.65rem; color: #aaa; display: flex; align-items: center; padding-left: 10px; background: #1a1a1a; border-bottom: 1px solid #333; position: sticky; left: 0; z-index: 20; font-weight: bold; }
+        
+        .midi-block { position: absolute; height: 85%; top: 7.5%; border-radius: 3px; z-index: 5; pointer-events: none; width: 92% !important; left: 4%; border: 1px solid rgba(255,255,255,0.3); }
+        .midi-block.manual { background: #ff00ff; box-shadow: 0 0 12px rgba(255, 0, 255, 0.8), inset 0 0 5px white; }
+        .midi-block.suggested { background: #00d4ff; box-shadow: 0 0 12px rgba(0, 212, 255, 0.8), inset 0 0 5px white; }
+        .midi-block.melody { background: #2ecc71; box-shadow: 0 0 12px rgba(46, 204, 113, 0.8), inset 0 0 5px white; }
+        .midi-block.melody.muted { opacity: 0.2; box-shadow: none; filter: grayscale(1); }
+        
+        #circle-wrapper { position: relative; width: 450px; height: 450px; background: radial-gradient(circle, #1a1a1a 0%, #0a0a0a 70%); border-radius: 50%; border: 1px solid #333; flex-shrink: 0; }
+        .note { position: absolute; width: 46px; height: 46px; margin-left: -23px; margin-top: -23px; display: flex; align-items: center; justify-content: center; background: #222; border: 2px solid #444; border-radius: 50%; cursor: pointer; font-weight: bold; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2; color: #fff; }
+        .note.minor { width: 40px; height: 40px; margin-left: -20px; margin-top: -20px; font-size: 0.8rem; }
+        .note.active { background: #ffcc00; color: #000; border-color: #fff; transform: scale(1.15); z-index: 10; box-shadow: 0 0 25px #ffcc00; }
+        .note.active-minor { background: #ff00ff !important; color: #fff !important; border-color: #fff; transform: scale(1.15); z-index: 10; box-shadow: 0 0 25px #ff00ff; }
+        .note.neighbor { border-color: #2ecc71; color: #2ecc71; background: #0a2e1a; }
+        
+        #mode-toggle-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80px; height: 80px; border-radius: 50%; border: 2px solid #444;
+            background: #222; color: #888; cursor: pointer; font-weight: bold;
+            font-size: 0.7rem; z-index: 15; transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center; text-align: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+        #mode-toggle-btn.minor-active { background: #ff00ff; color: #fff; border-color: #fff; box-shadow: 0 0 20px rgba(255, 0, 255, 0.6); }
+
+        #sidebar { display: flex; flex-direction: column; gap: 15px; flex: 1; max-width: 600px; }
+        .suggestion-box { background: #1a1a1a; padding: 12px; border-radius: 8px; max-height: 200px; overflow-y: auto; border-top: 3px solid #444; }
+        .suggestion-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; padding: 8px; background: #252525; border-radius: 6px; border: 1px solid #333; }
+        .info-prog { display: flex; flex-direction: column; gap: 1px; flex: 1; overflow: hidden; }
+        .notes-display { font-size: 0.6rem; color: #888; font-family: 'Courier New', monospace; }
+        .controls { display: flex; gap: 5px; }
+        .play-btn, .arp-btn, .gen-btn { border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.6rem; }
+        .play-btn { background: #444; color: #fff; }
+        .arp-btn { background: #ffcc00; color: #000; }
+        .gen-btn { background: #2ecc71; color: #000; }
+        
+        .mute-btn { background: #444; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.65rem; transition: all 0.2s; }
+        .mute-btn.active { background: #e74c3c; color: white; }
+
+        #piano-container { background: #1e1e1e; padding: 10px; border-radius: 10px; border: 1px solid #333; margin-bottom: 5px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        #chord-name { font-size: 0.9rem; color: #ffcc00; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+        
+        .piano { display: flex; height: 50px; background: #000; padding: 2px; border-radius: 4px; justify-content: center; width: 100%;}
+        .key { width: 14px; height: 100%; border: 1px solid #111; background: #ccc; border-radius: 0 0 2px 2px; }
+        .key.black { width: 10px; height: 60%; background: #222; margin-left: -5px; margin-right: -5px; z-index: 10; }
+        .key.active { background: #ffcc00 !important; box-shadow: inset 0 -5px 10px rgba(0,0,0,0.2); }
+        .key.missing { background: #00d4ff !important; }
+        
+        .download-btn { background: #00d4ff; color: #000; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; border:none; font-size: 0.8rem; }
+        .download-btn.melody-only { background: #2ecc71; }
+        .download-btn.chords-only { background: #ffcc00; }
+        
+        .play-seq-btn { background: #444; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .play-seq-btn.active { background: #2ecc71; color: #000; }
+
+        .social-float { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; align-items: flex-end; }
+        .social-btn { 
+            width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            text-decoration: none; color: white; font-weight: bold; font-size: 0.7rem; 
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.1); overflow: hidden; white-space: nowrap; width: 45px;
+        }
+        .social-btn:hover { width: 130px; border-radius: 25px; padding: 0 15px; border-color: rgba(255,255,255,0.5); }
+        .social-btn span { opacity: 0; margin-left: 8px; transition: opacity 0.2s; font-size: 0.75rem; }
+        .social-btn:hover span { opacity: 1; }
+
+        .fb { background: #1877F2; }
+        .gr { background: #000000; }
+        .sc { background: #ff5500; }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <h1>Nykro-Arpodelic Engine Pro <span style="font-size: 0.7rem; opacity: 0.6;">V2.7 LAYERED</span></h1>
+        <div id="status-midi">Buscando teclado MIDI...</div>
+    </header>
+
+    <div class="social-float">
+        <a href="https://soundcloud.com/nykronds" target="_blank" class="social-btn sc">☁<span>SoundCloud</span></a>
+        <a href="https://sites.google.com/view/nykronds/shop?authuser=0" target="_blank" class="social-btn gr">🛒<span>Gumroad Shop</span></a>
+        <a href="https://www.facebook.com/nykrodelic" target="_blank" class="social-btn fb">f<span>Facebook</span></a>
+    </div>
+
+    <div id="sequencer-container">
+        <div class="seq-header">
+            <div style="display:flex; gap:15px; align-items:center;">
+                <button id="play-seq-button" class="play-seq-btn" onclick="toggleSequencerPlay()">▶ PLAY SEQ</button>
+                <div style="background: #111; padding: 5px 12px; border-radius: 20px; border: 1px solid #444; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 0.65rem; color: #ffcc00; font-weight: bold; letter-spacing: 1px;">LOOP:</span>
+                    <span id="loop-range-display" style="font-size: 0.8rem; font-family: monospace; color: #fff; min-width: 60px;">0 - 31</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.6rem; color: #888;">BPM:</span>
+                    <input type="range" id="bpm-slider" min="60" max="240" value="138" oninput="updateBPM(this.value)" style="width: 80px;">
+                    <span id="bpm-val" style="font-size: 0.7rem; color: #ffcc00;">138</span>
+                </div>
+                <button class="gen-btn" onclick="generateQuestionAnswer()">+ IA MELODY</button>
+              <button class="btn-control" onclick="generarArpegioTranceIA()" style="background: linear-gradient(135deg, #00f2fe, #4facfe); border-color: #00f2fe;">
+    + Arpegio Trance IA
+</button>
+                <button id="melody-mute-btn" class="mute-btn" onclick="toggleMelodyMute()">MELODY: ON</button>
+                <span id="melody-info" style="font-size: 0.65rem; color: #888; font-family: monospace; border-left: 1px solid #444; padding-left: 10px;">IA: Lista</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="download-btn" onclick="exportToMidiFile('all')" title="Descarga Todo">⬇ FULL .MID</button>
+                <button class="download-btn melody-only" onclick="exportToMidiFile('melody')" title="Descarga solo Melodía">⬇ MEL .MID</button>
+                <button class="download-btn chords-only" onclick="exportToMidiFile('chords')" title="Descarga solo Acordes">⬇ CHORDS .MID</button>
+                <button onclick="clearSequencer()" style="background:#444; color:white; border:none; cursor:pointer; font-size:0.6rem; padding:4px 8px; border-radius:3px;">BORRAR TODO</button>
+            </div>
+        </div>
+        <div id="midi-grid-scroll">
+            <div id="midi-grid"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="circle-wrapper">
+            <button id="mode-toggle-btn" onclick="toggleMidiMode()">MODO:<br>MAYOR</button>
+        </div>
+
+        <div id="sidebar">
+            <div id="piano-container">
+                <div id="chord-name">SELECCIONA UN TONO</div>
+                <div class="piano" id="piano"></div>
+            </div>
+            <div class="suggestion-box" id="suggestions"><div style="font-weight: bold; color: #2ecc71; margin-bottom: 5px; font-size: 0.75rem;">TEORÍA Y CLÁSICOS</div><div id="suggestion-list"></div></div>
+            <div class="suggestion-box" id="psy-suggestions"><div style="font-weight: bold; color: #ff00ff; margin-bottom: 5px; font-size: 0.75rem;">PSYTRANCE & GOA</div><div id="psy-list"></div></div>
+            <div class="suggestion-box" id="techno-suggestions"><div style="font-weight: bold; color: #00d4ff; margin-bottom: 5px; font-size: 0.75rem;">TECHNO & HOUSE</div><div id="techno-list"></div></div>
+            <div class="suggestion-box" id="trance-suggestions"><div style="font-weight: bold; color: #3498db; margin-bottom: 5px; font-size: 0.75rem;">TRANCE & PROGRESSIVE</div><div id="trance-list"></div></div>
+            <div class="suggestion-box" id="modes-suggestions"><div style="font-weight: bold; color: #f1c40f; margin-bottom: 5px; font-size: 0.75rem;">MODAL EXPLORATION</div><div id="modes-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Rango visual (cuántas notas caben en la pantalla sin crecer)
+const VISIBLE_ROWS = 24; 
+// Nota MIDI que está en el fondo del piano roll (36 es C2)
+let vScrollOffset = 36;
+        const majors = ['C', 'G', 'D', 'A', 'E', 'B', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F'];
+        const minors = ['Am', 'Em', 'Bm', 'F#m', 'C#m', 'G#m', 'Ebm', 'Bbm', 'Fm', 'Cm', 'Gm', 'Dm'];
+        const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const freqs = { 'C': 261.63, 'C#': 277.18, 'D': 293.66, 'D#': 311.13, 'E': 329.63, 'F': 349.23, 'F#': 369.99, 'G': 392.00, 'G#': 415.30, 'A': 440.00, 'A#': 466.16, 'B': 493.88 };
+        const midiMap = { 'C': 60, 'C#': 61, 'D': 62, 'D#': 63, 'E': 64, 'F': 65, 'F#': 66, 'G': 67, 'G#': 68, 'A': 69, 'A#': 70, 'B': 71 };
+
+        let currentSequence = []; 
+        let currentRootForGrid = 'C';
+        let isPlayingSeq = false;
+        let seqInterval = null;
+        let currentStep = 0;
+        let currentBPM = 138;
+        let activeTimeouts = []; 
+        const TOTAL_STEPS = 32; 
+
+        let loopStart = 0;
+        let loopEnd = 31;
+        let isDraggingLoop = false;
+        let onlyMinorsMode = false;
+        let isMelodyMuted = false;
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                toggleSequencerPlay();
+            }
+        });
+
+        function toggleMidiMode() {
+            onlyMinorsMode = !onlyMinorsMode;
+            const btn = document.getElementById('mode-toggle-btn');
+            if(onlyMinorsMode) { btn.classList.add('minor-active'); btn.innerHTML = "MODO:<br>MENOR"; } 
+            else { btn.classList.remove('minor-active'); btn.innerHTML = "MODO:<br>MAYOR"; }
+        }
+
+        function toggleMelodyMute() {
+            isMelodyMuted = !isMelodyMuted;
+            const btn = document.getElementById('melody-mute-btn');
+            if(isMelodyMuted) { btn.innerText = "MELODY: OFF"; btn.classList.add('active'); } 
+            else { btn.innerText = "MELODY: ON"; btn.classList.remove('active'); }
+            drawSequenceOnGrid();
+        }
+
+        if (navigator.requestMIDIAccess) { navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure); }
+
+        function onMIDISuccess(midiAccess) {
+            const status = document.getElementById('status-midi');
+            const inputs = midiAccess.inputs.values();
+            let hasInputs = false;
+            for (let input of inputs) {
+                input.onmidimessage = getMIDIMessage;
+                status.innerText = `MIDI Conectado: ${input.name}`;
+                status.style.color = "#2ecc71";
+                hasInputs = true;
+            }
+            if(!hasInputs) status.innerText = "No se detectó teclado MIDI USB";
+        }
+
+        function onMIDIFailure() { }
+
+        function getMIDIMessage(message) {
+            const command = message.data[0];
+            const note = message.data[1];
+            const velocity = (message.data.length > 2) ? message.data[2] : 0;
+            if (command === 144 && velocity > 0) { 
+                const noteName = notes[note % 12];
+                const fullNoteName = onlyMinorsMode ? noteName + 'm' : noteName;
+                stopSequencer(); clearAudioQueue();
+                currentSequence = [];
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const listToSearch = onlyMinorsMode ? minors : majors;
+                let searchStr = fullNoteName.replace('F#', 'Gb').replace('C#', 'Db').replace('G#', 'Ab').replace('D#', 'Eb').replace('A#', 'Bb');
+                const noteIndex = listToSearch.indexOf(searchStr);
+                document.getElementById('chord-name').innerText = `TONO: ${fullNoteName}`; 
+                updateUI(fullNoteName, noteIndex, onlyMinorsMode);
+                
+                const cleanRoot = noteName.replace('Gb', 'F#').replace('Db', 'C#').replace('Ab', 'G#').replace('Eb', 'D#').replace('Bb', 'A#');
+                const rootIdx = notes.indexOf(cleanRoot);
+                const getN = (offset) => notes[(rootIdx + offset) % 12];
+                const totalSteps = Math.abs(loopEnd - loopStart) + 1;
+                
+                let progression = !onlyMinorsMode ? 
+                    [{ n: cleanRoot, min: false }, { n: getN(5), min: false }, { n: getN(7), min: false }, { n: cleanRoot, min: false }] : 
+                    [{ n: cleanRoot, min: true }, { n: getN(5), min: true }, { n: getN(7), min: false }, { n: cleanRoot, min: true }];
+                
+                progression.forEach((p, stepIdx) => {
+                    const chordNotes = getChordNotes(p.n, p.min);
+                    addToSequencer(chordNotes, stepIdx * (totalSteps/4), totalSteps/4, true); 
+                });
+                
+                generateQuestionAnswer(); 
+                playChord(getChordNotes(noteName, onlyMinorsMode), 0, 0.4, 'sawtooth');
+                highlightPiano(getChordNotes(noteName, onlyMinorsMode));
+                highlightCircleFromMidi(noteName, onlyMinorsMode);
+            }
+        }
+
+        function generateQuestionAnswer() {
+            currentSequence = currentSequence.filter(item => !item.isMelody);
+            const totalSteps = Math.abs(loopEnd - loopStart) + 1;
+            const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+            const rootIdx = notes.indexOf(cleanRoot);
+            const isMinorScale = currentRootForGrid.includes('m');
+            const scaleIntervals = isMinorScale ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];
+            const scaleNotes = scaleIntervals.map(v => notes[(rootIdx + v) % 12]);
+            const midPoint = Math.floor(totalSteps / 2);
+            for (let s = 0; s < midPoint; s += 2) {
+                if (Math.random() > 0.4) {
+                    const randomNote = scaleNotes[Math.floor(Math.random() * scaleNotes.length)];
+                    const finalNote = (s >= midPoint - 2) ? scaleNotes[4] : randomNote; 
+                    addNoteToSeq(finalNote, s, 1);
+                }
+            }
+            for (let s = midPoint; s < totalSteps; s += 2) {
+                if (Math.random() > 0.4) {
+                    const randomNote = scaleNotes[Math.floor(Math.random() * scaleNotes.length)];
+                    const finalNote = (s >= totalSteps - 2) ? scaleNotes[0] : randomNote;
+                    addNoteToSeq(finalNote, s, 1);
+                }
+            }
+            if(document.getElementById('melody-info')) document.getElementById('melody-info').innerText = `IA: ${currentRootForGrid}`;
+            drawSequenceOnGrid();
+        }
+
+        function addNoteToSeq(noteName, step, duration) {
+            const rangeSize = Math.abs(loopEnd - loopStart) + 1;
+            const stepToPlace = loopStart + (step % rangeSize);
+            currentSequence.push({ step: stepToPlace, notes: [noteName + '2'], duration: duration, isMelody: true });
+        }
+
+        function highlightCircleFromMidi(noteName, isMinor) {
+            let searchNote = noteName.replace('F#','Gb').replace('C#','Db').replace('G#','Ab').replace('D#','Eb').replace('A#','Bb');
+            if(isMinor) searchNote += 'm';
+            const allNoteDivs = document.querySelectorAll('.note');
+            allNoteDivs.forEach(div => {
+                div.classList.remove('active', 'active-minor', 'neighbor');
+                if(div.innerText === searchNote) div.classList.add(isMinor ? 'active-minor' : 'active');
+            });
+        }
+
+        function initGrid() {
+            const grid = document.getElementById('midi-grid');
+            grid.innerHTML = '';
+            const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+            const rootIdx = notes.indexOf(cleanRoot);
+            for(let i=7; i>=0; i--) {
+                const nIdx = (rootIdx + i) % 12;
+                const label = document.createElement('div'); label.className = 'note-label'; label.innerText = notes[nIdx]; grid.appendChild(label);
+                for(let s=0; s<TOTAL_STEPS; s++) { 
+                    const cell = document.createElement('div'); cell.className = `grid-cell step-${s}`; cell.id = `cell-${s}-${notes[nIdx]}`;
+                    cell.onmousedown = (e) => { e.preventDefault(); isDraggingLoop = true; loopStart = s; loopEnd = s; updateLoopVisuals(); };
+                    cell.onmouseenter = (e) => { if (isDraggingLoop) { loopEnd = s; updateLoopVisuals(); } };
+                    grid.appendChild(cell);
+                }
+            }
+            window.addEventListener('mouseup', () => { if(isDraggingLoop) { isDraggingLoop = false; finalizeLoopSelection(); } });
+            updateLoopVisuals(); drawSequenceOnGrid();
+        }
+
+        function finalizeLoopSelection() { if (loopStart > loopEnd) { [loopStart, loopEnd] = [loopEnd, loopStart]; } document.getElementById('loop-range-display').innerText = `${loopStart} - ${loopEnd}`; }
+
+        function updateLoopVisuals() {
+            const start = Math.min(loopStart, loopEnd);
+            const end = Math.max(loopStart, loopEnd);
+            for (let s = 0; s < TOTAL_STEPS; s++) {
+                const cells = document.querySelectorAll(`.step-${s}`);
+                cells.forEach(c => {
+                    if (s < start || s > end) { c.classList.add('out-of-loop'); c.classList.remove('in-loop'); } 
+                    else { c.classList.remove('out-of-loop'); c.classList.add('in-loop'); }
+                });
+            }
+        }
+
+        function drawSequenceOnGrid() {
+            document.querySelectorAll('.midi-block').forEach(b => b.remove());
+            currentSequence.forEach(item => {
+                const baseStep = item.step;
+                item.notes.forEach(n => {
+                    const noteName = n.replace('2', '');
+                    const cell = document.getElementById(`cell-${baseStep}-${noteName}`);
+                    if(cell) {
+                        const block = document.createElement('div');
+                        block.className = `midi-block ${item.isMelody ? 'melody' : (item.isSuggested ? 'suggested' : 'manual')}`;
+                        if(item.isMelody && isMelodyMuted) block.classList.add('muted');
+                        cell.appendChild(block);
+                    }
+                });
+            });
+        }
+
+        function updateBPM(val) { currentBPM = parseFloat(val); document.getElementById('bpm-val').innerText = val; if(isPlayingSeq) { 
+            if (seqInterval) clearInterval(seqInterval);
+            startSequencer();
+        }}
+
+        function toggleSequencerPlay() {
+            if(!isPlayingSeq) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                clearAudioQueue(); isPlayingSeq = true;
+                const btn = document.getElementById('play-seq-button'); btn.innerText = "■ STOP SEQ"; btn.classList.add('active');
+                currentStep = loopStart; startSequencer();
+            } else { stopSequencer(); }
+        }
+
+        function startSequencer() {
+            const stepTime = (60 / currentBPM / 4) * 1000; 
+            if (seqInterval) clearInterval(seqInterval);
+            seqInterval = setInterval(() => {
+                document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('playing-now'));
+                document.querySelectorAll(`.step-${currentStep}`).forEach(c => c.classList.add('playing-now'));
+                const notesInStep = currentSequence.filter(item => item.step === currentStep);
+                notesInStep.forEach(item => {
+                    if (item.isMelody && isMelodyMuted) return;
+                    const synthType = item.isMelody ? 'square' : 'sawtooth';
+                    playChord(item.notes, 0, (60 / currentBPM / 4) * item.duration, synthType); 
+                    highlightPiano(item.notes);
+                });
+                currentStep++; 
+                if (currentStep > loopEnd) currentStep = loopStart;
+            }, stepTime);
+        }
+
+        function stopSequencer() { if(seqInterval) clearInterval(seqInterval); isPlayingSeq = false; const btn = document.getElementById('play-seq-button'); if(btn) { btn.innerText = "▶ PLAY SEQ"; btn.classList.remove('active'); } document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('playing-now')); }
+        
+        function clearSequencer() { currentSequence = []; drawSequenceOnGrid(); }
+
+        function addToSequencer(chordNotes, offsetFromStart, duration, isSuggested = false) {
+            const rangeSize = Math.abs(loopEnd - loopStart) + 1;
+            const stepToPlace = loopStart + (Math.floor(offsetFromStart) % rangeSize);
+            currentSequence = currentSequence.filter(item => !(item.step === stepToPlace && !item.isMelody));
+            currentSequence.push({ step: stepToPlace, notes: [...chordNotes], duration: duration, isSuggested: isSuggested, isMelody: false });
+            drawSequenceOnGrid();
+        }
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const masterGain = audioCtx.createGain(); masterGain.gain.value = 0.3; masterGain.connect(audioCtx.destination);
+
+        function playChord(chordNotes, timeOffset = 0, duration = 0.5, type = 'triangle') {
+            chordNotes.forEach(n => {
+                const osc = audioCtx.createOscillator(); const noteGain = audioCtx.createGain(); osc.type = type;
+                let baseNote = n.replace('2', ''); let freq = freqs[baseNote]; if (n.includes('2')) freq *= 2;
+                osc.frequency.setValueAtTime(freq || 440, audioCtx.currentTime + timeOffset);
+                noteGain.gain.setValueAtTime(0.1, audioCtx.currentTime + timeOffset);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + timeOffset + duration);
+                osc.connect(noteGain); noteGain.connect(masterGain);
+                osc.start(audioCtx.currentTime + timeOffset); osc.stop(audioCtx.currentTime + timeOffset + duration);
+            });
+        }
+
+        function highlightPiano(chord) {
+            document.querySelectorAll('.key').forEach(k => k.classList.remove('active', 'missing'));
+            chord.forEach((n, index) => { const k = document.getElementById(`key-${n}`); if(k) k.classList.add(index === 0 ? 'active' : 'missing'); });
+        }
+
+        function clearAudioQueue() { activeTimeouts.forEach(t => clearTimeout(t)); activeTimeouts = []; }
+
+        function getChordNotes(root, isMinor, type = 'triad') {
+            let r = root.replace('m', '').replace('Gb', 'F#').replace('Db', 'C#').replace('Ab', 'G#').replace('Eb', 'D#').replace('Bb', 'A#');
+            let rootIdx = notes.indexOf(r);
+            let intervals = isMinor ? [0, 3, 7] : [0, 4, 7];
+            if (type === 'phrygian') intervals = [0, 1, 7];
+            if (type === 'sus2') intervals = [0, 2, 7];
+            if (type === 'sus4') intervals = [0, 5, 7];
+            if (type === 'dim') intervals = [0, 3, 6];
+            if (type === 'maj7') intervals = [0, 4, 7, 11];
+            if (type === 'dom7') intervals = [0, 4, 7, 10];
+            return intervals.map(v => { let idx = (rootIdx + v) % 12; return (rootIdx + v) < 12 ? notes[idx] : notes[idx] + '2'; });
+        }
+
+        function renderProg(prog, container) {
+            const item = document.createElement('div'); item.className = 'suggestion-item';
+            const info = document.createElement('div'); info.className = 'info-prog';
+            let notesText = prog.steps.slice(0, 4).map(s => `${s.n}${s.min?'m':''}`).join(' ') + (prog.steps.length > 4 ? '...' : '');
+            info.innerHTML = `<span style="font-size:0.75rem; font-weight:bold; color:#fff">${prog.label}</span><br><span class="notes-display">${notesText}</span>`;
+            const ctrl = document.createElement('div'); ctrl.className = 'controls';
+            const pBtn = document.createElement('button'); pBtn.className = 'play-btn'; pBtn.innerText = 'PLAY';
+            pBtn.onclick = () => { loadProgressionToSequencer(prog); };
+            const aBtn = document.createElement('button'); aBtn.className = 'arp-btn'; aBtn.innerText = 'ARP';
+            aBtn.onclick = () => {
+                stopSequencer(); clearAudioQueue();
+                currentSequence = currentSequence.filter(item => item.isMelody);
+                const totalStepsInLoop = Math.abs(loopEnd - loopStart) + 1;
+                let currentArpOffset = 0;
+                prog.steps.forEach((step) => {
+                    const chord = getChordNotes(step.n, step.min, step.type);
+                    const notesPerStep = Math.max(1, Math.floor(totalStepsInLoop / (prog.steps.length * chord.length)));
+                    chord.forEach((note) => {
+                        if (currentArpOffset < totalStepsInLoop) {
+                            addToSequencer([note], currentArpOffset, 1, true);
+                            currentArpOffset += notesPerStep;
+                        }
+                    });
+                });
+                currentRootForGrid = prog.steps[0].n + (prog.steps[0].min ? 'm' : '');
+                generateQuestionAnswer(); 
+                document.getElementById('chord-name').innerText = `ARP: ${currentRootForGrid}`;
+            };
+            ctrl.append(pBtn, aBtn); item.append(info, ctrl); container.appendChild(item);
+        }
+
+        function loadProgressionToSequencer(prog) {
+            stopSequencer(); clearAudioQueue();
+            currentSequence = currentSequence.filter(item => item.isMelody);
+            const totalStepsInLoop = Math.abs(loopEnd - loopStart) + 1;
+            const stepsPerChord = totalStepsInLoop / prog.steps.length;
+            prog.steps.forEach((step, i) => {
+                const chord = getChordNotes(step.n, step.min, step.type);
+                const offset = i * stepsPerChord;
+                addToSequencer(chord, offset, stepsPerChord, true);
+            });
+            currentRootForGrid = prog.steps[0].n + (prog.steps[0].min ? 'm' : '');
+            generateQuestionAnswer(); 
+            document.getElementById('chord-name').innerText = `TONO: ${currentRootForGrid}`;
+            playChord(getChordNotes(prog.steps[0].n, prog.steps[0].min, prog.steps[0].type));
+        }
+
+        function updateUI(note, index, isMinor) {
+            currentRootForGrid = note; initGrid();
+            const allNotes = document.querySelectorAll('.note');
+            allNotes.forEach(el => el.classList.remove('active', 'active-minor', 'neighbor'));
+            if (!isMinor) {
+                if(index >= 0) allNotes[index].classList.add('active');
+                allNotes[(index + 11) % 12].classList.add('neighbor');
+                allNotes[(index + 1) % 12].classList.add('neighbor');
+            } else {
+                if(index >= 0) allNotes[index + 12].classList.add('active-minor');
+            }
+            const cleanRoot = note.replace('m', '').replace('Gb', 'F#').replace('Db', 'C#').replace('Ab', 'G#').replace('Eb', 'D#').replace('Bb', 'A#');
+            const rootIdx = notes.indexOf(cleanRoot);
+            const getN = (offset) => notes[(rootIdx + offset) % 12];
+            
+            const listSug = document.getElementById('suggestion-list'); listSug.innerHTML = '';
+            const listPsy = document.getElementById('psy-list'); listPsy.innerHTML = '';
+            const listTech = document.getElementById('techno-list'); listTech.innerHTML = '';
+            const listTrance = document.getElementById('trance-list'); listTrance.innerHTML = '';
+            const listModes = document.getElementById('modes-list'); if(listModes) listModes.innerHTML = '';
+
+            const lists = {
+                classic: [
+        { label: 'Epic Cinema 16', steps: [{n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:getN(3), min:false}, {n:getN(8), min:false}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(10), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Emotional Journey', steps: [{n:cleanRoot, min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(4), min:true}, {n:getN(5), min:false}, {n:getN(2), min:true}, {n:getN(7), min:false}, {n:cleanRoot, min:false}, {n:getN(7), min:false, type:'dom7'}, {n:getN(9), min:true}, {n:getN(2), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(11), type:'dim'}, {n:cleanRoot, min:false}] },
+        { label: 'Soul & Gospel 16', steps: [{n:cleanRoot, type:'maj7'}, {n:getN(5), type:'maj7'}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:getN(4), min:true}, {n:getN(9), min:true}, {n:getN(2), min:true}, {n:getN(7), min:false}, {n:cleanRoot, type:'maj7'}, {n:getN(10), min:false}, {n:getN(9), min:true}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:getN(5), min:false}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}] },
+        { label: 'Baroque Cycle', steps: [{n:cleanRoot, min:true}, {n:getN(5), min:false}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(6), min:false}, {n:getN(2), min:true}, {n:getN(7), min:false}, {n:getN(11), type:'dim'}, {n:cleanRoot, min:true}, {n:getN(5), min:false}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(6), min:false}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}, {n:cleanRoot, min:true}] },
+        { label: 'Spanish Passion', steps: [{n:cleanRoot, min:true}, {n:getN(2), min:false}, {n:getN(1), min:true}, {n:getN(11), min:false}, {n:cleanRoot, min:true}, {n:getN(2), min:false}, {n:getN(3), min:false}, {n:getN(2), min:false}, {n:cleanRoot, min:true}, {n:getN(1), min:true}, {n:getN(11), min:false}, {n:getN(10), min:false}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}] },
+        { label: 'Neo-Classical Dark', steps: [{n:cleanRoot, min:true}, {n:getN(7), min:false}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:true}, {n:getN(3), min:false}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(8), min:false}, {n:getN(6), min:false}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(4), min:true}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}] },
+        { label: 'Suspense Drama', steps: [{n:cleanRoot, min:true}, {n:getN(2), type:'dim'}, {n:getN(7), min:false}, {n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:getN(11), type:'dim'}, {n:getN(7), min:false}, {n:cleanRoot, min:true}, {n:getN(2), type:'dim'}, {n:getN(5), min:true}, {n:getN(4), min:false}, {n:getN(8), min:false}, {n:getN(11), type:'dim'}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}] },
+        { label: 'Starlight Waltz', steps: [{n:cleanRoot, min:false}, {n:getN(2), min:true}, {n:getN(5), min:false}, {n:getN(1), min:false}, {n:getN(4), min:true}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(2), min:true}, {n:getN(5), min:false}, {n:getN(10), min:false}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(6), min:false}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:false}] },
+        { label: 'Top 40 Anthemic', steps: [{n:cleanRoot, min:false}, {n:getN(5), min:false}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:cleanRoot, min:false}, {n:getN(5), min:false}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(2), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:false}] },
+        { label: 'Golden Era Pop', steps: [{n:cleanRoot, min:false}, {n:getN(5), min:false}, {n:getN(9), min:true}, {n:getN(7), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:false}, {n:getN(7), min:false}, {n:getN(5), min:false}, {n:getN(4), min:true}, {n:getN(2), min:true}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:false}] },
+        { label: 'Disco Pop 16', steps: [{n:cleanRoot, min:true}, {n:getN(5), min:true}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(5), min:true}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(10), min:false}, {n:getN(7), type:'dom7'}] },
+        { label: 'Retro Synth Pop', steps: [{n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(1), min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(1), min:false}, {n:getN(7), min:false}, {n:getN(2), min:true}, {n:getN(4), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(10), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:false}] },
+        { label: 'Island Roots', steps: [{n:cleanRoot, min:false}, {n:getN(5), min:true}, {n:cleanRoot, min:false}, {n:getN(5), min:true}, {n:cleanRoot, min:false}, {n:getN(5), min:true}, {n:cleanRoot, min:false}, {n:getN(5), min:true}, {n:getN(5), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(7), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:false}, {n:cleanRoot, min:false}] },
+        { label: 'One Love Flow', steps: [{n:cleanRoot, min:false}, {n:getN(4), min:true}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:cleanRoot, min:false}, {n:getN(4), min:true}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(5), min:false}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:false}, {n:cleanRoot, min:false}] },
+        { label: 'Jazz-Blues Walk', steps: [{n:cleanRoot, type:'dom7'}, {n:getN(5), type:'dom7'}, {n:cleanRoot, type:'dom7'}, {n:getN(1), type:'dom7'}, {n:getN(5), type:'dom7'}, {n:getN(5), type:'dom7'}, {n:cleanRoot, type:'dom7'}, {n:getN(9), min:true}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:cleanRoot, type:'dom7'}, {n:getN(10), min:false}, {n:getN(9), min:true}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:getN(1), type:'dom7'}] },
+        { label: 'Urban Sophist', steps: [{n:cleanRoot, type:'maj7'}, {n:getN(4), min:true}, {n:getN(7), type:'dom7'}, {n:getN(1), type:'maj7'}, {n:getN(9), min:true}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:getN(10), type:'maj7'}, {n:getN(6), type:'maj7'}, {n:getN(2), min:true}, {n:getN(5), type:'dom7'}, {n:getN(3), min:true}, {n:getN(9), type:'dom7'}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:cleanRoot, type:'maj7'}] }
+    ],
+                psy: [
+        { label: 'Zenonesque Dark-16', steps: [{n:cleanRoot, min:true}, {n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:getN(1), min:false}, {n:getN(3), min:true}, {n:getN(1), min:false}, {n:cleanRoot, min:true}, {n:getN(6), type:'dim'}, {n:getN(1), min:false}, {n:getN(8), min:false}, {n:getN(1), min:false}, {n:getN(3), min:true}, {n:getN(1), type:'phrygian'}, {n:getN(7), type:'dom7'}] },
+        { label: 'Alien Hypnosis 16-Step', steps: [{n:cleanRoot, type:'sus2'}, {n:cleanRoot, type:'sus4'}, {n:getN(1), type:'sus2'}, {n:cleanRoot, type:'sus2'}, {n:getN(6), type:'sus2'}, {n:getN(1), type:'sus4'}, {n:getN(2), type:'sus2'}, {n:getN(1), type:'sus2'}, {n:cleanRoot, type:'sus2'}, {n:getN(3), type:'sus4'}, {n:getN(1), type:'sus2'}, {n:getN(6), type:'sus2'}, {n:getN(8), type:'sus2'}, {n:getN(10), type:'sus2'}, {n:getN(11), type:'sus2'}, {n:getN(1), type:'sus4'}] },
+        { label: 'Full-On Morning 16-Bar', steps: [{n:cleanRoot, min:true}, {n:getN(3), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(3), min:false}, {n:getN(5), min:true}, {n:getN(10), min:false}, {n:getN(11), min:false}, {n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(10), min:false}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(10), min:false}, {n:getN(11), min:false}] },
+        { label: 'Goa Spirit Ritual 16', steps: [{n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:cleanRoot, min:true}, {n:getN(10), min:false}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(1), min:false}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:getN(3), min:true}, {n:getN(1), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(11), min:false}, {n:getN(7), type:'dom7'}] },
+        { label: 'Forest Night 16 (High Tension)', steps: [{n:cleanRoot, type:'dim'}, {n:getN(1), min:true}, {n:getN(6), type:'dim'}, {n:getN(1), min:true}, {n:getN(6), type:'dim'}, {n:getN(7), type:'dim'}, {n:getN(12), type:'dim'}, {n:getN(1), type:'dim'}, {n:cleanRoot, type:'dim'}, {n:getN(3), type:'dim'}, {n:getN(6), type:'dim'}, {n:getN(9), type:'dim'}, {n:getN(10), min:false}, {n:getN(11), min:false}, {n:getN(1), type:'phrygian'}, {n:cleanRoot, min:true}] },
+        { label: 'Cyber-Trance 16-Bar', steps: [{n:cleanRoot, type:'sus2'}, {n:getN(1), type:'sus2'}, {n:getN(3), type:'sus2'}, {n:getN(1), type:'sus2'}, {n:cleanRoot, type:'sus4'}, {n:getN(6), type:'sus2'}, {n:getN(1), type:'sus4'}, {n:getN(1), type:'sus2'}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(3), min:false}, {n:getN(1), type:'sus2'}, {n:getN(11), min:false}, {n:getN(10), min:false}, {n:getN(8), min:false}, {n:getN(7), type:'dom7'}] },
+        { label: 'Prog-Psy Flow 16', steps: [{n:cleanRoot, min:true}, {n:cleanRoot, min:true}, {n:getN(3), min:false}, {n:cleanRoot, min:true}, {n:getN(5), min:true}, {n:getN(5), min:true}, {n:getN(6), min:false}, {n:getN(5), min:true}, {n:cleanRoot, min:true}, {n:getN(10), min:false}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:getN(3), min:false}, {n:getN(1), min:false}, {n:getN(1), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Dark Psy-Twist 16', steps: [{n:cleanRoot, type:'phrygian'}, {n:getN(1), type:'phrygian'}, {n:cleanRoot, type:'phrygian'}, {n:getN(6), type:'dim'}, {n:getN(1), type:'phrygian'}, {n:getN(2), type:'dim'}, {n:getN(1), type:'phrygian'}, {n:getN(6), type:'dim'}, {n:cleanRoot, type:'phrygian'}, {n:getN(13), min:true}, {n:getN(1), type:'phrygian'}, {n:getN(6), type:'dim'}, {n:getN(12), type:'dim'}, {n:getN(11), min:false}, {n:getN(1), type:'phrygian'}, {n:getN(7), type:'dom7'}] },
+        { label: 'Hi-Tech Glitch 16', steps: [{n:cleanRoot, type:'dim'}, {n:getN(13), type:'dim'}, {n:getN(1), type:'dim'}, {n:getN(6), type:'dim'}, {n:getN(12), type:'dim'}, {n:getN(7), type:'dim'}, {n:getN(1), type:'dim'}, {n:getN(13), type:'dim'}, {n:cleanRoot, type:'dim'}, {n:getN(18), type:'dim'}, {n:getN(6), type:'dim'}, {n:getN(1), type:'dim'}, {n:getN(3), min:true}, {n:getN(4), type:'dim'}, {n:getN(1), type:'phrygian'}, {n:getN(6), type:'dim'}] },
+        { label: 'Tribal Stomp 16', steps: [{n:cleanRoot, min:true}, {n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:getN(3), min:true}, {n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:getN(7), min:false}, {n:getN(5), min:true}, {n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(1), min:false}, {n:getN(10), min:false}, {n:getN(1), min:false}, {n:getN(3), min:true}, {n:getN(1), min:false}, {n:getN(1), min:false}] },
+        { label: 'Psychic Melodic 16', steps: [{n:cleanRoot, min:true}, {n:getN(7), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(3), min:false}, {n:getN(1), min:false}, {n:getN(10), min:false}, {n:getN(12), min:true}, {n:cleanRoot, min:true}, {n:getN(3), min:false}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(11), min:false}, {n:getN(13), min:false}] },
+        { label: 'Deep Abyss 16-Step', steps: [{n:cleanRoot, type:'sus2'}, {n:getN(1), type:'phrygian'}, {n:cleanRoot, type:'sus2'}, {n:getN(6), type:'dim'}, {n:getN(1), type:'sus2'}, {n:getN(3), type:'sus2'}, {n:getN(1), type:'phrygian'}, {n:getN(6), type:'dim'}, {n:cleanRoot, type:'sus2'}, {n:getN(8), type:'sus2'}, {n:getN(1), type:'phrygian'}, {n:getN(10), type:'sus2'}, {n:getN(1), type:'sus2'}, {n:getN(6), type:'dim'}, {n:getN(1), type:'phrygian'}, {n:getN(7), type:'dom7'}] }
+    ],
+                techno: [
+        { label: 'Industrial Abyss 16', steps: [{n:cleanRoot, min:true}, {n:cleanRoot, type:'phrygian'}, {n:getN(1), type:'dim'}, {n:cleanRoot, min:true}, {n:getN(6), type:'dim'}, {n:getN(7), min:true}, {n:getN(1), min:false}, {n:cleanRoot, type:'phrygian'}, {n:cleanRoot, min:true}, {n:getN(11), min:false}, {n:getN(10), min:false}, {n:getN(6), min:false}, {n:getN(1), min:true}, {n:getN(2), type:'dim'}, {n:getN(3), min:true}, {n:cleanRoot, min:true}] },
+        { label: 'Melodic Detroit 16', steps: [{n:cleanRoot, min:true}, {n:getN(7), min:true}, {n:getN(8), min:false}, {n:getN(5), min:true}, {n:getN(10), min:false}, {n:getN(3), min:false}, {n:getN(7), min:true}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(10), min:false}, {n:getN(5), min:true}, {n:getN(7), min:true}, {n:getN(1), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Dub Techno 16 (Chords)', steps: [{n:cleanRoot, min:true, type:'sus2'}, {n:cleanRoot, min:true}, {n:getN(3), min:true}, {n:cleanRoot, min:true}, {n:getN(5), min:true}, {n:getN(3), min:true}, {n:getN(7), min:true}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(3), min:true}, {n:getN(1), min:false}, {n:getN(5), min:true}, {n:getN(7), min:true}, {n:getN(2), type:'dim'}, {n:cleanRoot, min:true}] },
+        { label: 'Berlin Basement 16', steps: [{n:cleanRoot, min:true}, {n:cleanRoot, min:true}, {n:getN(1), type:'phrygian'}, {n:cleanRoot, min:true}, {n:getN(6), type:'dim'}, {n:cleanRoot, min:true}, {n:getN(1), min:true}, {n:getN(13), min:true}, {n:cleanRoot, min:true}, {n:getN(1), min:true}, {n:getN(4), type:'dim'}, {n:cleanRoot, min:true}, {n:getN(7), min:true}, {n:getN(6), min:true}, {n:getN(1), type:'phrygian'}, {n:cleanRoot, min:true}] },
+        { label: 'Acid Riff 16', steps: [{n:cleanRoot, min:true}, {n:getN(12), min:false}, {n:cleanRoot, min:true}, {n:getN(10), min:false}, {n:getN(3), min:false}, {n:cleanRoot, min:true}, {n:getN(5), min:true}, {n:getN(7), min:true}, {n:getN(10), min:false}, {n:getN(12), min:false}, {n:getN(13), min:false}, {n:getN(10), min:false}, {n:getN(7), min:true}, {n:getN(5), min:true}, {n:getN(3), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Robotic Funk 16', steps: [{n:cleanRoot, min:true}, {n:getN(12), min:true}, {n:getN(7), min:true}, {n:cleanRoot, min:true}, {n:getN(5), min:true}, {n:getN(10), min:false}, {n:getN(7), min:true}, {n:getN(12), min:true}, {n:cleanRoot, min:true}, {n:getN(2), type:'dim'}, {n:getN(10), min:false}, {n:getN(7), min:true}, {n:getN(5), min:true}, {n:getN(3), min:true}, {n:getN(1), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Cybercity 16', steps: [{n:cleanRoot, min:true}, {n:getN(3), min:true}, {n:getN(5), min:true}, {n:getN(1), min:false}, {n:cleanRoot, min:true}, {n:getN(7), min:true}, {n:getN(10), min:false}, {n:getN(12), min:true}, {n:getN(13), min:false}, {n:getN(10), min:false}, {n:getN(7), min:true}, {n:getN(5), min:true}, {n:getN(3), min:true}, {n:getN(2), type:'dim'}, {n:getN(1), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Classic 90s Groove', steps: [{n:cleanRoot, min:false}, {n:cleanRoot, min:false}, {n:getN(5), min:false}, {n:getN(5), type:'dom7'}, {n:getN(7), min:true}, {n:getN(7), min:true}, {n:getN(10), min:false}, {n:getN(10), min:false}, {n:getN(5), min:false}, {n:getN(5), min:false}, {n:getN(3), min:false}, {n:getN(3), min:false}, {n:getN(1), min:false}, {n:getN(1), type:'sus4'}, {n:getN(7), min:true}, {n:cleanRoot, min:false}] },
+        { label: 'Deep & Jazzy 16', steps: [{n:cleanRoot, min:true, type:'sus2'}, {n:getN(3), min:true}, {n:getN(7), min:true}, {n:getN(10), min:false}, {n:getN(5), min:true}, {n:getN(5), type:'dom7'}, {n:getN(8), min:false}, {n:getN(7), min:true}, {n:getN(3), min:true}, {n:getN(10), min:false}, {n:getN(12), min:true}, {n:getN(5), min:true}, {n:getN(2), type:'dim'}, {n:getN(7), min:true}, {n:getN(1), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Anyma Eternity 16', steps: [{n:cleanRoot, min:true}, {n:cleanRoot, min:true}, {n:getN(7), min:true}, {n:getN(7), min:true}, {n:getN(12), min:true}, {n:getN(12), min:true}, {n:getN(10), min:false}, {n:getN(10), min:false}, {n:getN(8), min:false}, {n:getN(8), min:false}, {n:getN(7), min:true}, {n:getN(7), min:true}, {n:getN(5), min:true}, {n:getN(5), min:true}, {n:getN(3), min:true}, {n:cleanRoot, min:true}] },
+        { label: 'Brejcha Minimal 16', steps: [{n:cleanRoot, min:true}, {n:getN(1), min:true}, {n:getN(12), min:true}, {n:cleanRoot, min:true}, {n:getN(3), min:true}, {n:getN(1), min:true}, {n:getN(7), min:true}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(13), min:true}, {n:getN(12), min:true}, {n:getN(1), min:true}, {n:getN(5), min:true}, {n:getN(2), type:'dim'}, {n:getN(1), min:true}, {n:cleanRoot, min:true}] },
+        { label: 'Artbat Gravity 16', steps: [{n:cleanRoot, min:true}, {n:cleanRoot, min:true}, {n:getN(3), min:true}, {n:cleanRoot, min:true}, {n:getN(7), min:true}, {n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(7), min:true}, {n:getN(10), min:false}, {n:getN(10), min:false}, {n:getN(12), min:true}, {n:getN(7), min:true}, {n:getN(5), min:true}, {n:getN(3), min:true}, {n:getN(1), min:true}, {n:cleanRoot, min:true}] },
+        { label: 'Afterlife Journey 16', steps: [{n:cleanRoot, min:true, type:'sus2'}, {n:getN(7), min:true}, {n:getN(3), min:true}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(5), min:true}, {n:getN(12), min:true}, {n:getN(7), min:true}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(12), min:true}, {n:getN(15), min:true}, {n:getN(14), min:true}, {n:getN(10), min:false}, {n:getN(7), min:true}, {n:cleanRoot, min:true}] }
+    ],
+                trance: [
+        { label: 'Uplifting Power 16', steps: [{n:getN(9), min:true}, {n:getN(5), min:false}, {n:cleanRoot, min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(2), min:true}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(10), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(2), min:true}, {n:getN(4), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}] },
+        { label: 'Classic Gate 16', steps: [{n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(3), min:false}, {n:getN(10), min:false}, {n:getN(5), min:true}, {n:getN(1), min:false}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:true}, {n:getN(3), min:false}, {n:getN(10), min:false}, {n:getN(5), min:true}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:getN(11), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Anjuna Deep 16', steps: [{n:cleanRoot, type:'maj7'}, {n:getN(9), min:true}, {n:getN(4), min:true}, {n:getN(5), min:false}, {n:cleanRoot, type:'maj7'}, {n:getN(2), min:true}, {n:getN(7), min:false}, {n:getN(7), type:'sus4'}, {n:cleanRoot, type:'maj7'}, {n:getN(9), min:true}, {n:getN(11), min:false}, {n:getN(5), min:false}, {n:getN(2), min:true}, {n:getN(4), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}] },
+        { label: 'Solarstone Pure', steps: [{n:cleanRoot, min:false}, {n:getN(7), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(2), min:true}, {n:cleanRoot, min:false}, {n:getN(4), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(11), type:'dim'}, {n:getN(7), type:'sus4'}, {n:cleanRoot, min:false}] },
+        { label: 'Psy-Trance Bliss', steps: [{n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:getN(3), min:true}, {n:getN(1), min:false}, {n:getN(6), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:true}, {n:getN(3), min:true}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(11), min:false}, {n:getN(1), type:'phrygian'}] },
+        { label: '90s Dreamscape', steps: [{n:cleanRoot, min:true}, {n:getN(5), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(5), min:false}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:getN(5), min:true}, {n:getN(3), min:false}, {n:getN(1), min:false}, {n:getN(10), min:false}, {n:getN(8), min:false}, {n:getN(7), min:false}, {n:getN(11), type:'dim'}, {n:cleanRoot, min:true}] },
+        { label: 'Euphoric Acid 16', steps: [{n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:cleanRoot, min:true}, {n:getN(10), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(3), min:true}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:getN(12), min:true}, {n:getN(10), min:false}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}] },
+        { label: 'Armada Energy', steps: [{n:getN(9), min:true}, {n:getN(9), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:cleanRoot, min:false}, {n:cleanRoot, min:false}, {n:getN(2), min:true}, {n:getN(4), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(11), min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(2), min:true}, {n:getN(7), type:'sus4'}] }
+    ], 
+    modes: [
+        { label: 'Ionian (Major)', steps: [{n:cleanRoot, min:false}, {n:getN(2), min:true}, {n:getN(4), min:true}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(11), type:'dim'}, {n:cleanRoot, min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(4), min:true}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:getN(11), type:'dim'}, {n:cleanRoot, min:false}] },
+        { label: 'Dorian (Soulful)', steps: [{n:cleanRoot, min:true}, {n:getN(2), min:true}, {n:getN(3), min:false}, {n:getN(5), min:false}, {n:getN(7), min:true}, {n:getN(9), type:'dim'}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(7), min:true}, {n:getN(5), min:false}, {n:getN(9), type:'dim'}, {n:getN(10), min:false}, {n:getN(3), min:false}, {n:getN(2), min:true}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}] },
+        { label: 'Phrygian (Dark)', steps: [{n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:getN(3), min:false}, {n:getN(5), min:true}, {n:getN(7), type:'dim'}, {n:getN(8), min:false}, {n:getN(10), min:true}, {n:cleanRoot, min:true}, {n:getN(1), min:false}, {n:getN(8), min:false}, {n:getN(10), min:true}, {n:getN(3), min:false}, {n:getN(1), min:false}, {n:getN(7), type:'dim'}, {n:getN(1), min:false}, {n:cleanRoot, min:true}] },
+        { label: 'Lydian (Ethereal)', steps: [{n:cleanRoot, min:false}, {n:getN(2), min:false}, {n:getN(4), min:true}, {n:getN(6), type:'dim'}, {n:getN(7), min:false}, {n:getN(9), min:true}, {n:getN(11), min:true}, {n:cleanRoot, min:false}, {n:getN(6), type:'dim'}, {n:getN(2), min:false}, {n:getN(7), min:false}, {n:getN(4), min:true}, {n:getN(11), min:true}, {n:getN(9), min:true}, {n:getN(7), min:false}, {n:cleanRoot, min:false}] },
+        { label: 'Mixolydian (Bluesy)', steps: [{n:cleanRoot, min:false}, {n:getN(2), min:true}, {n:getN(4), type:'dim'}, {n:getN(5), min:false}, {n:getN(7), min:true}, {n:getN(9), min:true}, {n:getN(10), min:false}, {n:cleanRoot, min:false}, {n:getN(10), min:false}, {n:getN(5), min:false}, {n:getN(7), min:true}, {n:getN(9), min:true}, {n:getN(2), min:true}, {n:getN(4), type:'dim'}, {n:getN(10), min:false}, {n:cleanRoot, min:false}] },
+        { label: 'Aeolian (Minor)', steps: [{n:cleanRoot, min:true}, {n:getN(2), type:'dim'}, {n:getN(3), min:false}, {n:getN(5), min:true}, {n:getN(7), min:true}, {n:getN(8), min:false}, {n:getN(10), min:false}, {n:cleanRoot, min:true}, {n:getN(8), min:false}, {n:getN(5), min:true}, {n:getN(10), min:false}, {n:getN(7), min:true}, {n:getN(3), min:false}, {n:getN(2), type:'dim'}, {n:getN(7), min:true}, {n:cleanRoot, min:true}] },
+        { label: 'Locrian (Tense)', steps: [{n:cleanRoot, type:'dim'}, {n:getN(1), min:false}, {n:getN(3), min:true}, {n:getN(5), min:false}, {n:getN(6), min:false}, {n:getN(8), min:true}, {n:getN(10), min:true}, {n:cleanRoot, type:'dim'}, {n:getN(6), min:false}, {n:getN(1), min:false}, {n:getN(10), min:true}, {n:getN(8), min:true}, {n:getN(5), min:false}, {n:getN(3), min:true}, {n:getN(1), min:false}, {n:cleanRoot, type:'dim'}] },
+        { label: 'Harmonic Minor', steps: [{n:cleanRoot, min:true}, {n:getN(2), type:'dim'}, {n:getN(3), min:false}, {n:getN(5), min:true}, {n:getN(7), type:'dom7'}, {n:getN(8), min:false}, {n:getN(11), type:'dim'}, {n:cleanRoot, min:true}, {n:getN(11), type:'dim'}, {n:getN(8), min:false}, {n:getN(7), type:'dom7'}, {n:getN(5), min:true}, {n:getN(3), min:false}, {n:getN(2), type:'dim'}, {n:getN(7), type:'dom7'}, {n:cleanRoot, min:true}] },
+        { label: 'Phrygian Dominant', steps: [{n:cleanRoot, min:false}, {n:getN(1), min:false}, {n:getN(4), type:'dim'}, {n:getN(5), min:true}, {n:getN(7), type:'dim'}, {n:getN(8), min:false}, {n:getN(10), min:true}, {n:cleanRoot, min:false}, {n:getN(1), min:false}, {n:getN(4), type:'dim'}, {n:getN(5), min:true}, {n:getN(8), min:false}, {n:getN(10), min:true}, {n:getN(7), type:'dim'}, {n:getN(1), min:false}, {n:cleanRoot, min:false}] }
+    ]
+            };
+
+            lists.classic.forEach(p => renderProg(p, listSug));
+            lists.psy.forEach(p => renderProg(p, listPsy));
+            lists.techno.forEach(p => renderProg(p, listTech));
+            lists.trance.forEach(p => renderProg(p, listTrance));
+            lists.modes.forEach(p => renderProg(p, listModes));
+        }
+
+        function exportToMidiFile(type) {
+            let filteredSeq = currentSequence;
+            let filename = "harmony_layered.mid";
+            if(type === 'melody') { filteredSeq = currentSequence.filter(i => i.isMelody); filename = "melody_layer.mid"; }
+            if(type === 'chords') { filteredSeq = currentSequence.filter(i => !i.isMelody); filename = "chords_layer.mid"; }
+            let bytes = [0x4D, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x01, 0x01, 0xE0];
+            let trackData = [];
+            let events = [];
+            filteredSeq.forEach(item => {
+                item.notes.forEach(n => {
+                    let base = n.replace('2', '');
+                    let midiNote = midiMap[base] + (n.includes('2') ? 12 : 0);
+                    events.push({ tick: item.step * 120, type: 0x90, note: midiNote });
+                    events.push({ tick: (item.step + item.duration) * 120, type: 0x80, note: midiNote });
+                });
+            });
+            events.sort((a, b) => a.tick - b.tick);
+            let lastTick = 0;
+            events.forEach(ev => {
+                let delta = ev.tick - lastTick; lastTick = ev.tick;
+                let buffer = []; let v = delta; buffer.push(v & 0x7F);
+                while (v >>= 7) buffer.push((v & 0x7F) | 0x80);
+                trackData.push(...buffer.reverse()); trackData.push(ev.type, ev.note, 0x64);
+            });
+            trackData.push(0x00, 0xFF, 0x2F, 0x00);
+            bytes.push(0x4D, 0x54, 0x72, 0x6B);
+            const len = trackData.length;
+            bytes.push((len >> 24) & 0xFF, (len >> 16) & 0xFF, (len >> 8) & 0xFF, len & 0xFF);
+            bytes = bytes.concat(trackData);
+            const blob = new Blob([new Uint8Array(bytes)], { type: "audio/midi" });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = filename; link.click();
+        }
+
+        const pContainer = document.getElementById('piano');
+        for(let i=0; i<12; i++) {
+            const k = document.createElement('div'); k.className = `key ${[1,3,6,8,10].includes(i)?'black':''}`; k.id = `key-${notes[i]}`; pContainer.appendChild(k);
+            if(i === 11) { const k2 = document.createElement('div'); k2.className = 'key'; k2.id = `key-${notes[0]}2`; pContainer.appendChild(k2); }
+        }
+
+        const circle = document.getElementById('circle-wrapper');
+        majors.forEach((n, i) => {
+            const div = document.createElement('div'); div.className = 'note'; div.innerText = n;
+            const angle = (i * 30 - 90) * (Math.PI / 180);
+            div.style.left = (225 + 160 * Math.cos(angle)) + 'px'; div.style.top = (225 + 160 * Math.sin(angle)) + 'px';
+            div.onclick = () => { 
+                const cleanRoot = n.replace('Gb', 'F#').replace('Db', 'C#').replace('Ab', 'G#').replace('Eb', 'D#').replace('Bb', 'A#');
+                const rootIdx = notes.indexOf(cleanRoot);
+                const getN = (offset) => notes[(rootIdx + offset) % 12];
+                loadProgressionToSequencer({
+                    label: n, 
+                    steps: [{n:n, min:false}, {n:getN(5), min:false}, {n:getN(7), min:false}, {n:n, min:false}]
+                });
+                updateUI(n, i, false);
+            };
+            circle.appendChild(div);
+        });
+        minors.forEach((n, i) => {
+            const div = document.createElement('div'); div.className = 'note minor'; div.innerText = n;
+            const angle = (i * 30 - 90) * (Math.PI / 180);
+            div.style.left = (225 + 100 * Math.cos(angle)) + 'px'; div.style.top = (225 + 100 * Math.sin(angle)) + 'px';
+            div.onclick = () => { 
+                const cleanRoot = n.replace('m','').replace('Gb', 'F#').replace('Db', 'C#').replace('Ab', 'G#').replace('Eb', 'D#').replace('Bb', 'A#');
+                const rootIdx = notes.indexOf(cleanRoot);
+                const getN = (offset) => notes[(rootIdx + offset) % 12];
+                loadProgressionToSequencer({
+                    label: n, 
+                    steps: [{n:cleanRoot, min:true}, {n:getN(5), min:true}, {n:getN(7), min:false}, {n:cleanRoot, min:true}]
+                });
+                updateUI(n, i, true);
+            };
+            circle.appendChild(div);
+        });
+        initGrid();
+
+
+ function generarArpegioTranceIA() {
+    // 1. Limpiar solo la parte que no es melodía (acordes previos)
+    currentSequence = currentSequence.filter(item => item.isMelody);
+
+    const totalSteps = Math.abs(loopEnd - loopStart) + 1;
+    
+    // 2. Obtener la tónica actual del círculo de quintas
+    const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+    const isMinor = currentRootForGrid.includes('m');
+
+    // Creamos una progresión básica basada en el tono seleccionado (I - VI - III - VII por ejemplo)
+    // O puedes usar la que ya genera tu función getMIDIMessage
+    const rootIdx = notes.indexOf(cleanRoot);
+    const getN = (offset) => notes[(rootIdx + offset) % 12];
+    
+    let prog = isMinor ? 
+        [{n: cleanRoot, min: true}, {n: getN(8), min: false}, {n: getN(3), min: false}, {n: getN(10), min: false}] :
+        [{n: cleanRoot, min: false}, {n: getN(9), min: true}, {n: getN(5), min: false}, {n: getN(7), min: false}];
+
+    let stepGlobal = 0;
+    const pasosPorAcorde = Math.floor(totalSteps / prog.length);
+
+    prog.forEach((acorde) => {
+        const chordNotes = getChordNotes(acorde.n, acorde.min);
+        const tónica = chordNotes[0]; // Ej: "A"
+        const tercera = chordNotes[1]; // Ej: "C"
+        const quinta = chordNotes[2];  // Ej: "E"
+
+        // Patrón Trance de 8 pasos (Semicorcheas)
+        // Usamos "2" para indicar octava arriba según tu lógica de playChord
+        const patron = [
+            { n: [tónica], dur: 1 },         // Paso 1: Tónica Base
+            { n: [quinta], dur: 1 },         // Paso 2: Quinta
+            { n: [tónica + '2'], dur: 1 },   // Paso 3: Tónica Aguda
+            { n: [quinta], dur: 1 },         // Paso 4: Quinta
+            { n: [tónica], dur: 1 },         // Paso 5: Tónica Base
+            { n: [tercera + '2'], dur: 1 },  // Paso 6: Tercera Aguda
+            { n: [tónica + '2'], dur: 1 },   // Paso 7: Tónica Aguda
+            { n: [quinta], dur: 1 }          // Paso 8: Quinta
+        ];
+
+        // Llenamos los pasos del secuenciador
+        for (let i = 0; i < pasosPorAcorde; i++) {
+            const p = patron[i % 8];
+            const actualStep = loopStart + stepGlobal + i;
+            
+            if (actualStep <= loopEnd) {
+                currentSequence.push({
+                    step: actualStep,
+                    notes: p.n,
+                    duration: p.dur,
+                    isMelody: false,
+                    isSuggested: true
+                });
+            }
+        }
+        stepGlobal += pasosPorAcorde;
+    });
+
+    // Actualizar visualmente el Piano Roll
+    drawSequenceOnGrid();
+    if(document.getElementById('melody-info')) {
+        document.getElementById('melody-info').innerText = `ARP: ${currentRootForGrid}`;
+    }
+}
+    </script>
+</body>
+</html>

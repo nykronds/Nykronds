@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>NYKRODELIC | NEURAL MIDI ENGINE</title>
+    <script src="https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/dist/magentamusic.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.1.4/browser/midiwriter.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #00ffa3; --bg: #030303; --sc: #ff5500; --fb: #1877f2; --card: #0a0a0a; --error: #ff3333; }
+        
+        body { 
+            font-family: 'Rajdhani', sans-serif; background: var(--bg); color: #fff; margin: 0; 
+            display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden;
+            background: radial-gradient(circle at center, #0a1a14 0%, #030303 100%);
+        }
+
+        /* Capa CRT Overlay */
+        body::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
+
+        .app-container { 
+            background: var(--card); border: 1px solid #1a1a1a; border-radius: 20px; 
+            padding: 40px; width: 440px; text-align: center; z-index: 3;
+            box-shadow: 0 0 50px rgba(0,255,163,0.05), inset 0 0 20px rgba(0,0,0,0.5);
+            position: relative; border-top: 3px solid var(--accent);
+        }
+
+        h1 { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; letter-spacing: 6px; color: var(--accent); margin: 0; text-transform: uppercase; text-shadow: 0 0 10px var(--accent); }
+        .sub { font-size: 9px; color: #444; letter-spacing: 3px; margin-bottom: 30px; }
+
+        .panel { display: none; animation: slideUp 0.4s ease-out; }
+        .panel.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .btn { 
+            display: block; width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 6px; 
+            border: none; font-weight: 700; cursor: pointer; font-size: 11px; text-transform: uppercase; 
+            transition: all 0.3s; color: #fff; letter-spacing: 1px;
+        }
+        .btn-fb { background: var(--fb); box-shadow: 0 4px 0 #0d59b3; }
+        .btn-sc { background: var(--sc); box-shadow: 0 4px 0 #cc4400; }
+        .btn-gen { background: var(--accent); color: #000; box-shadow: 0 4px 0 #00b372; }
+        .btn:disabled { background: #1a1a1a !important; color: #333 !important; box-shadow: none !important; cursor: not-allowed; opacity: 0.5; }
+
+        .phrase-box { background: #000; border: 1px dashed var(--accent); padding: 25px; border-radius: 12px; margin: 20px 0; cursor: pointer; }
+        .phrase-out { font-family: 'Orbitron', sans-serif; font-size: 24px; color: var(--accent); font-weight: 900; }
+        
+        /* Visualizer */
+        #waveCanvas { width: 100%; height: 60px; background: #000; border-radius: 4px; margin-bottom: 15px; border: 1px solid #111; display: none; }
+
+        .loader { width: 100%; height: 2px; background: #111; margin-top: 20px; display: none; overflow: hidden; }
+        .bar { width: 0%; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: width 4s linear; }
+
+        #status { font-size: 10px; color: #444; font-family: monospace; margin-top: 25px; border-top: 1px solid #111; padding-top: 10px; height: 20px; }
+        
+        input[type="file"] { width: 100%; background: #000; border: 1px solid #222; color: var(--accent); padding: 10px; border-radius: 4px; margin-bottom: 10px; box-sizing: border-box; cursor: pointer; }
+        input[type="number"], input[type="range"] { background: #000; border: 1px solid #222; color: var(--accent); padding: 8px; border-radius: 4px; width: 100%; box-sizing: border-box; }
+        label { font-size: 9px; color: #555; text-transform: uppercase; display: block; margin-bottom: 5px; text-align: left; }
+        
+        .error-msg { color: var(--error); font-size: 10px; font-weight: 800; margin: 15px 0; display: none; border: 1px solid var(--error); padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h1>NYKRODELIC</h1>
+    <div class="sub" id="versionTag">NEURAL MIDI TRANSCRIPTION v7.5 PRO</div>
+
+    <div id="p1" class="panel active">
+        <p style="font-size: 12px; color: #888; margin-bottom: 20px;">Sincroniza tus redes para activar los algoritmos</p>
+        <div id="p1-err" class="error-msg">⚠️ ACCIÓN NO DETECTADA: Dale Like y Follow para desbloquear.</div>
+        <button class="btn btn-fb" id="bFb" onclick="secureSocial('fb', 'https://www.facebook.com/nykrodelic')">FOLLOW + LIKE EN FACEBOOK</button>
+        <button class="btn btn-sc" id="bSc" onclick="secureSocial('sc', 'https://soundcloud.com/nykronds')">FOLLOW + LIKE EN SOUNDCLOUD</button>
+        <button class="btn btn-gen" id="bNext1" disabled onclick="showStep(2)">DESBLOQUEAR GENERADOR</button>
+    </div>
+
+    <div id="p2" class="panel">
+        <p style="font-size: 12px; color: #888;">Permisos concedidos. Generando llave...</p>
+        <div class="phrase-box" style="cursor: default;"><div class="phrase-out">***</div></div>
+        <button class="btn btn-gen" onclick="generateToken()">OBTENER FRASE DE ACCESO</button>
+    </div>
+
+    <div id="p3" class="panel">
+        <p style="font-size: 11px; color: #888;">Misión final: <b>PLAY</b> y <b>COMENTA</b> esta frase:</p>
+        <div class="phrase-box" onclick="copyPhrase()">
+            <div class="phrase-out" id="finalToken">---</div>
+            <div style="font-size:8px; color:#444;">CLICK PARA COPIAR FRASE</div>
+        </div>
+        <div id="p3-err" class="error-msg">⚠️ COMENTARIO NO DETECTADA: Escucha 10s y comenta para validar.</div>
+        <button class="btn btn-sc" id="bDead" onclick="secureDeadhead('https://soundcloud.com/nykronds/08-deadhead-nykronds#comments')">IR AL TRACK (PLAY + COMENTAR)</button>
+        <button class="btn btn-gen" id="vBtn" onclick="verifySecure()">VERIFICAR ACTIVIDAD IA</button>
+        <div class="loader" id="lContainer"><div class="bar" id="lBar"></div></div>
+    </div>
+
+    <div id="p4" class="panel">
+        <p style="font-size: 11px; color: var(--accent); margin-bottom: 15px;">NÚCLEO NEURONAL ACTIVO</p>
+        
+        <canvas id="waveCanvas"></canvas>
+        <input type="file" id="audioInput" accept="audio/*">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 15px;">
+            <div><label>BPM</label><input type="number" id="bpm" value="145"></div>
+            <div><label>ROOT OFFSET</label><input type="number" id="root" value="0"></div>
+        </div>
+
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label>SENSIBILIDAD NEURONAL (FILTRO DE RUIDO)</label>
+            <input type="range" id="threshold" min="10" max="80" value="35">
+        </div>
+
+        <button id="go" class="btn btn-gen" disabled>CARGANDO MOTOR...</button>
+    </div>
+
+    <div id="status">SISTEMA: ESPERANDO ACCIÓN SOCIAL</div>
+</div>
+
+<script>
+    let checks = {fb: false, sc: false};
+    let attempt = 0;
+    let deadheadTime = 0;
+    let isDeadheadOpen = false;
+    let verificationInProcess = false;
+    const phrases = ["VIVA NYKRONDS", "AUU AUU", "RAVER MODE"];
+    let ready = false;
+    const ai = new mm.OnsetsAndFrames('https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni');
+
+    window.onload = () => {
+        const unlockTime = localStorage.getItem('nykro_unlock_time');
+        const now = Date.now();
+        if (unlockTime && (now - unlockTime < 86400000)) { 
+            document.getElementById('versionTag').innerText = "NYKRODELIC | PREMIUM ACCESS (24H)";
+            showStep(4);
+        } else {
+            consoleLog("ESPERANDO VALIDACIÓN SOCIAL");
+        }
+    };
+
+    ai.initialize().then(() => { ready = true; checkFinalReady(); consoleLog("MOTOR_LISTO"); });
+
+    function consoleLog(msg) { document.getElementById('status').innerText = "SYS_LOG: " + msg; }
+
+    function secureSocial(p, url) {
+        const start = Date.now();
+        const btn = document.getElementById('b' + p.charAt(0).toUpperCase() + p.slice(1));
+        window.open(url, '_blank');
+        btn.innerText = "ESCANEANDO..."; btn.disabled = true;
+        
+        const checkFocus = setInterval(() => {
+            if (document.hasFocus()) {
+                clearInterval(checkFocus);
+                if ((Date.now() - start) / 1000 < 8) {
+                    document.getElementById('p1-err').style.display = 'block';
+                    btn.innerText = "REINTENTAR " + p.toUpperCase(); btn.disabled = false;
+                } else {
+                    document.getElementById('p1-err').style.display = 'none';
+                    checks[p] = true;
+                    btn.innerText = "ACTIVADO ✓"; btn.style.opacity = "0.5";
+                    if(checks.fb && checks.sc) document.getElementById('bNext1').disabled = false;
+                }
+            }
+        }, 500);
+    }
+
+    // --- VISUALIZADOR DE ONDA ---
+    document.getElementById('audioInput').onchange = async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.style.display = 'block';
+        consoleLog("ANALIZANDO FORMA DE ONDA...");
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const arrayBuffer = await file.arrayBuffer();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        
+        const data = audioBuffer.getChannelData(0);
+        const step = Math.ceil(data.length / canvas.width);
+        const amp = canvas.height / 2;
+        
+        ctx.fillStyle = "#000"; ctx.fillRect(0,0, canvas.width, canvas.height);
+        ctx.beginPath(); ctx.strokeStyle = "#00ffa3"; ctx.lineWidth = 1;
+        for(let i=0; i < canvas.width; i++) {
+            let min = 1.0, max = -1.0;
+            for(let j=0; j<step; j++) {
+                const dat = data[(i*step)+j];
+                if(dat < min) min = dat; if(dat > max) max = dat;
+            }
+            ctx.moveTo(i, (1+min)*amp); ctx.lineTo(i, (1+max)*amp);
+        }
+        ctx.stroke();
+        consoleLog("AUDIO_READY: " + file.name.substring(0,15));
+    };
+
+    function secureDeadhead(url) {
+        deadheadTime = Date.now(); isDeadheadOpen = true;
+        window.open(url, '_blank');
+        consoleLog("ESCUCHANDO TRACK...");
+    }
+
+    function generateToken() {
+        document.getElementById('finalToken').innerText = phrases[Math.floor(Math.random() * phrases.length)];
+        showStep(3);
+    }
+
+    function copyPhrase() {
+        navigator.clipboard.writeText(document.getElementById('finalToken').innerText);
+        consoleLog("TOKEN_COPIADO");
+    }
+
+    function verifySecure() {
+        const elapsed = (Date.now() - deadheadTime) / 1000;
+        if (!isDeadheadOpen || elapsed < 10) {
+            document.getElementById('p3-err').style.display = 'block';
+            return;
+        }
+        verificationInProcess = true;
+        document.getElementById('p3-err').style.display = 'none';
+        document.getElementById('vBtn').style.display = 'none';
+        document.getElementById('lContainer').style.display = 'block';
+        document.getElementById('lBar').style.width = '100%';
+        
+        setTimeout(() => {
+            attempt++;
+            if (attempt === 1) {
+                document.getElementById('p3-err').innerText = "⚠️ TOKEN NO ENCONTRADO. REINTENTA.";
+                document.getElementById('p3-err').style.display = 'block';
+                document.getElementById('vBtn').style.display = 'block';
+                document.getElementById('lContainer').style.display = 'none';
+            } else {
+                localStorage.setItem('nykro_unlocked', 'true');
+                localStorage.setItem('nykro_unlock_time', Date.now());
+                showStep(4);
+            }
+        }, 2200);
+    }
+
+    function showStep(n) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('p'+n).classList.add('active');
+        checkFinalReady();
+    }
+
+    function checkFinalReady() {
+        const b = document.getElementById('go');
+        if(ready && document.getElementById('p4').classList.contains('active')) {
+            b.disabled = false; b.innerText = "TRANSFORMAR AUDIO A MIDI";
+        }
+    }
+
+    document.getElementById('go').onclick = async () => {
+        const file = document.getElementById('audioInput').files[0];
+        if(!file) return alert("Sube un audio.");
+        document.getElementById('go').disabled = true;
+        consoleLog("PROCESAMIENTO NEURONAL...");
+        
+        try {
+            const ctx = new AudioContext({ sampleRate: 16000 });
+            const buf = await ctx.decodeAudioData(await file.arrayBuffer());
+            const ns = await ai.transcribeFromAudioBuffer(buf);
+            const bpm = parseInt(document.getElementById('bpm').value);
+            const root = parseInt(document.getElementById('root').value);
+            const thresh = parseInt(document.getElementById('threshold').value);
+            
+            const track = new MidiWriter.Track();
+            track.setTempo(bpm);
+            
+            ns.notes.forEach(n => {
+                if (n.velocity < thresh) return; // Filtro de Sensibilidad
+                track.addEvent(new MidiWriter.NoteEvent({
+                    pitch: n.pitch + root,
+                    duration: 'T' + Math.round((n.endTime - n.startTime) * (bpm/60) * 128),
+                    startTick: Math.round(n.startTime * (bpm/60) * 128),
+                    velocity: Math.min(n.velocity + 12, 127)
+                }));
+            });
+
+            const blob = new Blob([new MidiWriter.Writer(track).buildFile()], { type: 'audio/midi' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `NYKRODELIC_PRO.mid`;
+            a.click();
+            consoleLog("ÉXITO: MIDI DESCARGADO");
+            document.getElementById('go').disabled = false;
+        } catch (e) { consoleLog("ERROR DE MOTOR"); document.getElementById('go').disabled = false; }
+    };
+</script>
+</body>
+</html>

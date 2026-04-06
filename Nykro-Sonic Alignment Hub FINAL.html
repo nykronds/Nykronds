@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NykroSonic Alignment Hub</title>
+    <style>
+        body { background: #1a1a2e; color: #e94560; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 20px; margin: 0; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+        
+        h1 { font-size: 1.8em; }
+
+        .subtitle {
+            color: #4ecca3;
+            font-size: 1.1em;
+            margin-top: -10px;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Botón de Traducción Superior Izquierda */
+        #google_translate_element {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 2000;
+            background: rgba(22, 33, 62, 0.8);
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #4ecca3;
+        }
+
+        .social-float {
+            position: fixed;
+            bottom: 20px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+
+        .btn-social {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .fb-btn { background: #1877F2; border: 2px solid #1877F2; }
+        .sc-btn { background: #FF5500; border: 2px solid #FF5500; }
+        .sh-btn { background: #4ecca3; border: 2px solid #4ecca3; color: #1a1a2e; }
+
+        .btn-social:hover { transform: scale(1.1); filter: brightness(1.2); }
+
+        .top-container { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 10px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+
+        .section { 
+            border: 2px solid #0f3460; 
+            padding: 20px; 
+            margin: 10px 5px; 
+            border-radius: 10px; 
+            background: #16213e; 
+            flex: 1; 
+            min-width: 300px; 
+            max-width: 600px; 
+            box-sizing: border-box;
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .keyboard-section {
+            margin: 20px auto;
+            max-width: 950px;
+            width: 100%;
+        }
+
+        input, select { background: #0f3460; color: #fff; border: 1px solid #e94560; padding: 10px; border-radius: 5px; font-size: 1.1em; max-width: 100%; transition: 0.3s; }
+        
+        .nota-resultado { 
+            display: inline-block; 
+            margin: 3px; 
+            padding: 10px; 
+            background: #1a1a2e; 
+            border: 1px solid #4ecca3; 
+            border-radius: 5px; 
+            color: #4ecca3; 
+            font-size: 0.85em;
+            min-width: 80px;
+            transition: 0.3s;
+        }
+        
+        .frecuencia-actual { border-color: #f0fa6b; color: #f0fa6b; font-weight: bold; width: 90%; }
+
+        .guia-uso { color: #5bd10c; font-size: 0.85em; text-align: left; margin-top: 15px; line-height: 1.4; border-top: 1px dashed #0f3460; padding-top: 10px; }
+        
+        .btn-guia {
+            background: #0f3460;
+            color: #4ecca3;
+            border: 1px solid #4ecca3;
+            padding: 8px 12px;
+            margin: 5px 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+        .btn-guia:hover { background: #4ecca3; color: #16213e; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+
+        .modal-content {
+            background-color: #16213e;
+            margin: 5% auto;
+            padding: 25px;
+            border: 2px solid #e94560;
+            width: 90%;
+            max-width: 550px;
+            border-radius: 15px;
+            text-align: left;
+            position: relative;
+            max-height: 85vh;
+            overflow-y: auto;
+            transition: 0.3s;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; color: #f0fa6b; font-size: 0.85em; }
+        th { color: #e94560; border-bottom: 2px solid #e94560; padding: 5px; transition: 0.3s; }
+        td { padding: 8px; border-bottom: 1px solid #0f3460; transition: 0.3s; }
+
+        .teclado { 
+            display: flex; 
+            justify-content: center; 
+            margin: 20px auto; 
+            gap: 2px; 
+            max-width: 100%;
+            padding: 0 10px;
+            position: relative;
+        }
+
+        .tecla { 
+            flex: 1;
+            height: 120px; 
+            border: 1px solid #333; 
+            border-radius: 0 0 5px 5px; 
+            display: flex; 
+            align-items: flex-end; 
+            justify-content: center; 
+            padding-bottom: 8px; 
+            font-size: 0.65em; 
+            cursor: pointer; 
+            transition: 0.1s; 
+            user-select: none; 
+            min-width: 0;
+        }
+
+        .blanca { background: #eee; color: #333; }
+        .negra { 
+            background: #333; 
+            color: #fff; 
+            height: 75px; 
+            margin-left: -2.5%; 
+            margin-right: -2.5%; 
+            z-index: 2; 
+        }
+
+        .activa { background: #e94560 !important; color: #49e48a !important; box-shadow: 0 0 15px #e94560; }
+        .sonando { filter: brightness(1.5); border-color: white; transform: translateY(2px); }
+
+        .btn-midi {
+            background: transparent;
+            color: #4ecca3;
+            border: 1px solid rgba(78, 204, 163, 0.5);
+            padding: 10px 20px;
+            margin-top: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .extra-tools { margin-top: 15px; border-top: 1px solid #0f3460; padding-top: 10px; text-align: left; }
+        .tool-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.85em; }
+        .tool-row span { color: #4ecca3; font-weight: bold; }
+        .tool-tip { font-size: 0.75em; color: #888; margin-bottom: 12px; font-style: italic; }
+        .btn-noise { background: #e94560; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
+
+        .harmonic-row { color: #f0fa6b; font-size: 0.75em; border-left: 2px solid #e94560; padding-left: 10px; margin: 3px 0; }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            h1 { font-size: 1.4em; }
+            .section { min-width: 100%; margin: 5px 0; }
+            .teclado { height: 90px; font-size: 0.5em; }
+            .negra { height: 55px; }
+            .nota-resultado { width: 30%; padding: 5px; font-size: 0.75em; }
+            .btn-guia { width: 48%; margin: 1%; }
+            .social-float { bottom: 10px; right: 10px; }
+            #google_translate_element { top: 5px; left: 5px; scale: 0.8; }
+            .top-controls { top: 5px !important; right: 5px !important; scale: 0.8; }
+        }
+
+        /* ========================================= */
+        /* NUEVO: ESTILOS PARA LOS CONTROLES Y TEMA CLARO */
+        /* ========================================= */
+        .top-controls {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 2000;
+        }
+
+        .ctrl-btn {
+            background: rgba(22, 33, 62, 0.8);
+            color: #4ecca3;
+            border: 1px solid #4ecca3;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            transition: 0.3s;
+        }
+
+        .ctrl-btn:hover { background: #4ecca3; color: #1a1a2e; }
+
+        /* Estilos del Modo Claro (Se activan con JavaScript) */
+        body.light-mode { background: #f4f4f9; color: #16213e; }
+        body.light-mode .section { background: #ffffff; border-color: #4ecca3; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body.light-mode input, body.light-mode select { background: #f4f4f9; color: #16213e; border-color: #16213e; }
+        body.light-mode .nota-resultado { background: #f4f4f9; border-color: #16213e; color: #16213e; }
+        body.light-mode .frecuencia-actual { border-color: #e94560; color: #e94560; }
+        body.light-mode .subtitle, body.light-mode h2 { color: #e94560; }
+        body.light-mode th { color: #16213e; border-bottom: 2px solid #16213e; }
+        body.light-mode td { border-bottom: 1px solid #ddd; color: #16213e; }
+        body.light-mode .modal-content { background-color: #ffffff; border-color: #4ecca3; }
+        body.light-mode #modalCuerpo { color: #16213e !important; }
+        body.light-mode .btn-guia { background: #e0e0e0; color: #16213e; border-color: #16213e; }
+        body.light-mode .btn-guia:hover { background: #16213e; color: #4ecca3; }
+        body.light-mode .tecla.blanca { background: #fff; color: #16213e; border-color: #ccc; }
+        body.light-mode .extra-tools, body.light-mode .guia-uso { border-top: 1px dashed #ccc; }
+        body.light-mode .harmonic-row { color: #16213e; }
+    </style>
+</head>
+<body onclick="initAudio()">
+
+    <div id="google_translate_element"></div>
+
+    <div class="top-controls">
+        <button id="theme-btn" class="ctrl-btn" onclick="toggleTheme()">☀️ Light</button>
+        <button class="ctrl-btn" onclick="toggleLanguage()">🌐 EN/ES</button>
+    </div>
+
+    <div class="social-float">
+        <a href="https://sites.google.com/view/nykronds/shop?authuser=0" target="_blank" class="btn-social sh-btn" title="Shop">SHOP</a>
+        <a href="https://www.facebook.com/nykrodelic" target="_blank" class="btn-social fb-btn" title="Facebook">FB</a>
+        <a href="https://soundcloud.com/nykronds" target="_blank" class="btn-social sc-btn" title="Soundcloud">SC</a>
+    </div>
+
+    <h1>Nykro-Sonic Alignment Hub 🎧</h1>
+    <div class="subtitle">Psytrance Math Tool</div>
+
+    <div class="top-container">
+        <div class="section">
+            <h2>Sync Calculator ⏱️</h2>
+            <input type="number" id="bpm-input" value="145" min="40" max="300" oninput="actualizarTodo()">
+            <span>BPM</span>
+            
+            <div id="resultados" style="margin-top: 15px;">
+                <div class="nota-resultado">1/1: <br><span id="nota-1">1655.17</span> ms</div>
+                <div class="nota-resultado">1/2: <br><span id="nota-2">827.59</span> ms</div>
+                <div class="nota-resultado">1/4: <br><span id="nota-4">413.79</span> ms</div>
+                <div class="nota-resultado">1/8: <br><span id="nota-8">206.90</span> ms</div>
+                <div class="nota-resultado">1/16: <br><span id="nota-16">103.45</span> ms</div>
+                <center>
+                    <div class="nota-resultado frecuencia-actual">
+                        Note: <span id="nombre-nota">C</span> | <span id="hz-nota">261.63</span> Hz<br>
+                        <small>MIDI ID: <span id="midi-val">60</span></small>
+                    </div>
+                </center>
+            </div>
+
+            <div class="guia-uso">
+                <strong>Application & Technique Guides:</strong><br>
+                <button class="btn-guia" style="background: #4ecca3; color: #16213e; font-weight: bold;" onclick="abrirModal('quicktips')">Quick Tips MS</button>
+                <button class="btn-guia" onclick="abrirModal('delay_guide')">Delay Guide</button>
+                <button class="btn-guia" onclick="abrirModal('reverb_guide')">Reverb Guide</button>
+                <button class="btn-guia" onclick="abrirModal('sidechain')">Sidechain/LFO</button>
+                <button class="btn-guia" onclick="abrirModal('eq_pro')">Pro Harmonic EQ</button>
+                <button class="btn-guia" onclick="abrirModal('fase_pro')">Phase & Samplers</button>
+                <button class="btn-guia" onclick="abrirModal('pink_noise')">Pink Noise Guide</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Rhythmic Compression Guide 🎚️</h2>
+            <table>
+                <thead>
+                    <tr><th>Element</th><th>Attack</th><th>Release (Auto)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Kick 🥁</td><td>10-30 ms</td><td class="highlight" id="comp-kick">103.45 ms</td></tr>
+                    <tr><td>Bass 🎸</td><td>2-5 ms</td><td class="highlight" id="comp-bass">51.72 ms</td></tr>
+                    <tr><td>Leads 🎤</td><td>15-40 ms</td><td class="highlight" id="comp-leads">206.90 ms</td></tr>
+                    <tr><td>Atmos 🌌</td><td>100+ ms</td><td class="highlight" id="comp-atmos">413.79 ms</td></tr>
+                </tbody>
+            </table>
+            
+            <div class="extra-tools">
+                <div class="tool-row">Phase Cycle (ms): <span id="fase-ms">3.82</span></div>
+                <div class="tool-tip">Use this for your Bass fade-out.</div>
+                
+                <div class="tool-row">Transpose %: <input type="number" id="st-input" value="7" style="width: 45px; padding: 2px;" oninput="calcTranspose()"> ➔ <span id="st-result">149.8%</span></div>
+                <div class="tool-tip">Speed adjustment for Samplers.</div>
+
+                <div class="tool-row" style="margin-top:10px; color:#e94560;">Harmonic Analysis (EQ):</div>
+                <div class="harmonic-row">H2 (Octave): <span id="h2-val">523.26</span> Hz</div>
+                <div class="harmonic-row">H3 (Fifth): <span id="h3-val">784.89</span> Hz</div>
+                
+                <div class="tool-row" style="margin-top:10px;">Pink Noise Test: <button class="btn-noise" id="noise-btn" onclick="toggleNoise()">PLAY</button></div>
+                <div class="tool-tip">Loudness Balance Reference.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalGuia" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal()" style="position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 24px; color: #e94560;">&times;</span>
+            <h3 id="modalTitulo" style="color: #4ecca3; margin-top: 10px;"></h3>
+            <div id="modalCuerpo" style="color: #fff; font-size: 0.9em; line-height: 1.4;"></div>
+        </div>
+    </div>
+
+    <div class="section keyboard-section">
+        <h2>Scale Visualizer (2 Octaves) 🎼</h2>
+        <p id="midi-status" style="font-size: 0.75em; color: #4ecca3;">MIDI: Searching for USB devices...</p>
+        <select id="escala-select" onchange="iluminarEscala(ultimaRaiz)">
+            <optgroup label="PSYTRANCE CLASSICS">
+                <option value="frigia">Phrygian (Dark/Twilight)</option>
+                <option value="locria">Locrian (Tense/Acid)</option>
+                <option value="menorArmonica">Harmonic Minor (Forest)</option>
+                <option value="pentatonicaMenor">Pentatonic (Full On)</option>
+            </optgroup>
+            <optgroup label="PROGRESSIVE & ATMOS">
+                <option value="dorica">Dorian (Prog/Deep)</option>
+                <option value="lidia">Lydian (Uplifting)</option>
+                <option value="mixolidia">Mixolydian (Groovy)</option>
+            </optgroup>
+            <optgroup label="WORLD & ETHNIC (PSY-STYLE)">
+                <option value="hirajoshi">Hirajoshi (Japan Psy) 🌸</option>
+                <option value="dominanteFrigia">Phrygian Dominant (Indu/GOA) 🕌</option>
+                <option value="hungaraMenor">Hungarian Minor (Mystic)</option>
+                <option value="bizantina">Byzantine (Arabic Psy)</option>
+                <option value="inSen">In-Sen (Zenonesque)</option>
+            </optgroup>
+        </select>
+        <div class="teclado" id="teclado"></div>
+        <button class="btn-midi" onclick="descargarMIDI()"><span>💾</span> DOWNLOAD MIDI</button>
+        <p id="midi-log" style="color: #5bd10c; font-size: 0.7em; margin-top: 5px; font-style: italic; min-height: 1em;"></p>
+    </div>
+
+    <script>
+        /* SCRIPT TRADUCCION */
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({pageLanguage: 'en', layout: google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element');
+        }
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <script>
+        let notasParaMidi = [];
+        let audioCtx = null;
+        let ultimaRaiz = 0; 
+        let noiseNode = null;
+
+        const notasNombres = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const frecuenciasBase = [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88];
+        
+        const escalas = {
+            frigia: [0, 1, 3, 5, 7, 8, 10], locria: [0, 1, 3, 5, 6, 8, 10], dorica: [0, 2, 3, 5, 7, 9, 10], 
+            menorArmonica: [0, 2, 3, 5, 7, 8, 11], hirajoshi: [0, 2, 3, 7, 8], pentatonicaMenor: [0, 3, 5, 7, 10],
+            lidia: [0, 2, 4, 6, 7, 9, 11], mixolidia: [0, 2, 4, 5, 7, 9, 10], dominanteFrigia: [0, 1, 4, 5, 7, 8, 10],
+            hungaraMenor: [0, 2, 3, 6, 7, 8, 11], bizantina: [0, 1, 4, 5, 7, 8, 11], inSen: [0, 1, 5, 7, 10]
+        };
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function generarTeclado() {
+            const contenedor = document.getElementById('teclado');
+            contenedor.innerHTML = '';
+            for(let i = 0; i < 24; i++) {
+                const nombreNota = notasNombres[i % 12];
+                const div = document.createElement('div');
+                div.innerText = nombreNota + (i < 12 ? "" : "'");
+                div.id = "nota-" + i;
+                div.className = nombreNota.includes("#") ? "tecla negra" : "tecla blanca";
+                div.onclick = () => {
+                    initAudio();
+                    procesarEntradaNota(i);
+                };
+                contenedor.appendChild(div);
+            }
+            iluminarEscala(ultimaRaiz);
+        }
+
+        function procesarEntradaNota(index) {
+            initAudio();
+            ultimaRaiz = index; 
+            const freq = frecuenciasBase[index % 12] * (index >= 12 ? 2 : 1);
+            
+            document.getElementById('nombre-nota').innerText = notasNombres[index % 12];
+            document.getElementById('hz-nota').innerText = freq.toFixed(2);
+            document.getElementById('fase-ms').innerText = (1000/freq).toFixed(2);
+            document.getElementById('midi-val').innerText = 60 + index;
+            
+            document.getElementById('h2-val').innerText = (freq * 2).toFixed(2);
+            document.getElementById('h3-val').innerText = (freq * 3).toFixed(2);
+            
+            arpegiarEscala(index);
+            iluminarEscala(index); 
+        }
+
+        function actualizarTodo() {
+            const bpm = document.getElementById('bpm-input').value;
+            if (bpm > 0) {
+                const ms1 = (60000 / bpm) * 4; 
+                const ms4 = ms1 / 4;           
+                const ms8 = ms4 / 2;           
+                const ms16 = ms4 / 4;           
+                const ms32 = ms4 / 8;
+                document.getElementById('nota-1').innerText = ms1.toFixed(2);
+                document.getElementById('nota-2').innerText = (ms1/2).toFixed(2);
+                document.getElementById('nota-4').innerText = ms4.toFixed(2);
+                document.getElementById('nota-8').innerText = ms8.toFixed(2);
+                document.getElementById('nota-16').innerText = ms16.toFixed(2);
+                document.getElementById('comp-kick').innerText = ms16.toFixed(2) + " ms";
+                document.getElementById('comp-bass').innerText = ms32.toFixed(2) + " ms";
+                document.getElementById('comp-leads').innerText = ms8.toFixed(2) + " ms";
+                document.getElementById('comp-atmos').innerText = ms4.toFixed(2) + " ms";
+                return ms4 / 1000;
+            }
+            return 0.5;
+        }
+
+        function calcTranspose() {
+            const st = document.getElementById('st-input').value;
+            document.getElementById('st-result').innerText = (Math.pow(2, st/12) * 100).toFixed(1) + "%";
+        }
+
+        function toggleNoise() {
+            initAudio();
+            if (noiseNode) {
+                noiseNode.stop(); noiseNode = null;
+                document.getElementById('noise-btn').innerText = "PLAY";
+                document.getElementById('noise-btn').style.background = "#e94560";
+            } else {
+                const bufferSize = 2 * audioCtx.sampleRate, noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate), output = noiseBuffer.getChannelData(0);
+                let lastOut = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    let white = Math.random() * 2 - 1;
+                    output[i] = (lastOut + (0.02 * white)) / 1.02; lastOut = output[i]; output[i] *= 3.5; 
+                }
+                noiseNode = audioCtx.createBufferSource(); noiseNode.buffer = noiseBuffer; noiseNode.loop = true;
+                const gain = audioCtx.createGain(); gain.gain.value = 0.08;
+                noiseNode.connect(gain); gain.connect(audioCtx.destination); noiseNode.start();
+                document.getElementById('noise-btn').innerText = "STOP";
+                document.getElementById('noise-btn').style.background = "#4ecca3";
+            }
+        }
+
+        function arpegiarEscala(rootIndex) {
+            if (!audioCtx) initAudio();
+            const seleccion = document.getElementById('escala-select').value;
+            const intervalosBase = escalas[seleccion];
+            const bpmSec = actualizarTodo();
+            const sixteenthNote = bpmSec / 4;
+            let now = audioCtx.currentTime;
+            notasParaMidi = [];
+            
+            let escalaExtendida = [];
+            for (let oct = 0; oct < 2; oct++) {
+                intervalosBase.forEach(inter => {
+                    escalaExtendida.push(inter + (oct * 12));
+                });
+            }
+
+            escalaExtendida.forEach((intervalo, i) => {
+                const noteIndex = (rootIndex + intervalo);
+                if (noteIndex < 36) { 
+                    const freq = frecuenciasBase[noteIndex % 12] * Math.pow(2, Math.floor(noteIndex / 12));
+                    notasParaMidi.push(60 + noteIndex);
+                    playNote(freq, sixteenthNote * 0.9, now + (i * sixteenthNote), "nota-" + (noteIndex % 24));
+                }
+            });
+            document.getElementById('midi-log').innerText = "✓ MIDI READY";
+        }
+
+        function playNote(frequency, duration, startTime, elementId) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(frequency, startTime);
+            gain.gain.setValueAtTime(0.15, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(startTime); osc.stop(startTime + duration);
+            setTimeout(() => {
+                const el = document.getElementById(elementId);
+                if(el) { el.classList.add('sonando'); setTimeout(() => el.classList.remove('sonando'), duration*1000); }
+            }, (startTime - audioCtx.currentTime) * 1000);
+        }
+
+        function iluminarEscala(raiz) {
+            const seleccion = document.getElementById('escala-select').value;
+            const intervalos = escalas[seleccion];
+            document.querySelectorAll('.tecla').forEach(el => el.classList.remove("activa"));
+            
+            for (let oct = 0; oct < 3; oct++) {
+                intervalos.forEach(paso => {
+                    const noteIdx = (raiz + paso + (oct * 12));
+                    if(noteIdx < 24) {
+                        const el = document.getElementById("nota-" + noteIdx);
+                        if(el) el.classList.add("activa");
+                    }
+                });
+            }
+        }
+
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+        }
+
+        function onMIDISuccess(midiAccess) {
+            const inputs = midiAccess.inputs.values();
+            for (let input of inputs) { input.onmidimessage = handleMIDIMessage; document.getElementById('midi-status').innerText = "MIDI: " + input.name + " Connected ✅"; }
+            midiAccess.onstatechange = (e) => {
+                if(e.port.type === 'input') document.getElementById('midi-status').innerText = e.port.state === "connected" ? "MIDI: " + e.port.name + " Connected ✅" : "MIDI: Disconnected";
+            };
+        }
+
+        function onMIDIFailure() { document.getElementById('midi-status').innerText = "MIDI: Not supported."; }
+
+        function handleMIDIMessage(message) {
+            const command = message.data[0], note = message.data[1], velocity = (message.data.length > 2) ? message.data[2] : 0;
+            if (!audioCtx || audioCtx.state !== 'running') initAudio();
+            if (command === 144 && velocity > 0) {
+                const noteIndex = note % 24;
+                procesarEntradaNota(noteIndex);
+            }
+        }
+
+        function abrirModal(tipo) {
+            const modal = document.getElementById("modalGuia");
+            const values = {
+                v1: document.getElementById('nota-1').innerText,
+                v2: document.getElementById('nota-2').innerText,
+                v4: document.getElementById('nota-4').innerText,
+                v8: document.getElementById('nota-8').innerText,
+                v16: document.getElementById('nota-16').innerText,
+                vHz: document.getElementById('hz-nota').innerText,
+                vFase: document.getElementById('fase-ms').innerText,
+                vH2: document.getElementById('h2-val').innerText,
+                vH3: document.getElementById('h3-val').innerText,
+                vST: document.getElementById('st-input').value,
+                vRatio: document.getElementById('st-result').innerText
+            };
+            
+            const contenido = {
+                quicktips: { 
+                    t: "Quick Tips: MS Application", 
+                    c: `<p>🎯 <b>Kicks:</b> Set the total Hold/Decay of your Kick to <b>${values.v16}ms</b> for perfect integration with the bass.</p>` +
+                        `<p>🥁 <b>Psy-Groove:</b> Set your filter's LFO to 1/8 sync or <b>${values.v8}ms</b> for that classic bounce.</p>` +
+                        `<p>🔥 <b>Stabs:</b> Send your stabs to a bus with a Gate set to <b>${values.v16}ms</b> for surgical cuts.</p>` +
+                        `<p>🎹 <b>Arps:</b> If using fast arpeggios, the envelope Release should not exceed <b>${values.v16}ms</b> to avoid mud.</p>`
+                },
+                delay_guide: { 
+                    t: "Delay Master Guide", 
+                    c: `<p>🌀 <b>Offbeat Psy:</b> Standard delay is 1/8 (${values.v8}ms). Adjust feedback to 30%.</p>` +
+                        `<p>✨ <b>Slapback Lead:</b> Use 1/16 (${values.v16}ms) with low feedback to add thickness without clutter.</p>` +
+                        `<p>🌌 <b>Tripled Textures:</b> Use a 1/4 (${values.v4}ms) delay with a high Hi-Pass filter for atmospheres that don't interfere.</p>` +
+                        `<p>📐 <b>Perfect Ping-Pong:</b> Channel L at 1/8 (${values.v8}ms) and Channel R at 1/4 (${values.v4}ms) for a rhythmic expansive stereo.</p>` +
+                        `<p>💥 <b>Haas Effect:</b> Set a manual delay between 10ms and <b>${values.vFase}ms</b> on a single channel to widen mono sounds.</p>`
+                },
+                reverb_guide: { 
+                    t: "Surgical Reverb Guide", 
+                    c: `<p>⏱️ <b>Pro Predelay:</b> Set Predelay to exactly <b>${values.vFase}ms</b>. This separates the Lead transient from the reverb cloud.</p>` +
+                        `<p>🧼 <b>Clean Decay:</b> In fast Psytrance, a Reverb Decay longer than <b>${values.v4}ms</b> usually muddies the mix. Keep "Tails" short.</p>` +
+                        `<p>🌑 <b>Dark Reverb:</b> Use a 1/2 (${values.v2}ms) decay but apply a Low-Cut up to 400Hz and a High-Cut at 5kHz.</p>` +
+                        `<p>🌊 <b>Sidechained Reverb:</b> Send your reverb to a bus and sidechain it to the Kick using a <b>${values.v16}ms</b> release so the reverb "breathes".</p>`
+                },
+                sidechain: { 
+                    t: "Sidechain & LFO Tool", 
+                    c: `<p>📉 <b>Bass Release:</b> Set your sidechain compressor release to <b>${values.v16}ms</b>. It's the exact time for the bass to recover volume before the next note.</p>` +
+                        `<p>🛸 <b>LFO Shaping:</b> If using LFO Tool, draw the curve so it reaches 100% volume right at the <b>${values.v8}ms</b> mark.</p>` +
+                        `<p>🔊 <b>Pumping Atmos:</b> For dramatic pumping on pads, use a slower sidechain with 1/4 (<b>${values.v4}ms</b>) release.</p>` +
+                        `<p>⚡ <b>Surgical Precision:</b> Use the phase cycle of <b>${values.vFase}ms</b> as the "Lookahead" time to anticipate compression.</p>`
+                },
+                eq_pro: { 
+                    t: "Harmonic Analysis (EQ) 🔊", 
+                    c: `<p>Use these exact points for the current note (<b>${values.vHz}Hz</b>):</p>` +
+                        `<p>• <b>Resonance Cleaning:</b> Reduce with a narrow bell at <b>${values.vH3}Hz</b> to remove harsh harmonics.</p>` +
+                        `<p>• <b>Bass Punch:</b> Boost +2dB at <b>${values.vH2}Hz</b> (the octave) so the bass is audible on mobiles and laptops.</p>` +
+                        `<p>• <b>Air Cut:</b> Apply a gentle Low Pass starting at harmonic H8 for a more "Forest" and organic sound.</p>` 
+                },
+                fase_pro: { 
+                    t: "Phase & Samplers 🌀", 
+                    c: `<p>• <b>Phase Alignment:</b> Your note completes a cycle every <b>${values.vFase}ms</b>. Move your audio clip in milliseconds to find the point where it adds with the Kick.</p>` +
+                        `<p>• <b>Time Stretching:</b> To transpose <b>${values.vST} semitones</b> without losing rhythm, stretch your sample to <b>${values.vRatio}</b>.</p>` +
+                        `<p>• <b>Zero Crossing:</b> Make your Fade-ins <b>${values.vFase}ms</b> to avoid the initial "pop" in synth samples.</p>`
+                },
+                pink_noise: {
+                    t: "Pink Noise Mixing Guide 🌸",
+                    c: `<p><b>Mixing Technique:</b></p>` +
+                        `<p>1. Play the Pink Noise and set it to <b>-12dB</b> (or your target loudness).</p>` +
+                        `<p>2. Bring all your faders down.</p>` +
+                        `<p>3. Bring up each track one by one until you can <i>just barely</i> hear it over the noise.</p>` +
+                        `<p>4. This creates a balanced, professional spectrum. Pink Noise has equal energy per octave, mirroring human hearing.</p>`
+                }
+            };
+            document.getElementById("modalTitulo").innerHTML = contenido[tipo].t;
+            document.getElementById("modalCuerpo").innerHTML = contenido[tipo].c;
+            modal.style.display = "block";
+        }
+        function cerrarModal() { document.getElementById("modalGuia").style.display = "none"; }
+        window.onclick = e => { if(e.target == document.getElementById("modalGuia")) cerrarModal(); }
+
+        function descargarMIDI() {
+            if (notasParaMidi.length === 0) return alert("Play the keyboard first!");
+            const bpm = document.getElementById('bpm-input').value;
+            const header = [0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x80];
+            let body = [];
+            notasParaMidi.forEach(n => body.push(0x00, 0x90, n, 0x64, 0x60, 0x80, n, 0x00));
+            body.push(0x00, 0xFF, 0x2F, 0x00);
+            const trackHeader = [0x4d, 0x54, 0x72, 0x6b, 0, 0, 0, body.length];
+            const midi = new Uint8Array([...header, ...trackHeader, ...body]);
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob([midi], {type: "audio/midi"}));
+            a.download = `Nykro_Scale_${bpm}BPM.mid`; a.click();
+        }
+
+        /* ========================================= */
+        /* NUEVO: LÓGICA DE BOTONES TEMA E IDIOMA    */
+        /* ========================================= */
+        
+        // Función para el Modo Claro / Oscuro
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            document.getElementById('theme-btn').innerText = isLight ? '🌙 Dark' : '☀️ Light';
+        }
+
+        // Función para cambiar el idioma usando el traductor nativo ya existente
+        function toggleLanguage() {
+            const select = document.querySelector('.goog-te-combo');
+            if (select) {
+                select.value = select.value === 'es' ? 'en' : 'es';
+                select.dispatchEvent(new Event('change'));
+            } else {
+                alert("El traductor de Google aún está cargando. ¡Intenta en un segundo!");
+            }
+        }
+
+        generarTeclado();
+        actualizarTodo();
+        calcTranspose();
+    </script>
+</body>
+</html>

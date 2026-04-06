@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title> Architect Audio Lab V112: Intelligent Harmony </title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://unpkg.com/@tonejs/midi"></script>
+    <style>
+        :root {
+            --bg: #020205; --panel: #0a0a1a; --accent: #00ffcc;
+            --chord: #ffffff; --lead: #33aaff; --ornament: #ffcc00;
+            --grid-line: #151525; --advice: #bb88ff;
+            --s-safe: #00ff88; --s-cool: #00bbff; --s-warn: #ffcc00;
+            --in-scale-bg: #0a1525;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #e0e0e0; margin: 0; padding: 10px; overflow: hidden; user-select: none; }
+        .container { max-width: 100%; height: 98vh; display: flex; flex-direction: column; gap: 6px; }
+
+        .toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 8px 15px; border-radius: 6px; border: 1px solid #1a1a3a; }
+        .btn { background: #121225; color: #fff; border: 1px solid #2a2a45; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.6rem; text-transform: uppercase; transition: 0.2s; }
+        .btn:hover { border-color: var(--accent); color: var(--accent); }
+        
+        .btn-play { background: #1a1a35; color: var(--accent); border: 2px solid var(--accent); min-width: 120px; }
+        .btn-play.active { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--accent); }
+
+        .bpm-control { display: flex; align-items: center; gap: 8px; background: #050510; padding: 4px 10px; border-radius: 4px; border: 1px solid #1a1a3a; }
+        .bpm-slider { width: 80px; cursor: pointer; accent-color: var(--accent); }
+        .bpm-value { font-family: monospace; font-size: 0.7rem; color: var(--accent); min-width: 45px; font-weight: bold; }
+
+        .main-workarea { display: flex; flex-direction: column; gap: 4px; flex-grow: 1; overflow: hidden; }
+        .measure-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .m-card { background: var(--panel); border: 1px solid #1a1a3a; padding: 8px; border-radius: 6px; border-bottom: 3px solid #222; }
+        
+        .degree-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 6px; }
+        .btn-deg { padding: 4px 0; font-size: 0.6rem; background: #04040a; border: 1px solid #1c1c30; color: #333; cursor: pointer; font-weight: 900; transition: 0.2s; }
+        .btn-deg.selected { border-color: #fff !important; color: #000 !important; background: #fff !important; }
+        
+        .sug-next-safe { border-color: var(--s-safe) !important; color: var(--s-safe) !important; }
+        .sug-next-cool { border-color: var(--s-cool) !important; color: var(--s-cool) !important; }
+        .sug-next-warn { border-color: var(--s-warn) !important; color: var(--s-warn) !important; }
+
+        .tech-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+        .btn-tech { padding: 3px 0; font-size: 0.4rem; background: #060615; border: 1px solid #1a1a30; color: #555; cursor: pointer; text-transform: uppercase; }
+        .btn-tech.active { background: var(--lead); color: #fff; border-color: #fff; }
+
+        .local-res { width: 100%; margin-top: 6px; background: #000; color: var(--accent); border: 1px solid #333; font-size: 0.55rem; padding: 3px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+
+        .sequencer-wrapper { flex-grow: 1; background: #020205; border: 1px solid #1a1a3a; border-radius: 6px; overflow: auto; position: relative; }
+        .grid { display: grid; grid-template-columns: 80px repeat(32, 1fr); gap: 1px; background: var(--grid-line); }
+        .note-header { background: #0d0d1a; color: #444; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; height: 18px; font-weight: 900; position: sticky; left: 0; z-index: 20; border-right: 2px solid #000; }
+        
+        .note-header.in-scale { color: var(--accent) !important; background: #0b0b25; border-right: 2px solid var(--accent); }
+        .cell.in-scale-row { background: var(--in-scale-bg); }
+
+        .cell { height: 18px; background: #020205; position: relative; cursor: crosshair; }
+        
+        .note-block { position: absolute; top: 1px; left: 0; height: calc(100% - 2px); z-index: 5; pointer-events: none; border-radius: 1px; border: 1px solid rgba(255,255,255,0.4); }
+        .cell.chord-node { background: rgba(255, 255, 255, 0.1) !important; }
+        .lead-node { background: var(--lead); box-shadow: 0 0 8px var(--lead); }
+        .ornament-node { background: var(--ornament); border-radius: 8px; transform: scaleY(0.6); box-shadow: 0 0 5px var(--ornament); }
+        
+        .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; pointer-events: none; z-index: 100; box-shadow: 0 0 10px #fff; }
+
+        .footer { background: var(--panel); padding: 8px 15px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; border: 1px solid #1a1a3a; overflow: hidden;}
+        .footer-top { display: flex; justify-content: space-between; align-items: center; }
+        
+        .prog-suggestions { display: flex; gap: 8px; align-items: center; overflow-x: auto; padding-bottom: 4px; flex-wrap: nowrap; max-width: 100%;}
+        .prog-suggestions::-webkit-scrollbar { height: 4px; }
+        .prog-suggestions::-webkit-scrollbar-thumb { background: #2a2a45; border-radius: 2px; }
+
+        .btn-prog-pro { 
+            background: linear-gradient(145deg, #1a0a2a, #0d0515); 
+            border: 1px solid #3a1a5a; 
+            color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; 
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            min-width: 100px; transition: 0.3s; flex-shrink: 0;
+        }
+        .btn-prog-pro:hover { border-color: var(--advice); box-shadow: 0 0 10px rgba(187, 136, 255, 0.3); transform: translateY(-2px); }
+        .btn-prog-pro .style-label { font-size: 0.45rem; color: var(--advice); font-weight: 900; letter-spacing: 1px; text-transform: uppercase;}
+        .btn-prog-pro .num-label { font-size: 0.6rem; font-weight: bold; opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="toolbar">
+        <div style="display:flex; gap:12px; align-items: center;">
+            <div style="color:var(--accent); font-weight: 900; font-size: 0.8rem;">ARCHITECT-LAB V112</div>
+            <select id="rootTone" class="btn" onchange="buildGrid()"></select>
+            <select id="scaleType" class="btn" style="min-width: 180px;" onchange="buildGrid()"></select>
+            
+            <div class="bpm-control">
+                <span style="font-size: 0.5rem; color: #555; font-weight: 900;">BPM</span>
+                <input type="range" id="bpmSlider" class="bpm-slider" min="40" max="250" value="120" oninput="updateBPM(this.value)">
+                <span id="bpmDisplay" class="bpm-value">120</span>
+            </div>
+        </div>
+        
+        <div style="display:flex; gap:8px;">
+            <button class="btn" onclick="smartRandom()" style="border-color: var(--ornament); color: var(--ornament);">🎲 RANDOM</button>
+            <button class="btn" onclick="exportMIDI()" style="border-color: var(--lead); color: var(--lead);">💾 MIDI</button>
+            <button class="btn" onclick="clearManual()" style="color:#ff5555; border-color:#ff5555">❌ CLEAR</button>
+            <button id="playBtn" class="btn btn-play" onclick="togglePlayback()">▶ START</button>
+        </div>
+    </div>
+
+    <div class="main-workarea">
+        <div class="measure-controls" id="controls"></div>
+        <div class="sequencer-wrapper" id="seq-wrap">
+            <div id="playhead" class="playhead" style="left: 0; display: none;"></div>
+            <div id="editor" class="grid"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="prog-suggestions" id="prog-list"></div>
+        <div class="footer-top">
+            <div style="font-size: 0.5rem; font-weight: 900; display: flex; gap: 10px;">
+                <span style="color:var(--s-safe)">● SAFE</span>
+                <span style="color:var(--s-cool)">● COOL</span>
+                <span style="color:var(--s-warn)">● DANGER</span>
+            </div>
+            <div id="advisor-text" style="font-size:0.6rem; color:var(--advice); font-weight:900; text-transform: uppercase;">SELECT SCALE & STYLE</div>
+            <div style="font-size: 0.5rem; color: #444;">V112 INTELLIGENT HARMONY</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const reverb = new Tone.Reverb({ decay: 4, wet: 0.15 }).toDestination();
+    const leadSynth = new Tone.PolySynth(Tone.Synth).toDestination(); 
+    leadSynth.set({ oscillator: { type: "triangle" }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.1, release: 0.1 }, volume: -8 });
+    const chordSynth = new Tone.PolySynth(Tone.Synth).connect(reverb);
+    chordSynth.set({ volume: -22, oscillator: { type: "sine" }, envelope: { attack: 0.2, sustain: 0.8, release: 1.2 } });
+
+    Tone.Transport.bpm.value = 120;
+
+    const rootNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const chromaticNotes = [];
+    for(let o=5; o>=2; o--) rootNames.slice().reverse().forEach(n => chromaticNotes.push(n + o));
+
+    const scales = {
+        aeolian: { name: "Minor Natural (Aeolian)", intervals: [0, 2, 3, 5, 7, 8, 10], progs: [{p:[0,5,3,4], label:"EPIC PASSION", desc:"VIAJE ÉPICO Y EMOCIONAL."}, {p:[0,6,5,4], label:"DARK SADNESS", desc:"MELANCOLÍA PROFUNDA."}] },
+        phrygian: { name: "Phrygian (Psytrance)", intervals: [0, 1, 3, 5, 7, 8, 10], progs: [{p:[0,1,0,1], label:"DARK PSY", desc:"SONIDO MALIGNO CLÁSICO."}, {p:[0,6,1,0], label:"ALIEN TENSION", desc:"TENSIÓN EXTRATERRESTRE."}] },
+        dorian: { name: "Dorian (Techno/House)", intervals: [0, 2, 3, 5, 7, 9, 10], progs: [{p:[0,3,6,3], label:"DEEP CLUB", desc:"SOFISTICACIÓN TECHNO."}, {p:[0,2,0,4], label:"ENERGY BOOST", desc:"ENERGÍA EN ASCENSO."}] },
+        locrian: { name: "Locrian (Extreme Tension)", intervals: [0, 1, 3, 4, 6, 8, 9], progs: [{p:[0,1,4,0], label:"CHAOS THEORY", desc:"CAOS CONTROLADO."}] },
+        harmonicMinor: { name: "Harmonic Minor", intervals: [0, 2, 3, 5, 7, 8, 11], progs: [{p:[0,3,4,0], label:"VAMPIRE DRAMA", desc:"DRAMA GÓTICO Y OSCURO."}] },
+        melodicMinor: { name: "Melodic Minor (Asc)", intervals: [0, 2, 3, 5, 7, 9, 11], progs: [{p:[0,3,4,3], label:"JAZZY TECHNO", desc:"FUSIÓN JAZZ Y TECHNO."}] },
+        phrygianDominant: { name: "Phrygian Dominant (Spanish)", intervals: [0, 1, 4, 5, 7, 8, 10], progs: [{p:[0,1,3,0], label:"FLAMENCO TECH", desc:"GROOVE FLAMENCO ELECTRÓNICO."}] },
+        hungarianMinor: { name: "Hungarian Minor", intervals: [0, 2, 3, 6, 7, 8, 11], progs: [{p:[0,3,6,0], label:"EASTERN BLOC", desc:"TEXTURA DEL ESTE DE EUROPA."}] },
+        neapolitanMinor: { name: "Neapolitan Minor", intervals: [0, 1, 3, 5, 7, 8, 11], progs: [{p:[0,1,4,0], label:"ROMANTIC DARK", desc:"OSCURIDAD ROMÁNTICA DRAMÁTICA."}] },
+        diminishedWH: { name: "Diminished (W/H)", intervals: [0, 2, 3, 5, 6, 8, 9, 11], progs: [{p:[0,2,4,6], label:"HORROR MOVIE", desc:"TENSIÓN DE PELÍCULA DE TERROR."}] }
+    };
+
+    const resolveMatrix = {
+        0: { safe: [3, 4], cool: [5, 6], warn: [1], desc: "HOME (I)" },
+        1: { safe: [4, 0], cool: [6], warn: [2], desc: "DYNAMISM (II)" },
+        2: { safe: [5, 0], cool: [3], warn: [4], desc: "MOOD (III)" },
+        3: { safe: [0, 4], cool: [1, 6], warn: [2], desc: "OPEN FEEL (IV)" },
+        4: { safe: [0, 5], cool: [6, 3], warn: [1], desc: "TENSION (V)" },
+        5: { safe: [3, 4], cool: [0, 1], warn: [6], desc: "EPIC (VI)" },
+        6: { safe: [0], cool: [4, 2], warn: [5], desc: "RESOLVE (VII)" }
+    };
+
+    const techs = ['stab', 'paso', 'floreo', 'preg-resp', 'retardo', 'anticipa', 'sincopa', 'pedal', 'escapada', 'ratchet', 'arpegg', 'melodico', 'evolutiva'];
+    let measureData = Array(4).fill().map(() => ({deg:0, tech:'stab', res:'16n'}));
+    let isPlaying = false, currentStep = 0;
+
+    function updateBPM(val) {
+        Tone.Transport.bpm.value = val;
+        document.getElementById('bpmDisplay').innerText = val;
+    }
+
+    function init() {
+        const rootSel = document.getElementById('rootTone');
+        rootNames.forEach((n, i) => rootSel.innerHTML += `<option value="${i}">${n}</option>`);
+        const scaleSel = document.getElementById('scaleType');
+        Object.keys(scales).forEach(key => scaleSel.innerHTML += `<option value="${key}">${scales[key].name}</option>`);
+        buildGrid();
+    }
+
+    function buildGrid() {
+        const ed = document.getElementById('editor'); ed.innerHTML = '<div></div>';
+        for(let i=1; i<=32; i++) ed.innerHTML += `<div class="note-header">${i}</div>`;
+        const root = parseInt(document.getElementById('rootTone').value);
+        const scaleKey = document.getElementById('scaleType').value;
+        const scale = scales[scaleKey];
+
+        const progList = document.getElementById('prog-list');
+        progList.innerHTML = '<span style="font-size:0.6rem; color:var(--advice); font-weight:bold; margin-right:10px; flex-shrink:0;">STYLES:</span>';
+        scale.progs.forEach(progObj => {
+            const b = document.createElement('button'); b.className = 'btn-prog-pro';
+            b.innerHTML = `<span class="style-label">${progObj.label}</span><span class="num-label">${progObj.p.map(n=>n+1).join('-')}</span>`;
+            b.onclick = () => { 
+                progObj.p.forEach((d, i) => { if (measureData[i]) measureData[i].deg = d; }); 
+                document.getElementById('advisor-text').innerText = progObj.desc;
+                renderControls(); refresh(); 
+            };
+            progList.appendChild(b);
+        });
+
+        const scaleNotes = scale.intervals.map(i => rootNames[(root + i) % 12]);
+        chromaticNotes.forEach(n => {
+            const noteOnly = n.replace(/\d/,'');
+            const inScale = scaleNotes.includes(noteOnly);
+            ed.innerHTML += `<div class="note-header ${inScale?'in-scale':''}">${n}</div>`;
+            for(let i=0; i<32; i++) { ed.innerHTML += `<div class="cell ${inScale?'in-scale-row':''} ${i%8===0?'measure-div':''}" data-note="${n}" data-step="${i}"></div>`; }
+        });
+        renderControls(); refresh();
+    }
+
+    function renderControls() {
+        const ctrlDiv = document.getElementById('controls'); ctrlDiv.innerHTML = '';
+        measureData.forEach((data, i) => {
+            let html = `<div class="m-card"><div class="degree-grid">`;
+            const prevDeg = (i > 0) ? measureData[i-1].deg : null;
+            const suggestions = prevDeg !== null ? resolveMatrix[prevDeg] : null;
+            for(let idx=0; idx<7; idx++) {
+                let sugClass = (suggestions && suggestions.safe.includes(idx)) ? 'sug-next-safe' : (suggestions && suggestions.cool.includes(idx)) ? 'sug-next-cool' : (suggestions && suggestions.warn.includes(idx)) ? 'sug-next-warn' : '';
+                html += `<button class="btn-deg ${data.deg===idx?'selected':''} ${sugClass}" onclick="updateM(${i},'deg',${idx})">${idx+1}</button>`;
+            }
+            html += `</div><div class="tech-grid">`;
+            techs.forEach(t => html += `<button class="btn-tech ${data.tech===t?'active':''}" onclick="updateM(${i},'tech','${t}')">${t.substring(0,4)}</button>`);
+            html += `</div><select class="local-res" onchange="updateM(${i}, 'res', this.value)">`;
+            ['1n','2n','4n','8n','16n','32n'].forEach(r => html += `<option value="${r}" ${data.res===r?'selected':''}>${r}</option>`);
+            html += `</select></div>`;
+            ctrlDiv.innerHTML += html;
+        });
+    }
+
+    function updateM(i, t, v) { 
+        if (measureData[i]) measureData[i][t] = v; 
+        renderControls(); refresh(); 
+    }
+
+    function refresh() {
+        document.querySelectorAll('.note-block').forEach(b => b.remove());
+        document.querySelectorAll('.cell').forEach(c => c.classList.remove('chord-node'));
+        const root = parseInt(document.getElementById('rootTone').value);
+        const scaleKey = document.getElementById('scaleType').value;
+        const scale = scales[scaleKey];
+        if (!scale) return;
+
+        let lastNoteIndex = null; // Para Voice Leading
+
+        measureData.forEach((data, mIdx) => {
+            const start = mIdx * 8;
+            const end = start + 8;
+            const stepVal = Tone.Time(data.res).toSeconds() / Tone.Time("16n").toSeconds();
+            
+            // LÓGICA DE VOICING E INVERSIONES
+            const getNote = (df, baseOct) => {
+                const numScale = scale.intervals.length;
+                let degreeIdx = (data.deg + df + numScale * 20) % numScale;
+                let interval = scale.intervals[degreeIdx];
+                let noteName = rootNames[(root + interval) % 12];
+                
+                // Determinar Octava Inteligente (Voice Leading)
+                let oct = baseOct;
+                if (lastNoteIndex !== null) {
+                    let currentGlobalPos = (root + interval);
+                    let diff = currentGlobalPos - lastNoteIndex;
+                    if (diff > 6) oct--; 
+                    if (diff < -6) oct++;
+                }
+                
+                let finalNote = noteName + oct;
+                lastNoteIndex = (root + interval);
+                return finalNote;
+            };
+            
+            [0, 2, 4].forEach(d => { 
+                const n = getNote(d, 3);
+                const c = document.querySelector(`.cell[data-note="${n}"][data-step="${start}"]`);
+                if(c) c.classList.add('chord-node');
+            });
+
+            const R_Low = getNote(0, 3), R = getNote(0, 4), S2 = getNote(1, 4), T3 = getNote(2, 4), R5 = getNote(4, 4), Oct = getNote(0, 5);
+            
+            const paintDur = (note, localStep, type, durOverride) => {
+                if (localStep < 0 || localStep >= 8) return;
+                const globalStep = start + localStep;
+                paintBlock(note, globalStep, type, durOverride || data.res, end);
+            };
+            
+            switch(data.tech) {
+                case 'stab': 
+                    for(let s=0; s<8; s += Math.max(stepVal, 1)) { paintDur(R, s, 'lead-node'); }
+                    break;
+                case 'paso': 
+                    let dir = mIdx % 2 === 0 ? 1 : -1;
+                    for(let s=0; s<8; s += Math.max(stepVal, 1)) { 
+                        // Paso inteligente: busca la nota del acorde más cercana
+                        let stepNote = (s % 2 === 0) ? getNote(s*dir, 4) : getNote(0, 4);
+                        paintDur(stepNote, s, 'lead-node'); 
+                    }
+                    break;
+                case 'floreo': 
+                    paintDur(R, 0, 'lead-node');
+                    if(stepVal < 4) paintDur(S2, 1, 'ornament-node', '32n');
+                    paintDur(T3, Math.min(Math.floor(stepVal), 4), 'lead-node'); // Resuelve al 3ero
+                    break;
+                case 'preg-resp': 
+                    paintDur(Oct, 0, 'lead-node');
+                    paintDur(R, 4, 'lead-node');
+                    break;
+                case 'retardo': 
+                    paintDur(S2, 0, 'ornament-node');
+                    paintDur(R, 2, 'lead-node');
+                    break;
+                case 'anticipa': 
+                    paintDur(R, 0, 'lead-node', '2n');
+                    paintDur(R5, 7, 'ornament-node', '32n');
+                    break;
+                case 'sincopa': 
+                    [1, 3, 5, 7].forEach((s, i) => paintDur(i % 2 === 0 ? T3 : R, s, 'lead-node'));
+                    break;
+                case 'pedal': 
+                    for(let s=0; s<8; s += Math.max(stepVal, 1)) { paintDur(R_Low, s, 'lead-node'); }
+                    break;
+                case 'escapada': 
+                    paintDur(R, 0, 'lead-node');
+                    paintDur(Oct, 1, 'ornament-node', '32n');
+                    paintDur(R5, 4, 'lead-node');
+                    break;
+                case 'ratchet': 
+                    for(let s=0; s<4; s++) paintDur(R, s, 'lead-node', '32n');
+                    paintDur(T3, 4, 'lead-node');
+                    break;
+                case 'arpegg': 
+                    [0, 2, 4, 7].forEach((d, i) => paintDur(getNote(d, 4), i*2, 'lead-node'));
+                    break;
+                case 'melodico': 
+                    [0, 2, 4, 0].forEach((d, i) => paintDur(getNote(d, 4), i * Math.max(stepVal, 1), 'lead-node'));
+                    break;
+                case 'evolutiva':
+                    for(let s=0; s<8; s += Math.max(stepVal, 1)) { 
+                        let randDeg = [0, 2, 4, 7][Math.floor(Math.random()*4)];
+                        paintDur(getNote(randDeg, 4), s, 'lead-node'); 
+                    }
+                    break;
+                default: paintDur(R, 0, 'lead-node');
+            }
+        });
+    }
+
+    function paintBlock(n, s, type, dur, measureEnd) {
+        const cell = document.querySelector(`.cell[data-note="${n}"][data-step="${s}"]`);
+        if(!cell) return;
+        let factor = Tone.Time(dur).toSeconds() / Tone.Time('16n').toSeconds();
+        const stepsRemaining = measureEnd - s;
+        if (factor > stepsRemaining) factor = stepsRemaining;
+        const block = document.createElement('div');
+        block.className = `note-block ${type}`;
+        block.style.width = `calc(${factor * 100}% + ${Math.floor(factor) - 1}px)`;
+        block.dataset.dur = dur;
+        cell.appendChild(block);
+    }
+
+    function togglePlayback() {
+        const ph = document.getElementById('playhead');
+        const btn = document.getElementById('playBtn');
+        if (isPlaying) { Tone.Transport.stop(); Tone.Transport.cancel(); ph.style.display='none'; btn.classList.remove('active'); btn.innerText = "▶ START"; } 
+        else {
+            Tone.start(); currentStep = 0; ph.style.display='block'; btn.classList.add('active'); btn.innerText = "■ STOP";
+            Tone.Transport.scheduleRepeat((time) => {
+                const gridElem = document.getElementById('editor');
+                if (!gridElem) return;
+                const sw = (gridElem.offsetWidth - 80) / 32;
+                ph.style.left = (80 + currentStep * sw) + 'px';
+                document.querySelectorAll(`.cell[data-step="${currentStep}"] .note-block`).forEach(block => {
+                    let vel = block.classList.contains('ornament-node') ? 0.4 : 0.75;
+                    leadSynth.triggerAttackRelease(block.parentElement.dataset.note, block.dataset.dur, time, vel);
+                });
+                if (currentStep % 8 === 0) {
+                    const n = []; document.querySelectorAll(`.cell[data-step="${currentStep}"].chord-node`).forEach(c => n.push(c.dataset.note));
+                    if (n.length > 0) chordSynth.triggerAttackRelease(n, "1n", time, 0.2); 
+                }
+                currentStep = (currentStep + 1) % 32;
+            }, "16n");
+            Tone.Transport.start();
+        }
+        isPlaying = !isPlaying;
+    }
+
+    function clearManual() {
+        measureData.forEach(m => { m.deg = 0; m.tech = 'stab'; m.res = '16n'; });
+        renderControls(); refresh();
+    }
+
+    function smartRandom() {
+        measureData.forEach(m => { m.tech = techs[Math.floor(Math.random()*techs.length)]; m.deg = Math.floor(Math.random()*7); });
+        renderControls(); refresh();
+    }
+
+    function exportMIDI() {
+        const midi = new Midi(); const track = midi.addTrack(); track.name = "Architect Master";
+        const stepSeconds = Tone.Time("16n").toSeconds();
+        for (let s = 0; s < 32; s++) {
+            const blocks = document.querySelectorAll(`.cell[data-step="${s}"] .note-block`);
+            blocks.forEach(block => {
+                track.addNote({ name: block.parentElement.dataset.note, time: s * stepSeconds, duration: Tone.Time(block.dataset.dur).toSeconds(), velocity: 0.8 });
+            });
+        }
+        const blob = new Blob([midi.toArray()], { type: "audio/midi" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "architect_isolated.mid"; a.click();
+    }
+
+    init();
+</script>
+</body>
+</html>
