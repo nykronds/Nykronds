@@ -262,10 +262,29 @@
         </aside>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <script>
-        let events = JSON.parse(localStorage.getItem('nykronds_events')) || [
-            { date: 'MAR 24', venue: 'NEURAL_FEST // MX', link: '#', img: 'https://via.placeholder.com/150/220000/ff0000?text=NYK' }
-        ];
+        // CONFIGURACIÓN DE FIREBASE
+        const firebaseConfig = {
+            databaseURL: "https://nykronds-51edc-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const eventsRef = db.ref('nykronds_events');
+
+        let eventsData = {}; 
+
+        // LECTURA EN TIEMPO REAL DESDE FIREBASE
+        eventsRef.on('value', (snapshot) => {
+            eventsData = snapshot.val() || {};
+            renderEvents();
+            
+            const logs = document.getElementById('logs');
+            logs.innerHTML += `<br><span style="color:var(--neon)">>> DATABASE_SYNCED.</span>`;
+            logs.scrollTop = logs.scrollHeight;
+        });
 
         // LÓGICA DE ENVÍO DE CORREO MEJORADA (AJAX)
         document.getElementById('booking-form').addEventListener('submit', function(e) {
@@ -300,6 +319,7 @@
                 btn.innerText = "RETRY_SEND";
                 btn.disabled = false;
             });
+            logs.scrollTop = logs.scrollHeight;
         });
 
         function isEventExpired(eventDateStr) {
@@ -316,7 +336,13 @@
         function renderEvents() {
             const container = document.getElementById('events-container');
             container.innerHTML = '';
-            const activeEvents = events.filter(ev => !isEventExpired(ev.date) || document.body.classList.contains('admin-mode'));
+            
+            // Convertir el objeto de Firebase a un Array
+            const eventsArray = Object.keys(eventsData).map(key => {
+                return { id: key, ...eventsData[key] };
+            });
+
+            const activeEvents = eventsArray.filter(ev => !isEventExpired(ev.date) || document.body.classList.contains('admin-mode'));
 
             activeEvents.forEach((ev, index) => {
                 const expired = isEventExpired(ev.date);
@@ -325,7 +351,7 @@
 
                 container.innerHTML += `
                     <div class="card-wrapper" style="animation-delay: ${delay}s">
-                        <button class="delete-btn" onclick="deleteEvent(${index})">X</button>
+                        <button class="delete-btn" onclick="deleteEvent('${ev.id}')">X</button>
                         <a href="${ev.link}" target="_blank" class="event-card ${isFirst ? 'featured-node' : ''}" 
                            style="${expired ? 'opacity: 0.4; filter: sepia(1);' : ''}">
                             <img src="${ev.img}" class="event-img" onerror="this.src='https://via.placeholder.com/150/110000/330000?text=NO_DATA'">
@@ -339,7 +365,6 @@
                     </div>
                 `;
             });
-            localStorage.setItem('nykronds_events', JSON.stringify(events));
         }
 
         function addEvent() {
@@ -348,21 +373,27 @@
             const link = document.getElementById('ev-link').value;
             const img = document.getElementById('ev-img').value;
             if(date && venue) {
-                events.push({ date, venue, link: link || '#', img: img || '' });
-                renderEvents();
+                // Guarda en Firebase (esto triggerea eventsRef.on('value') automáticamente en todos los clientes)
+                eventsRef.push({ 
+                    date: date, 
+                    venue: venue, 
+                    link: link || '#', 
+                    img: img || '' 
+                });
+                
                 ['ev-date', 'ev-venue', 'ev-link', 'ev-img'].forEach(id => document.getElementById(id).value = '');
             }
         }
 
-        function deleteEvent(index) {
+        function deleteEvent(id) {
             if(confirm("TERMINATE_DATA_NODE?")) {
-                events.splice(index, 1);
-                renderEvents();
+                // Borra el nodo específico en Firebase usando su ID único
+                db.ref('nykronds_events/' + id).remove();
             }
         }
 
         function exportData() {
-            navigator.clipboard.writeText(JSON.stringify(events, null, 4));
+            navigator.clipboard.writeText(JSON.stringify(eventsData, null, 4));
             alert("DATABASE_COPIED_TO_CLIPBOARD");
         }
 
@@ -381,7 +412,6 @@
             if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'K') toggleAdmin();
         });
 
-        renderEvents();
     </script>
 </body>
 </html>
