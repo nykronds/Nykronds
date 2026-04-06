@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NYKRONDS // KINETIC_SYNC_v47.0</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@100;300;500;800&family=Syncopate:wght@400;700&display=swap');
@@ -423,6 +424,56 @@
             0%, 100% { transform: translate(-50%, -60%); opacity: 0.1; }
             50% { transform: translate(-50%, -40%); opacity: 0.3; }
         }
+
+        /* =========================================================================
+           AQUÍ INICIA EL CÓDIGO AÑADIDO PARA ADAPTACIÓN A CELULARES (RESPONSIVE) 
+           ========================================================================= */
+        @media screen and (max-width: 1024px) {
+            .main-frame {
+                /* Cambiamos la cuadrícula de 3 columnas a flex en columna (1 sobre otra) */
+                display: flex;
+                flex-direction: column;
+                height: 96vh;
+                overflow-y: auto; /* Permite deslizar hacia abajo dentro del marco */
+                overflow-x: hidden;
+            }
+
+            .sidebar-left, .content-main, .sidebar-right {
+                /* Ajustamos los bordes y el espacio (padding) para que encajen bien en móvil */
+                border: none;
+                border-bottom: 1px solid var(--border-tech);
+                padding: 20px;
+            }
+
+            .sidebar-right {
+                border-bottom: none; /* Quitamos la línea final para que se vea más limpio */
+            }
+
+            .img-container {
+                height: 300px; /* Reducimos la altura de la imagen para que no abarque toda la pantalla de golpe */
+            }
+
+            .content-main {
+                overflow-y: visible; /* El scroll lo maneja el main-frame ahora */
+                padding: 20px 15px;
+            }
+
+            .footer-data {
+                position: relative; /* Evita que el footer flote sobre el texto al hacer scroll */
+                padding: 20px 0;
+                bottom: auto;
+            }
+        }
+
+        /* Ajustes adicionales para pantallas de celulares muy estrechos */
+        @media screen and (max-width: 600px) {
+            .label-grid {
+                grid-template-columns: 1fr; /* Pone los botones de Nodos en una sola fila vertical */
+            }
+            .glitch-title {
+                font-size: 2.2rem; /* Achicamos ligeramente el título principal para que no se salga del margen */
+            }
+        }
     </style>
 </head>
 <body>
@@ -475,7 +526,7 @@
                 <div class="label-item">Freq_Analysis</div>
             </div>
 
-            <div class="sc-mini" style="border: 1px solid var(--border); box-shadow: var(--glow); background: #000;">
+            <div class="sc-mini" style="border: 1px solid var(--border-tech); background: #000;">
     <iframe 
         id="sc-widget" 
         width="100%" 
