@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NYKRONDS // UPLINK_PROTOCOL_v47</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@100;300;500;800&display=swap');
@@ -21,6 +22,7 @@
             margin-bottom: 20px;
             border-bottom: 1px solid var(--border);
             padding-bottom: 10px;
+            flex-wrap: wrap; /* Permite que los botones bajen de línea en celular si no caben */
         }
 
         .nav-btn {
@@ -109,7 +111,7 @@
 
         .events-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
         }
 
@@ -180,6 +182,7 @@
             transform: translate(-50%, -50%); background: var(--panel);
             border: 2px solid var(--neon); padding: 30px; 
             z-index: 5000; width: 420px; box-shadow: 0 0 150px #000; backdrop-filter: blur(10px);
+            max-width: 95%; /* Para que el panel admin no se salga en celulares */
         }
 
         .input-box {
@@ -194,7 +197,36 @@
         }
         .btn-send:hover { background: var(--neon); color: #000; box-shadow: var(--glow); }
 
-        @media (max-width: 1100px) { .interface-frame { grid-template-columns: 1fr; } .sidebar-left, .sidebar-right { display: none; } }
+        /* ======== NUEVA LÓGICA RESPONSIVE PARA CELULARES ======== */
+        @media (max-width: 1100px) { 
+            body {
+                overflow-y: auto; /* Permite hacer scroll en celular */
+                height: auto;
+                padding: 10px;
+            }
+            .interface-frame { 
+                grid-template-columns: 1fr; /* Una sola columna vertical */
+                height: auto;
+                min-height: 96vh;
+                gap: 15px;
+                background: transparent;
+                border: none;
+                box-shadow: none;
+            } 
+            .pane {
+                border: 1px solid var(--border);
+                min-height: fit-content;
+            }
+            .sidebar-left, .sidebar-right { 
+                display: flex; /* En lugar de 'none', ahora se muestran apilados */
+                padding: 20px;
+            }
+            .main-content {
+                padding: 20px;
+                /* Limitamos la altura de los eventos en celular para que se vea el booking abajo */
+                max-height: 80vh; 
+            }
+        }
     </style>
 </head>
 <body>
@@ -222,9 +254,9 @@
                 [<span style="color:var(--neon)">LOC</span>] GRID_NODE_MX
             </div>
             
-            <div style="margin-top: auto;">
+            <div style="margin-top: 20px;">
                 <div class="header-tag"><span>CONSOLE_FEED</span></div>
-                <div id="logs" style="font-size: 9px; color: #440000; font-family: 'JetBrains Mono'; height: 100px; overflow-y: hidden;">
+                <div id="logs" style="font-size: 9px; color: #440000; font-family: 'JetBrains Mono'; height: 100px; overflow-y: auto;">
                     >> INITIALIZING...<br>
                     >> AUTO_PURGE: ENABLED<br>
                     >> CTRL+SHIFT+K TO ADMIN
@@ -252,6 +284,8 @@
                 <input type="email" name="email" id="email" class="input-box" placeholder="RETURN_PATH (Email)" required>
                 <input type="text" name="location" id="location" class="input-box" placeholder="TARGET_NODE (Ciudad/Lugar)">
                 <textarea name="message" id="message" class="input-box" rows="6" placeholder="DATA_STREAM (Mensaje...)" required></textarea>
+                
+                <input type="hidden" name="_captcha" value="false">
                 
                 <button type="submit" class="btn-send" id="submit-btn">EXECUTE_SEND</button>
             </form>
@@ -286,7 +320,7 @@
             logs.scrollTop = logs.scrollHeight;
         });
 
-        // LÓGICA DE ENVÍO DE CORREO MEJORADA (AJAX)
+        // LÓGICA DE ENVÍO DE CORREO FUNCIONAL (AJAX FormSubmit)
         document.getElementById('booking-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
@@ -299,6 +333,7 @@
 
             const data = new FormData(this);
             
+            // Envío a tu correo usando FormSubmit
             fetch("https://formsubmit.co/ajax/nykrondsbooking@gmail.com", {
                 method: "POST",
                 body: data,
@@ -306,13 +341,13 @@
             })
             .then(response => response.ok ? response.json() : Promise.reject())
             .then(() => {
-                logs.innerHTML += `<br><span style="color:var(--neon)">>> UPLINK_SUCCESS.</span>`;
+                logs.innerHTML += `<br><span style="color:var(--neon)">>> UPLINK_SUCCESS (DATA_SENT).</span>`;
                 btn.innerText = "SENT_COMPLETED";
-                this.reset();
+                this.reset(); // Limpia el formulario
                 setTimeout(() => { 
                     btn.innerText = originalText;
                     btn.disabled = false;
-                }, 3000);
+                }, 4000);
             })
             .catch(() => {
                 logs.innerHTML += `<br><span style="color:var(--neon)">>> CONNECTION_ERROR.</span>`;
@@ -337,7 +372,6 @@
             const container = document.getElementById('events-container');
             container.innerHTML = '';
             
-            // Convertir el objeto de Firebase a un Array
             const eventsArray = Object.keys(eventsData).map(key => {
                 return { id: key, ...eventsData[key] };
             });
@@ -373,7 +407,6 @@
             const link = document.getElementById('ev-link').value;
             const img = document.getElementById('ev-img').value;
             if(date && venue) {
-                // Guarda en Firebase (esto triggerea eventsRef.on('value') automáticamente en todos los clientes)
                 eventsRef.push({ 
                     date: date, 
                     venue: venue, 
@@ -387,7 +420,6 @@
 
         function deleteEvent(id) {
             if(confirm("TERMINATE_DATA_NODE?")) {
-                // Borra el nodo específico en Firebase usando su ID único
                 db.ref('nykronds_events/' + id).remove();
             }
         }
