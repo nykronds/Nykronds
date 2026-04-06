@@ -6,6 +6,10 @@
     <title>NYKRONDS | NEURAL OPERATING SYSTEM</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         :root {
             --accent: #00ffa3;
             --accent-bright: #00ffff;
@@ -50,7 +54,7 @@
         /* --- EFECTO SCANLINE --- */
         body::before {
             content: "";
-            position: absolute;
+            position: fixed; /* Cambiado a fixed para que siga ahí si hay scroll en móviles */
             top: 0; left: 0; width: 100%; height: 5px;
             background: rgba(0, 255, 163, 0.1);
             box-shadow: 0 0 20px var(--accent);
@@ -67,7 +71,7 @@
 
         body::after {
             content: "";
-            position: absolute;
+            position: fixed; /* Cambiado a fixed para cubrir todo el fondo en móviles */
             top: 0; left: 0; width: 100%; height: 100%;
             background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 2px);
             pointer-events: none;
@@ -227,9 +231,9 @@
             box-shadow: 0 0 30px var(--glow);
         }
 
-        /* NUEVO ESTILO: BOTÓN VOLVER A BIO */
+        /* BOTÓN VOLVER A BIO */
         .bio-btn {
-            grid-column: span 3; /* Ocupa todo el ancho */
+            grid-column: span 3; 
             margin-top: 10px;
             border-left: 4px solid #fff;
             opacity: 0.8;
@@ -279,18 +283,78 @@
         }
 
         .footer {
-            position: absolute;
+            position: fixed; /* Fixeado para que el scroll del cel no lo pierda */
             bottom: 20px;
             right: 20px;
             font-size: 9px;
             color: rgba(0, 255, 163, 0.2);
             letter-spacing: 8px;
             z-index: 5;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 8px;
+            border-radius: 4px;
         }
 
+        /* --- ADAPTACIÓN RESPONSIVE (MÓVILES Y TABLETS) --- */
         @media (max-width: 800px) {
-            .grid-launcher { grid-template-columns: repeat(2, 1fr); }
-            .bio-btn { grid-column: span 2; }
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow-y: auto; /* Permite scroll en móviles */
+                justify-content: flex-start;
+                padding: 40px 0 80px 0; /* Espacio superior e inferior */
+            }
+            .grid-launcher { 
+                grid-template-columns: repeat(2, 1fr); 
+            }
+            .bio-btn { 
+                grid-column: span 2; 
+            }
+            h1 {
+                font-size: 2.5rem;
+                letter-spacing: 10px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .grid-launcher { 
+                grid-template-columns: 1fr; /* Una sola columna para celulares */
+                width: 90%;
+            }
+            .bio-btn { 
+                grid-column: span 1; 
+            }
+            h1 {
+                font-size: 1.8rem; /* Letra más pequeña para no desbordar */
+                letter-spacing: 5px;
+            }
+            .lock-box {
+                padding: 25px;
+                width: 90%;
+            }
+            .social-link {
+                font-size: 9px;
+                padding: 10px;
+            }
+            #unlock-btn {
+                font-size: 11px;
+                padding: 10px 15px;
+            }
+            #neural-log {
+                bottom: 10px;
+                left: 10px;
+                width: 180px;
+                height: 70px;
+                font-size: 8px;
+                background: rgba(0,0,0,0.7); /* Fondo más oscuro para que se lea sobre los botones al scrollear */
+                border-radius: 4px;
+            }
+            .footer {
+                bottom: 10px;
+                right: 10px;
+                font-size: 7px;
+                letter-spacing: 4px;
+            }
         }
     </style>
 </head>
