@@ -175,7 +175,10 @@
             padding: 4px 8px; font-size: 9px; cursor: pointer; z-index: 3000;
             font-family: 'Orbitron'; font-weight: bold; border-radius: 2px;
         }
-        body.admin-mode .delete-btn { display: block; }
+        
+        /* MEJORA: Botón visible en admin-mode y en el nuevo delete-mode */
+        body.admin-mode .delete-btn,
+        body.delete-mode .delete-btn { display: block; }
 
         #admin-panel {
             display: none; position: fixed; top: 50%; left: 50%;
@@ -239,7 +242,8 @@
                 <div id="logs" style="font-size: 9px; color: #440000; font-family: 'JetBrains Mono'; height: 100px; overflow-y: auto;">
                     >> INITIALIZING...<br>
                     >> AUTO_PURGE: ENABLED<br>
-                    >> CTRL+SHIFT+K TO ADMIN
+                    >> CTRL+SHIFT+K TO ADMIN<br>
+                    >> CTRL+SHIFT+Q TO DELETE
                 </div>
             </div>
         </aside>
@@ -299,7 +303,6 @@
             logs.scrollTop = logs.scrollHeight;
         });
 
-        // MEJORA: Lógica de envío de correo más estable
         document.getElementById('booking-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
@@ -310,7 +313,6 @@
             btn.disabled = true;
             logs.innerHTML += `<br>>> ATTEMPTING_UPLINK...`;
 
-            // Convertimos FormData a un objeto simple para asegurar compatibilidad
             const formData = new FormData(this);
             const object = {};
             formData.forEach((value, key) => object[key] = value);
@@ -365,7 +367,8 @@
                 return { id: key, ...eventsData[key] };
             });
 
-            const activeEvents = eventsArray.filter(ev => !isEventExpired(ev.date) || document.body.classList.contains('admin-mode'));
+            // MEJORA: Filtro actualizado para mostrar eventos expirados también en modo 'delete-mode'
+            const activeEvents = eventsArray.filter(ev => !isEventExpired(ev.date) || document.body.classList.contains('admin-mode') || document.body.classList.contains('delete-mode'));
 
             activeEvents.forEach((ev, index) => {
                 const expired = isEventExpired(ev.date);
@@ -421,15 +424,37 @@
             const panel = document.getElementById('admin-panel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
             document.body.classList.toggle('admin-mode');
+            
+            // Si abrimos el admin, cerramos el delete-mode para que no se encimen lógicas
+            document.body.classList.remove('delete-mode'); 
             renderEvents();
+        }
+
+        // MEJORA: Nueva función para mostrar únicamente las 'X' de eliminar
+        function toggleDeleteMode() {
+            document.body.classList.toggle('delete-mode');
+            renderEvents();
+            
+            const logs = document.getElementById('logs');
+            const isActive = document.body.classList.contains('delete-mode');
+            logs.innerHTML += `<br><span style="color:var(--neon)">>> QUICK_DELETE_MODE: ${isActive ? 'ENABLED' : 'DISABLED'}</span>`;
+            logs.scrollTop = logs.scrollHeight;
         }
 
         setInterval(() => {
             document.getElementById('clock').innerText = new Date().toTimeString().split(' ')[0];
         }, 1000);
 
+        // MEJORA: Se agregaron preventDefault para evitar que el navegador haga acciones nativas por accidente y se incluyó la lógica del nuevo atajo.
         window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'K') toggleAdmin();
+            if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'K') {
+                e.preventDefault();
+                toggleAdmin();
+            }
+            if (e.ctrlKey && e.shiftKey && e.key.toUpperCase() === 'Q') {
+                e.preventDefault();
+                toggleDeleteMode();
+            }
         });
     </script>
 </body>
