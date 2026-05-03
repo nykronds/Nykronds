@@ -1,700 +1,1937 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NykroSonic Alignment Hub</title>
-    <style>
-        body { background: #1a1a2e; color: #e94560; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 20px; margin: 0; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
-        
-        h1 { font-size: 1.8em; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NykroSonic Alignment Hub v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c14;
+    --bg2: #0d1526;
+    --bg3: #111d35;
+    --border: #1a3060;
+    --accent: #00ffe7;
+    --red: #ff2d55;
+    --yellow: #f0fa6b;
+    --green: #39ff14;
+    --purple: #b44bff;
+    --text: #c8d8f0;
+    --dim: #5a7090;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-ui: 'Rajdhani', sans-serif;
+    --glow-a: 0 0 12px rgba(0,255,231,0.35);
+    --glow-r: 0 0 12px rgba(255,45,85,0.35);
+  }
+  body.light {
+    --bg: #eef2f8; --bg2: #dde5f0; --bg3: #fff;
+    --border: #b0c4e0; --text: #1a2740; --dim: #7090b0;
+  }
 
-        .subtitle {
-            color: #4ecca3;
-            font-size: 1.1em;
-            margin-top: -10px;
-            margin-bottom: 30px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    padding: 70px 12px 100px;
+    transition: background .3s, color .3s;
+    overflow-x: hidden;
+  }
 
-        /* Botón de Traducción Superior Izquierda */
-        #google_translate_element {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 2000;
-            background: rgba(22, 33, 62, 0.8);
-            padding: 5px;
-            border-radius: 5px;
-            border: 1px solid #4ecca3;
-        }
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,255,231,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,231,.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+  }
 
-        .social-float {
-            position: fixed;
-            bottom: 20px;
-            right: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 1000;
-        }
+  /* ── TOP BAR ── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+    background: rgba(8,12,20,.92);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; height: 54px;
+  }
+  .topbar h1 {
+    font-family: var(--font-ui);
+    font-size: 1.2em;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  .ctrl-btn {
+    font-family: var(--font-mono);
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: .78em;
+    letter-spacing: 1px;
+    transition: .2s;
+  }
+  .ctrl-btn:hover { background: var(--accent); color: var(--bg); }
 
-        .btn-social {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            color: #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
+  /* ── SOCIAL FLOAT ── */
+  .social-float {
+    position: fixed; bottom: 20px; right: 14px;
+    display: flex; flex-direction: column; gap: 10px; z-index: 900;
+  }
+  .btn-social {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none; font-size: .75em; font-weight: 700;
+    transition: .2s; color: #fff;
+    box-shadow: 0 4px 15px rgba(0,0,0,.4);
+  }
+  .fb-btn { background: #1877F2; }
+  .sc-btn { background: #FF5500; }
+  .sh-btn { background: var(--accent); color: var(--bg) !important; font-family: var(--font-ui); }
+  .btn-social:hover { transform: scale(1.12); filter: brightness(1.2); }
 
-        .fb-btn { background: #1877F2; border: 2px solid #1877F2; }
-        .sc-btn { background: #FF5500; border: 2px solid #FF5500; }
-        .sh-btn { background: #4ecca3; border: 2px solid #4ecca3; color: #1a1a2e; }
+  /* ── LAYOUT ── */
+  .wrapper { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; }
+  .subtitle {
+    text-align: center;
+    font-family: var(--font-ui);
+    color: var(--dim);
+    font-size: .9em;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
 
-        .btn-social:hover { transform: scale(1.1); filter: brightness(1.2); }
+  /* TABS */
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    flex-wrap: wrap; justify-content: center;
+  }
+  .tab-btn {
+    font-family: var(--font-mono);
+    background: var(--bg2);
+    color: var(--dim);
+    border: 1px solid var(--border);
+    padding: 8px 18px;
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    font-size: .8em;
+    letter-spacing: 1px;
+    transition: .2s;
+  }
+  .tab-btn.active { background: var(--bg3); color: var(--accent); border-bottom-color: var(--bg3); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
 
-        .top-container { 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 10px; 
-            max-width: 1200px; 
-            margin: 0 auto; 
-        }
+  /* GRID LAYOUT */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media(max-width:900px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
+  @media(max-width:600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
 
-        .section { 
-            border: 2px solid #0f3460; 
-            padding: 20px; 
-            margin: 10px 5px; 
-            border-radius: 10px; 
-            background: #16213e; 
-            flex: 1; 
-            min-width: 300px; 
-            max-width: 600px; 
-            box-sizing: border-box;
-            transition: background 0.3s, border-color 0.3s;
-        }
+  /* CARDS */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    transition: border-color .2s;
+  }
+  .card:hover { border-color: rgba(0,255,231,.3); }
+  .card h2 {
+    font-family: var(--font-ui);
+    font-size: 1em;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .icon { font-size: 1.1em; }
 
-        .keyboard-section {
-            margin: 20px auto;
-            max-width: 950px;
-            width: 100%;
-        }
+  /* INPUTS */
+  .input-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .input-row label { font-size: .8em; color: var(--dim); min-width: 90px; }
+  input[type=number], input[type=range], select {
+    background: var(--bg3);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 7px 10px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: .9em;
+    outline: none;
+    transition: .2s;
+  }
+  input[type=number]:focus, select:focus { border-color: var(--accent); box-shadow: var(--glow-a); }
+  input[type=number] { width: 100px; }
+  input[type=range] { width: 120px; accent-color: var(--accent); }
+  select { padding: 7px 8px; }
 
-        input, select { background: #0f3460; color: #fff; border: 1px solid #e94560; padding: 10px; border-radius: 5px; font-size: 1.1em; max-width: 100%; transition: 0.3s; }
-        
-        .nota-resultado { 
-            display: inline-block; 
-            margin: 3px; 
-            padding: 10px; 
-            background: #1a1a2e; 
-            border: 1px solid #4ecca3; 
-            border-radius: 5px; 
-            color: #4ecca3; 
-            font-size: 0.85em;
-            min-width: 80px;
-            transition: 0.3s;
-        }
-        
-        .frecuencia-actual { border-color: #f0fa6b; color: #f0fa6b; font-weight: bold; width: 90%; }
+  /* RESULT GRID */
+  .res-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 8px; margin-top: 14px;
+  }
+  .res-cell {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 6px;
+    text-align: center;
+    transition: .2s;
+  }
+  .res-cell .label { font-size: .65em; color: var(--dim); margin-bottom: 4px; }
+  .res-cell .val { font-size: .95em; color: var(--accent); font-weight: bold; }
+  .res-cell.highlight { border-color: var(--yellow); }
+  .res-cell.highlight .val { color: var(--yellow); }
+  .res-cell.red { border-color: var(--red); }
+  .res-cell.red .val { color: var(--red); }
 
-        .guia-uso { color: #5bd10c; font-size: 0.85em; text-align: left; margin-top: 15px; line-height: 1.4; border-top: 1px dashed #0f3460; padding-top: 10px; }
-        
-        .btn-guia {
-            background: #0f3460;
-            color: #4ecca3;
-            border: 1px solid #4ecca3;
-            padding: 8px 12px;
-            margin: 5px 2px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8em;
-            transition: 0.3s;
-            text-transform: uppercase;
-        }
-        .btn-guia:hover { background: #4ecca3; color: #16213e; }
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: .82em; }
+  .data-table th { color: var(--accent); font-family: var(--font-ui); letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; }
+  .data-table td { padding: 8px; border-bottom: 1px solid rgba(26,48,96,.5); color: var(--text); }
+  .data-table td.val { color: var(--yellow); font-weight: bold; }
+  .data-table tr:hover td { background: rgba(0,255,231,.03); }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.8);
-        }
+  /* BUTTONS */
+  .btn {
+    font-family: var(--font-mono);
+    font-size: .78em;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 8px 14px;
+    transition: .2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-a { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .btn-a:hover { background: var(--accent); color: var(--bg); }
+  .btn-r { background: transparent; color: var(--red); border: 1px solid var(--red); }
+  .btn-r:hover { background: var(--red); color: #fff; }
+  .btn-y { background: var(--yellow); color: var(--bg); border: none; font-weight: bold; }
+  .btn-y:hover { filter: brightness(1.15); }
+  .btn-g { background: transparent; color: var(--green); border: 1px solid var(--green); }
+  .btn-g:hover { background: var(--green); color: var(--bg); }
+  .btn-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
 
-        .modal-content {
-            background-color: #16213e;
-            margin: 5% auto;
-            padding: 25px;
-            border: 2px solid #e94560;
-            width: 90%;
-            max-width: 550px;
-            border-radius: 15px;
-            text-align: left;
-            position: relative;
-            max-height: 85vh;
-            overflow-y: auto;
-            transition: 0.3s;
-        }
+  /* KEYBOARD */
+  .kb-wrap { position: relative; overflow-x: auto; padding-bottom: 8px; }
+  .teclado {
+    display: flex;
+    justify-content: flex-start;
+    gap: 2px;
+    min-width: 600px;
+    padding: 0 4px;
+    position: relative;
+    height: 110px;
+  }
+  .tecla {
+    flex: 1; min-width: 0;
+    border: 1px solid #333;
+    border-radius: 0 0 5px 5px;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 6px;
+    font-size: .62em;
+    cursor: pointer;
+    transition: .1s;
+    user-select: none;
+  }
+  .blanca { background: #eee; color: #333; height: 110px; }
+  .negra { background: #222; color: #fff; height: 68px; margin-left: -2.5%; margin-right: -2.5%; z-index: 2; }
+  .activa { background: var(--red) !important; color: var(--yellow) !important; box-shadow: 0 0 14px var(--red); }
+  .sonando { filter: brightness(1.6); border-color: white; transform: translateY(2px); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; color: #f0fa6b; font-size: 0.85em; }
-        th { color: #e94560; border-bottom: 2px solid #e94560; padding: 5px; transition: 0.3s; }
-        td { padding: 8px; border-bottom: 1px solid #0f3460; transition: 0.3s; }
+  /* TIP CARDS */
+  .tip-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .tip-item {
+    background: var(--bg3);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    font-size: .82em;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .tip-item.red { border-color: var(--red); }
+  .tip-item.yellow { border-color: var(--yellow); }
+  .tip-item.green { border-color: var(--green); }
+  .tip-item.purple { border-color: var(--purple); }
+  .tip-item strong { color: var(--accent); }
+  .tip-item.red strong { color: var(--red); }
+  .tip-item.yellow strong { color: var(--yellow); }
+  .tip-item.green strong { color: var(--green); }
+  .tip-item.purple strong { color: var(--purple); }
 
-        .teclado { 
-            display: flex; 
-            justify-content: center; 
-            margin: 20px auto; 
-            gap: 2px; 
-            max-width: 100%;
-            padding: 0 10px;
-            position: relative;
-        }
+  /* HARMONIC BAR */
+  .harmonic-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: .78em; padding: 4px 0;
+    border-bottom: 1px solid rgba(26,48,96,.4);
+  }
+  .harmonic-row .h-name { color: var(--dim); min-width: 80px; }
+  .harmonic-row .h-val { color: var(--yellow); font-weight: bold; min-width: 80px; }
+  .harmonic-row .h-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .harmonic-row .h-fill { height: 100%; background: var(--yellow); border-radius: 3px; transition: width .3s; }
 
-        .tecla { 
-            flex: 1;
-            height: 120px; 
-            border: 1px solid #333; 
-            border-radius: 0 0 5px 5px; 
-            display: flex; 
-            align-items: flex-end; 
-            justify-content: center; 
-            padding-bottom: 8px; 
-            font-size: 0.65em; 
-            cursor: pointer; 
-            transition: 0.1s; 
-            user-select: none; 
-            min-width: 0;
-        }
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.85);
+    backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--bg2);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 28px;
+    max-width: 540px; width: 94%;
+    max-height: 85vh; overflow-y: auto;
+    position: relative;
+    box-shadow: var(--glow-a);
+  }
+  .modal-box h3 { color: var(--accent); font-family: var(--font-ui); letter-spacing: 2px; font-size: 1.1em; margin-bottom: 16px; }
+  .modal-box .close-btn {
+    position: absolute; top: 12px; right: 14px;
+    background: none; border: none; color: var(--red); font-size: 1.4em; cursor: pointer;
+  }
 
-        .blanca { background: #eee; color: #333; }
-        .negra { 
-            background: #333; 
-            color: #fff; 
-            height: 75px; 
-            margin-left: -2.5%; 
-            margin-right: -2.5%; 
-            z-index: 2; 
-        }
+  /* CHORD DISPLAY */
+  .chord-display {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+  }
+  .chord-note {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: .85em;
+    text-align: center;
+    min-width: 60px;
+    transition: .2s;
+  }
+  .chord-note .note-name { color: var(--accent); font-weight: bold; display: block; }
+  .chord-note .note-hz { color: var(--dim); font-size: .75em; }
+  .chord-note.root { border-color: var(--red); }
+  .chord-note.root .note-name { color: var(--red); }
 
-        .activa { background: #e94560 !important; color: #49e48a !important; box-shadow: 0 0 15px #e94560; }
-        .sonando { filter: brightness(1.5); border-color: white; transform: translateY(2px); }
+  /* NOISE METER */
+  .meter-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .meter-fill { height: 100%; width: 0%; border-radius: 4px; transition: width .1s; background: linear-gradient(90deg, var(--green), var(--yellow), var(--red)); }
 
-        .btn-midi {
-            background: transparent;
-            color: #4ecca3;
-            border: 1px solid rgba(78, 204, 163, 0.5);
-            padding: 10px 20px;
-            margin-top: 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
+  /* PILL BADGE */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: .68em; font-weight: bold; letter-spacing: 1px;
+    background: rgba(0,255,231,.12); color: var(--accent); border: 1px solid rgba(0,255,231,.3);
+    vertical-align: middle; margin-left: 6px;
+  }
+  .badge.red { background: rgba(255,45,85,.12); color: var(--red); border-color: rgba(255,45,85,.3); }
+  .badge.yellow { background: rgba(240,250,107,.12); color: var(--yellow); border-color: rgba(240,250,107,.3); }
 
-        .extra-tools { margin-top: 15px; border-top: 1px solid #0f3460; padding-top: 10px; text-align: left; }
-        .tool-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 0.85em; }
-        .tool-row span { color: #4ecca3; font-weight: bold; }
-        .tool-tip { font-size: 0.75em; color: #888; margin-bottom: 12px; font-style: italic; }
-        .btn-noise { background: #e94560; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
+  /* COMPRESSOR VISUALIZER */
+  .comp-visual {
+    display: flex; gap: 8px; margin-top: 10px; align-items: flex-end; height: 60px;
+  }
+  .comp-bar-wrap { flex: 1; text-align: center; }
+  .comp-bar {
+    width: 100%; border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, var(--accent), rgba(0,255,231,.3));
+    transition: height .3s;
+  }
+  .comp-bar-lbl { font-size: .6em; color: var(--dim); margin-top: 4px; }
 
-        .harmonic-row { color: #f0fa6b; font-size: 0.75em; border-left: 2px solid #e94560; padding-left: 10px; margin: 3px 0; }
+  /* OSCILLOSCOPE CANVAS */
+  canvas#scope { width: 100%; height: 70px; border-radius: 6px; background: var(--bg3); display: block; }
 
-        @media (max-width: 600px) {
-            body { padding: 10px; }
-            h1 { font-size: 1.4em; }
-            .section { min-width: 100%; margin: 5px 0; }
-            .teclado { height: 90px; font-size: 0.5em; }
-            .negra { height: 55px; }
-            .nota-resultado { width: 30%; padding: 5px; font-size: 0.75em; }
-            .btn-guia { width: 48%; margin: 1%; }
-            .social-float { bottom: 10px; right: 10px; }
-            #google_translate_element { top: 5px; left: 5px; scale: 0.8; }
-            .top-controls { top: 5px !important; right: 5px !important; scale: 0.8; }
-        }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .small { font-size: .75em; color: var(--dim); margin-top: 4px; }
+  .glow-text { text-shadow: 0 0 10px var(--accent); }
 
-        /* ========================================= */
-        /* NUEVO: ESTILOS PARA LOS CONTROLES Y TEMA CLARO */
-        /* ========================================= */
-        .top-controls {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            display: flex;
-            gap: 10px;
-            z-index: 2000;
-        }
-
-        .ctrl-btn {
-            background: rgba(22, 33, 62, 0.8);
-            color: #4ecca3;
-            border: 1px solid #4ecca3;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            font-family: 'Courier New', Courier, monospace;
-            transition: 0.3s;
-        }
-
-        .ctrl-btn:hover { background: #4ecca3; color: #1a1a2e; }
-
-        /* Estilos del Modo Claro (Se activan con JavaScript) */
-        body.light-mode { background: #f4f4f9; color: #16213e; }
-        body.light-mode .section { background: #ffffff; border-color: #4ecca3; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        body.light-mode input, body.light-mode select { background: #f4f4f9; color: #16213e; border-color: #16213e; }
-        body.light-mode .nota-resultado { background: #f4f4f9; border-color: #16213e; color: #16213e; }
-        body.light-mode .frecuencia-actual { border-color: #e94560; color: #e94560; }
-        body.light-mode .subtitle, body.light-mode h2 { color: #e94560; }
-        body.light-mode th { color: #16213e; border-bottom: 2px solid #16213e; }
-        body.light-mode td { border-bottom: 1px solid #ddd; color: #16213e; }
-        body.light-mode .modal-content { background-color: #ffffff; border-color: #4ecca3; }
-        body.light-mode #modalCuerpo { color: #16213e !important; }
-        body.light-mode .btn-guia { background: #e0e0e0; color: #16213e; border-color: #16213e; }
-        body.light-mode .btn-guia:hover { background: #16213e; color: #4ecca3; }
-        body.light-mode .tecla.blanca { background: #fff; color: #16213e; border-color: #ccc; }
-        body.light-mode .extra-tools, body.light-mode .guia-uso { border-top: 1px dashed #ccc; }
-        body.light-mode .harmonic-row { color: #16213e; }
-    </style>
+  @media(max-width:600px) {
+    body { padding: 60px 8px 100px; }
+    .teclado { min-width: 420px; }
+    .res-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
 </head>
-<body onclick="initAudio()">
+<body>
 
-    <div id="google_translate_element"></div>
+<div class="topbar">
+  <h1>🎧 NykroSonic Alignment Hub <span class="badge yellow">v2</span></h1>
+  <div class="topbar-right">
+    <button class="ctrl-btn" onclick="toggleTheme()" id="theme-btn">☀️ Light</button>
+    <button class="ctrl-btn" onclick="copyShareLink()">🔗 Share</button>
+  </div>
+</div>
 
-    <div class="top-controls">
-        <button id="theme-btn" class="ctrl-btn" onclick="toggleTheme()">☀️ Light</button>
-        <button class="ctrl-btn" onclick="toggleLanguage()">🌐 EN/ES</button>
-    </div>
+<div class="social-float">
+  <a href="https://sites.google.com/view/nykronds/shop" target="_blank" class="btn-social sh-btn">SHOP</a>
+  <a href="https://www.facebook.com/nykrodelic" target="_blank" class="btn-social fb-btn">FB</a>
+  <a href="https://soundcloud.com/nykronds" target="_blank" class="btn-social sc-btn">SC</a>
+</div>
 
-    <div class="social-float">
-        <a href="https://sites.google.com/view/nykronds/shop?authuser=0" target="_blank" class="btn-social sh-btn" title="Shop">SHOP</a>
-        <a href="https://www.facebook.com/nykrodelic" target="_blank" class="btn-social fb-btn" title="Facebook">FB</a>
-        <a href="https://soundcloud.com/nykronds" target="_blank" class="btn-social sc-btn" title="Soundcloud">SC</a>
-    </div>
+<div class="wrapper">
+  <div class="subtitle">Psytrance Math Engine — Producer Toolkit</div>
 
-    <h1>Nykro-Sonic Alignment Hub 🎧</h1>
-    <div class="subtitle">Psytrance Math Tool</div>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('sync')">⏱ Sync Calc</button>
+    <button class="tab-btn" onclick="switchTab('harmony')">🎹 Harmony</button>
+    <button class="tab-btn" onclick="switchTab('comp')">🎚 Compressor</button>
+    <button class="tab-btn" onclick="switchTab('fx')">🌀 FX Designer</button>
+    <button class="tab-btn" onclick="switchTab('tips')">💡 Pro Tips</button>
+    <button class="tab-btn" onclick="switchTab('tools')">🛠 Extra Tools</button>
+  </div>
 
-    <div class="top-container">
-        <div class="section">
-            <h2>Sync Calculator ⏱️</h2>
-            <input type="number" id="bpm-input" value="145" min="40" max="300" oninput="actualizarTodo()">
-            <span>BPM</span>
-            
-            <div id="resultados" style="margin-top: 15px;">
-                <div class="nota-resultado">1/1: <br><span id="nota-1">1655.17</span> ms</div>
-                <div class="nota-resultado">1/2: <br><span id="nota-2">827.59</span> ms</div>
-                <div class="nota-resultado">1/4: <br><span id="nota-4">413.79</span> ms</div>
-                <div class="nota-resultado">1/8: <br><span id="nota-8">206.90</span> ms</div>
-                <div class="nota-resultado">1/16: <br><span id="nota-16">103.45</span> ms</div>
-                <center>
-                    <div class="nota-resultado frecuencia-actual">
-                        Note: <span id="nombre-nota">C</span> | <span id="hz-nota">261.63</span> Hz<br>
-                        <small>MIDI ID: <span id="midi-val">60</span></small>
-                    </div>
-                </center>
-            </div>
+  <!-- ═══════════════════════════════════════ TAB: SYNC ═══ -->
+  <div class="tab-panel active" id="tab-sync">
+    <div class="grid-2">
 
-            <div class="guia-uso">
-                <strong>Application & Technique Guides:</strong><br>
-                <button class="btn-guia" style="background: #4ecca3; color: #16213e; font-weight: bold;" onclick="abrirModal('quicktips')">Quick Tips MS</button>
-                <button class="btn-guia" onclick="abrirModal('delay_guide')">Delay Guide</button>
-                <button class="btn-guia" onclick="abrirModal('reverb_guide')">Reverb Guide</button>
-                <button class="btn-guia" onclick="abrirModal('sidechain')">Sidechain/LFO</button>
-                <button class="btn-guia" onclick="abrirModal('eq_pro')">Pro Harmonic EQ</button>
-                <button class="btn-guia" onclick="abrirModal('fase_pro')">Phase & Samplers</button>
-                <button class="btn-guia" onclick="abrirModal('pink_noise')">Pink Noise Guide</button>
-            </div>
+      <!-- BPM MASTER -->
+      <div class="card">
+        <h2><span class="icon">⏱</span> BPM Sync Calculator</h2>
+        <div class="input-row">
+          <label>BPM</label>
+          <input type="number" id="bpm-input" value="145" min="40" max="300" oninput="updateAll()">
+          <input type="range" id="bpm-range" min="40" max="220" value="145" oninput="syncBpmRange(this)">
+          <span id="bpm-display" style="color:var(--accent);font-weight:bold">145</span>
         </div>
 
-        <div class="section">
-            <h2>Rhythmic Compression Guide 🎚️</h2>
-            <table>
-                <thead>
-                    <tr><th>Element</th><th>Attack</th><th>Release (Auto)</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>Kick 🥁</td><td>10-30 ms</td><td class="highlight" id="comp-kick">103.45 ms</td></tr>
-                    <tr><td>Bass 🎸</td><td>2-5 ms</td><td class="highlight" id="comp-bass">51.72 ms</td></tr>
-                    <tr><td>Leads 🎤</td><td>15-40 ms</td><td class="highlight" id="comp-leads">206.90 ms</td></tr>
-                    <tr><td>Atmos 🌌</td><td>100+ ms</td><td class="highlight" id="comp-atmos">413.79 ms</td></tr>
-                </tbody>
-            </table>
-            
-            <div class="extra-tools">
-                <div class="tool-row">Phase Cycle (ms): <span id="fase-ms">3.82</span></div>
-                <div class="tool-tip">Use this for your Bass fade-out.</div>
-                
-                <div class="tool-row">Transpose %: <input type="number" id="st-input" value="7" style="width: 45px; padding: 2px;" oninput="calcTranspose()"> ➔ <span id="st-result">149.8%</span></div>
-                <div class="tool-tip">Speed adjustment for Samplers.</div>
-
-                <div class="tool-row" style="margin-top:10px; color:#e94560;">Harmonic Analysis (EQ):</div>
-                <div class="harmonic-row">H2 (Octave): <span id="h2-val">523.26</span> Hz</div>
-                <div class="harmonic-row">H3 (Fifth): <span id="h3-val">784.89</span> Hz</div>
-                
-                <div class="tool-row" style="margin-top:10px;">Pink Noise Test: <button class="btn-noise" id="noise-btn" onclick="toggleNoise()">PLAY</button></div>
-                <div class="tool-tip">Loudness Balance Reference.</div>
-            </div>
+        <div class="res-grid">
+          <div class="res-cell"><div class="label">1/1 Bar</div><div class="val" id="ms-1">—</div><div class="label">ms</div></div>
+          <div class="res-cell"><div class="label">1/2 Half</div><div class="val" id="ms-2">—</div><div class="label">ms</div></div>
+          <div class="res-cell highlight"><div class="label">1/4 Beat</div><div class="val" id="ms-4">—</div><div class="label">ms</div></div>
+          <div class="res-cell"><div class="label">1/8 Eight</div><div class="val" id="ms-8">—</div><div class="label">ms</div></div>
+          <div class="res-cell"><div class="label">1/16</div><div class="val" id="ms-16">—</div><div class="label">ms</div></div>
+          <div class="res-cell"><div class="label">1/32</div><div class="val" id="ms-32">—</div><div class="label">ms</div></div>
+          <div class="res-cell"><div class="label">Triplet 1/8</div><div class="val" id="ms-t8">—</div><div class="label">ms</div></div>
+          <div class="res-cell"><div class="label">Dotted 1/8</div><div class="val" id="ms-d8">—</div><div class="label">ms</div></div>
+          <div class="res-cell"><div class="label">Hz (BPM)</div><div class="val" id="hz-bpm">—</div><div class="label">Hz</div></div>
         </div>
-    </div>
 
-    <div id="modalGuia" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="cerrarModal()" style="position: absolute; right: 15px; top: 10px; cursor: pointer; font-size: 24px; color: #e94560;">&times;</span>
-            <h3 id="modalTitulo" style="color: #4ecca3; margin-top: 10px;"></h3>
-            <div id="modalCuerpo" style="color: #fff; font-size: 0.9em; line-height: 1.4;"></div>
+        <hr class="divider">
+        <div style="font-size:.8em; color:var(--dim); margin-bottom:8px;">BPM Converter</div>
+        <div class="input-row" style="flex-wrap:wrap; gap:8px;">
+          <label>Target Hz</label>
+          <input type="number" id="hz-to-bpm" placeholder="2.42" style="width:90px" oninput="hzToBpm()">
+          <span style="color:var(--dim);font-size:.8em">→</span>
+          <span id="hz-bpm-result" style="color:var(--yellow);font-weight:bold">—</span>
+          <span style="color:var(--dim);font-size:.8em">BPM</span>
         </div>
-    </div>
+        <div class="input-row">
+          <label>Target BPM</label>
+          <input type="number" id="bpm-to-hz" placeholder="145" style="width:90px" oninput="bpmToHz()">
+          <span style="color:var(--dim);font-size:.8em">→</span>
+          <span id="bpm-hz-result" style="color:var(--yellow);font-weight:bold">—</span>
+          <span style="color:var(--dim);font-size:.8em">Hz</span>
+        </div>
+      </div>
 
-    <div class="section keyboard-section">
-        <h2>Scale Visualizer (2 Octaves) 🎼</h2>
-        <p id="midi-status" style="font-size: 0.75em; color: #4ecca3;">MIDI: Searching for USB devices...</p>
-        <select id="escala-select" onchange="iluminarEscala(ultimaRaiz)">
+      <!-- NOTE & FREQ -->
+      <div class="card">
+        <h2><span class="icon">🎵</span> Frequency Analyzer</h2>
+        <div class="input-row">
+          <label>Freq (Hz)</label>
+          <input type="number" id="freq-input" value="261.63" min="20" max="20000" oninput="freqToNote()">
+          <button class="btn btn-a" style="padding:6px 10px; font-size:.72em;" onclick="toggleTuner()">🎤 Detect</button>
+        </div>
+
+        <div class="res-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="res-cell highlight"><div class="label">Note</div><div class="val" id="note-name">C4</div></div>
+          <div class="res-cell"><div class="label">MIDI</div><div class="val" id="note-midi">60</div></div>
+          <div class="res-cell"><div class="label">Cents off</div><div class="val" id="note-cents">0</div></div>
+          <div class="res-cell"><div class="label">Phase (ms)</div><div class="val" id="phase-ms">3.82</div></div>
+          <div class="res-cell"><div class="label">Period (λ)</div><div class="val" id="period-m">1.31</div><div class="label">m</div></div>
+          <div class="res-cell"><div class="label">Octave</div><div class="val" id="note-oct">4</div></div>
+        </div>
+
+        <hr class="divider">
+        <div style="font-size:.8em; color:var(--dim); margin-bottom:10px;">Harmonic Series</div>
+        <div id="harmonic-list"></div>
+
+        <hr class="divider">
+        <div class="input-row">
+          <label>Semitones</label>
+          <input type="number" id="st-input" value="7" style="width:65px" oninput="calcTranspose()">
+          <span style="color:var(--dim);font-size:.8em">→ speed</span>
+          <span id="st-result" style="color:var(--yellow);font-weight:bold">—</span>
+          <span style="color:var(--dim);font-size:.8em">ratio</span>
+        </div>
+        <div class="input-row">
+          <label>Transp. freq</label>
+          <span id="transposed-freq" style="color:var(--green);font-weight:bold">—</span>
+          <span style="color:var(--dim);font-size:.8em">Hz</span>
+        </div>
+        <div id="tuner-status" style="display:none; margin-top:10px;">
+          <div style="font-size:.75em; color:var(--dim);">Live Tuner</div>
+          <canvas id="scope"></canvas>
+          <div style="display:flex; justify-content:space-between; font-size:.75em; margin-top:4px;">
+            <span id="tuner-note" style="color:var(--accent);">—</span>
+            <span id="tuner-cents" style="color:var(--yellow);">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB: HARMONY ═══ -->
+  <div class="tab-panel" id="tab-harmony">
+    <div class="grid-2">
+      <div class="card" style="grid-column: 1 / -1;">
+        <h2><span class="icon">🎹</span> Scale Visualizer & Arpeggiator</h2>
+        <div class="input-row" style="flex-wrap:wrap;">
+          <label>Root</label>
+          <select id="root-select" onchange="rebuildKeyboard()">
+            <option value="0">C</option><option value="1">C#/Db</option><option value="2">D</option>
+            <option value="3">D#/Eb</option><option value="4">E</option><option value="5">F</option>
+            <option value="6">F#/Gb</option><option value="7">G</option><option value="8">G#/Ab</option>
+            <option value="9">A</option><option value="10">A#/Bb</option><option value="11">B</option>
+          </select>
+          <label style="min-width:50px">Scale</label>
+          <select id="scale-select" onchange="rebuildKeyboard()">
             <optgroup label="PSYTRANCE CLASSICS">
-                <option value="frigia">Phrygian (Dark/Twilight)</option>
-                <option value="locria">Locrian (Tense/Acid)</option>
-                <option value="menorArmonica">Harmonic Minor (Forest)</option>
-                <option value="pentatonicaMenor">Pentatonic (Full On)</option>
+              <option value="phrygian">Phrygian (Dark/Twilight)</option>
+              <option value="locrian">Locrian (Tense/Acid)</option>
+              <option value="harmMinor">Harmonic Minor (Forest)</option>
+              <option value="pentatonicMin">Pentatonic Minor (Full On)</option>
             </optgroup>
             <optgroup label="PROGRESSIVE & ATMOS">
-                <option value="dorica">Dorian (Prog/Deep)</option>
-                <option value="lidia">Lydian (Uplifting)</option>
-                <option value="mixolidia">Mixolydian (Groovy)</option>
+              <option value="dorian">Dorian (Prog/Deep)</option>
+              <option value="lydian">Lydian (Uplifting)</option>
+              <option value="mixolydian">Mixolydian (Groovy)</option>
             </optgroup>
-            <optgroup label="WORLD & ETHNIC (PSY-STYLE)">
-                <option value="hirajoshi">Hirajoshi (Japan Psy) 🌸</option>
-                <option value="dominanteFrigia">Phrygian Dominant (Indu/GOA) 🕌</option>
-                <option value="hungaraMenor">Hungarian Minor (Mystic)</option>
-                <option value="bizantina">Byzantine (Arabic Psy)</option>
-                <option value="inSen">In-Sen (Zenonesque)</option>
+            <optgroup label="WORLD & ETHNIC">
+              <option value="hirajoshi">Hirajoshi (Japan Psy)</option>
+              <option value="phrygDom">Phrygian Dominant (Indu/GOA)</option>
+              <option value="hungarianMin">Hungarian Minor (Mystic)</option>
+              <option value="byzantine">Byzantine (Arabic Psy)</option>
+              <option value="inSen">In-Sen (Zenonesque)</option>
             </optgroup>
-        </select>
-        <div class="teclado" id="teclado"></div>
-        <button class="btn-midi" onclick="descargarMIDI()"><span>💾</span> DOWNLOAD MIDI</button>
-        <p id="midi-log" style="color: #5bd10c; font-size: 0.7em; margin-top: 5px; font-style: italic; min-height: 1em;"></p>
+            <optgroup label="EXTRA">
+              <option value="major">Major / Ionian</option>
+              <option value="naturalMinor">Natural Minor / Aeolian</option>
+              <option value="wholeTone">Whole Tone</option>
+              <option value="diminished">Diminished</option>
+            </optgroup>
+          </select>
+          <label style="min-width:60px">Octave</label>
+          <select id="octave-select" onchange="rebuildKeyboard()">
+            <option value="3">3</option><option value="4" selected>4</option>
+            <option value="5">5</option><option value="6">6</option>
+          </select>
+          <label style="min-width:60px">Wave</label>
+          <select id="wave-select">
+            <option value="sawtooth">Sawtooth</option>
+            <option value="sine">Sine</option>
+            <option value="square">Square</option>
+            <option value="triangle">Triangle</option>
+          </select>
+        </div>
+
+        <div class="kb-wrap">
+          <div class="teclado" id="teclado"></div>
+        </div>
+        <p id="midi-status" style="font-size:.7em; color:var(--green); margin:6px 0;">MIDI: Searching...</p>
+
+        <div class="btn-group">
+          <button class="btn btn-a" onclick="playArpeggio()">▶ Arpeggio UP</button>
+          <button class="btn btn-a" onclick="playArpeggioDown()">▼ Arpeggio DOWN</button>
+          <button class="btn btn-a" onclick="playArpeggioBounce()">↕ Bounce</button>
+          <button class="btn btn-g" onclick="downloadMIDI()">💾 Download MIDI</button>
+        </div>
+        <p id="midi-log" style="font-size:.7em; color:var(--green); margin-top:6px;"></p>
+      </div>
+
+      <!-- CHORD BUILDER -->
+      <div class="card">
+        <h2><span class="icon">🎸</span> Chord Builder</h2>
+        <div class="input-row">
+          <label>Root</label>
+          <select id="chord-root">
+            <option value="0">C</option><option value="1">C#</option><option value="2">D</option>
+            <option value="3">D#</option><option value="4">E</option><option value="5">F</option>
+            <option value="6">F#</option><option value="7">G</option><option value="8">G#</option>
+            <option value="9">A</option><option value="10">A#</option><option value="11">B</option>
+          </select>
+          <label style="min-width:50px">Type</label>
+          <select id="chord-type" onchange="buildChord()">
+            <option value="maj">Major</option>
+            <option value="min">Minor</option>
+            <option value="dim">Diminished</option>
+            <option value="aug">Augmented</option>
+            <option value="maj7">Major 7th</option>
+            <option value="min7">Minor 7th</option>
+            <option value="dom7">Dominant 7th</option>
+            <option value="sus2">Sus2</option>
+            <option value="sus4">Sus4</option>
+            <option value="min9">Minor 9th (Psy Deep)</option>
+            <option value="phrygChord">Phrygian Stack (Psy Dark)</option>
+          </select>
+        </div>
+        <div id="chord-display" class="chord-display"></div>
+        <div style="margin-top:10px;" class="small" id="chord-desc"></div>
+        <div class="btn-group">
+          <button class="btn btn-a" onclick="playChord()">▶ Play Chord</button>
+          <button class="btn btn-a" onclick="playChordArpeggio()">♪ Arpeggiate</button>
+        </div>
+      </div>
+
+      <!-- INTERVAL CALCULATOR -->
+      <div class="card">
+        <h2><span class="icon">📐</span> Interval Calculator</h2>
+        <div class="input-row">
+          <label>Note A (Hz)</label>
+          <input type="number" id="int-a" value="261.63" style="width:100px" oninput="calcInterval()">
+        </div>
+        <div class="input-row">
+          <label>Note B (Hz)</label>
+          <input type="number" id="int-b" value="392.00" style="width:100px" oninput="calcInterval()">
+        </div>
+        <table class="data-table" style="margin-top:12px;">
+          <tr><td>Ratio</td><td class="val" id="int-ratio">—</td></tr>
+          <tr><td>Semitones</td><td class="val" id="int-st">—</td></tr>
+          <tr><td>Interval Name</td><td class="val" id="int-name">—</td></tr>
+          <tr><td>Cents</td><td class="val" id="int-cents">—</td></tr>
+          <tr><td>Consonance</td><td class="val" id="int-cons">—</td></tr>
+        </table>
+      </div>
     </div>
+  </div>
 
-    <script>
-        /* SCRIPT TRADUCCION */
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({pageLanguage: 'en', layout: google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element');
+  <!-- ═══════════════════════════════════════ TAB: COMPRESSOR ═══ -->
+  <div class="tab-panel" id="tab-comp">
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">🎚</span> Rhythmic Compression Calculator</h2>
+        <div class="small" style="margin-bottom:12px;">Auto-synced to BPM. Values update when you change BPM.</div>
+        <table class="data-table">
+          <thead><tr><th>Element</th><th>Attack</th><th>Release</th><th>Ratio</th></tr></thead>
+          <tbody>
+            <tr><td>Kick 🥁</td><td>10–30ms</td><td class="val" id="comp-kick">—</td><td>4:1 – 8:1</td></tr>
+            <tr><td>Bass 🎸</td><td>2–5ms</td><td class="val" id="comp-bass">—</td><td>4:1 – 6:1</td></tr>
+            <tr><td>Leads 🎤</td><td>15–40ms</td><td class="val" id="comp-lead">—</td><td>2:1 – 4:1</td></tr>
+            <tr><td>Atmos 🌌</td><td>100+ms</td><td class="val" id="comp-atmos">—</td><td>1.5:1 – 3:1</td></tr>
+            <tr><td>Hats 🎵</td><td>1–3ms</td><td class="val" id="comp-hats">—</td><td>3:1 – 6:1</td></tr>
+            <tr><td>Full Bus 🔊</td><td>30–80ms</td><td class="val" id="comp-bus">—</td><td>1.5:1 – 2:1</td></tr>
+          </tbody>
+        </table>
+
+        <div class="comp-visual" id="comp-visual">
+          <div class="comp-bar-wrap"><div class="comp-bar" id="cb-kick" style="height:40px"></div><div class="comp-bar-lbl">Kick</div></div>
+          <div class="comp-bar-wrap"><div class="comp-bar" id="cb-bass" style="height:25px; background:linear-gradient(180deg,var(--red),rgba(255,45,85,.3))"></div><div class="comp-bar-lbl">Bass</div></div>
+          <div class="comp-bar-wrap"><div class="comp-bar" id="cb-lead" style="height:50px; background:linear-gradient(180deg,var(--yellow),rgba(240,250,107,.3))"></div><div class="comp-bar-lbl">Lead</div></div>
+          <div class="comp-bar-wrap"><div class="comp-bar" id="cb-atmos" style="height:55px; background:linear-gradient(180deg,var(--purple),rgba(180,75,255,.3))"></div><div class="comp-bar-lbl">Atmos</div></div>
+        </div>
+      </div>
+
+      <!-- SIDECHAIN DESIGNER -->
+      <div class="card">
+        <h2><span class="icon">📉</span> Sidechain Designer</h2>
+        <div class="input-row">
+          <label>Shape</label>
+          <select id="sc-shape" onchange="drawSidechain()">
+            <option value="exp">Exponential (Classic Psy)</option>
+            <option value="linear">Linear (Minimal)</option>
+            <option value="pump">Pump (Hardstyle)</option>
+            <option value="soft">Soft (Progressive)</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <label>Depth %</label>
+          <input type="range" id="sc-depth" min="10" max="100" value="80" oninput="drawSidechain()">
+          <span id="sc-depth-val" style="color:var(--accent)">80%</span>
+        </div>
+        <div class="input-row">
+          <label>Hold ms</label>
+          <input type="range" id="sc-hold" min="0" max="50" value="10" oninput="drawSidechain()">
+          <span id="sc-hold-val" style="color:var(--accent)">10ms</span>
+        </div>
+        <canvas id="sc-canvas" width="400" height="120" style="width:100%; border-radius:6px; background:var(--bg3); margin-top:8px;"></canvas>
+        <div class="small" id="sc-tip" style="margin-top:8px;"></div>
+
+        <hr class="divider">
+        <div style="font-size:.8em; color:var(--dim); margin-bottom:8px;">LFO Tool Values (auto-synced)</div>
+        <div class="res-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="res-cell"><div class="label">LFO Rate</div><div class="val" id="lfo-rate">—</div><div class="label">Hz</div></div>
+          <div class="res-cell"><div class="label">Attack</div><div class="val" id="lfo-attack">—</div><div class="label">ms</div></div>
+          <div class="res-cell"><div class="label">Release</div><div class="val" id="lfo-release">—</div><div class="label">ms</div></div>
+        </div>
+      </div>
+
+      <!-- LIMITER CALC -->
+      <div class="card">
+        <h2><span class="icon">📊</span> Loudness & Limiter Calc</h2>
+        <div class="input-row">
+          <label>Peak (dBFS)</label>
+          <input type="number" id="peak-input" value="-3" min="-60" max="0" oninput="calcLoudness()">
+        </div>
+        <div class="input-row">
+          <label>Ceiling</label>
+          <input type="number" id="ceil-input" value="-1" min="-12" max="0" oninput="calcLoudness()">
+        </div>
+        <div class="input-row">
+          <label>Target LUFS</label>
+          <select id="lufs-target" onchange="calcLoudness()">
+            <option value="-14">-14 LUFS (Spotify)</option>
+            <option value="-16">-16 LUFS (Apple Music)</option>
+            <option value="-11" selected>-11 LUFS (Psytrance Club)</option>
+            <option value="-23">-23 LUFS (Broadcast)</option>
+          </select>
+        </div>
+        <table class="data-table" style="margin-top:10px;">
+          <tr><td>Gain Reduction needed</td><td class="val" id="gain-reduction">—</td></tr>
+          <tr><td>Headroom available</td><td class="val" id="headroom">—</td></tr>
+          <tr><td>RMS estimate</td><td class="val" id="rms-est">—</td></tr>
+          <tr><td>Platform recommendation</td><td class="val" id="platform-rec">—</td></tr>
+        </table>
+        <div class="meter-bar" style="margin-top:10px;"><div class="meter-fill" id="loud-meter"></div></div>
+        <div class="small" id="loud-tip" style="margin-top:6px;"></div>
+      </div>
+
+      <!-- ATTACK/RELEASE DETAIL -->
+      <div class="card">
+        <h2><span class="icon">⚡</span> Attack / Release Fine-Tuner</h2>
+        <div class="small" style="margin-bottom:12px;">Calculate musical attack/release times based on BPM for any element.</div>
+        <div class="input-row">
+          <label>Element</label>
+          <select id="ar-element" onchange="calcAR()">
+            <option value="kick">Kick (1/16 release)</option>
+            <option value="bass">Bass (1/32 release)</option>
+            <option value="lead">Lead (1/8 release)</option>
+            <option value="atmos">Atmos (1/4 release)</option>
+            <option value="hat">Hat (1/32 release)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="input-row" id="ar-custom-row" style="display:none;">
+          <label>Div. factor</label>
+          <input type="number" id="ar-custom-div" value="16" min="1" oninput="calcAR()">
+        </div>
+        <table class="data-table" style="margin-top:8px;">
+          <tr><td>Recommended Attack</td><td class="val" id="ar-attack">—</td></tr>
+          <tr><td>Recommended Release</td><td class="val" id="ar-release">—</td></tr>
+          <tr><td>Knee</td><td class="val" id="ar-knee">—</td></tr>
+          <tr><td>Makeup Gain hint</td><td class="val" id="ar-makeup">—</td></tr>
+        </table>
+        <div class="tip-list" style="margin-top:12px;" id="ar-tips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB: FX ═══ -->
+  <div class="tab-panel" id="tab-fx">
+    <div class="grid-2">
+
+      <!-- DELAY DESIGNER -->
+      <div class="card">
+        <h2><span class="icon">🌀</span> Delay Designer</h2>
+        <div class="input-row">
+          <label>Mode</label>
+          <select id="delay-mode" onchange="updateDelayDesigner()">
+            <option value="offbeat">Offbeat Psy (1/8)</option>
+            <option value="slapback">Slapback Lead (1/16)</option>
+            <option value="ping">Ping-Pong Stereo</option>
+            <option value="triplet">Triplet Feel</option>
+            <option value="dotted">Dotted Rhythmic</option>
+            <option value="haas">Haas Widener</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <label>Feedback %</label>
+          <input type="range" id="delay-fb" min="0" max="90" value="30" oninput="updateDelayDesigner()">
+          <span id="delay-fb-val" style="color:var(--accent)">30%</span>
+        </div>
+        <table class="data-table" style="margin-top:8px;">
+          <tr><td>Channel L</td><td class="val" id="delay-L">—</td></tr>
+          <tr><td>Channel R</td><td class="val" id="delay-R">—</td></tr>
+          <tr><td>Feedback</td><td class="val" id="delay-fb-ms">—</td></tr>
+          <tr><td>Echo repeats</td><td class="val" id="delay-repeats">—</td></tr>
+          <tr><td>Total tail</td><td class="val" id="delay-tail">—</td></tr>
+        </table>
+        <div class="tip-list" style="margin-top:12px;" id="delay-tips"></div>
+      </div>
+
+      <!-- REVERB DESIGNER -->
+      <div class="card">
+        <h2><span class="icon">🌊</span> Reverb Designer</h2>
+        <div class="input-row">
+          <label>Room type</label>
+          <select id="rev-type" onchange="updateReverbDesigner()">
+            <option value="room">Room (Tight)</option>
+            <option value="hall">Hall (Medium)</option>
+            <option value="large">Large Space</option>
+            <option value="plate">Plate (Lead Glue)</option>
+            <option value="spring">Spring (Psychedelic)</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <label>Decay mult</label>
+          <input type="range" id="rev-mult" min="1" max="8" value="2" step="0.1" oninput="updateReverbDesigner()">
+          <span id="rev-mult-val" style="color:var(--accent)">2x</span>
+        </div>
+        <table class="data-table" style="margin-top:8px;">
+          <tr><td>Pre-delay</td><td class="val" id="rev-predelay">—</td></tr>
+          <tr><td>Decay time</td><td class="val" id="rev-decay">—</td></tr>
+          <tr><td>Low Cut</td><td class="val" id="rev-lowcut">—</td></tr>
+          <tr><td>High Cut</td><td class="val" id="rev-highcut">—</td></tr>
+          <tr><td>Wet mix hint</td><td class="val" id="rev-wet">—</td></tr>
+        </table>
+        <div class="tip-list" style="margin-top:12px;" id="rev-tips"></div>
+      </div>
+
+      <!-- EQ HARMONIC -->
+      <div class="card">
+        <h2><span class="icon">🔊</span> Harmonic EQ Guide</h2>
+        <div class="small" style="margin-bottom:12px;">Based on current note frequency. Click a key or change BPM to update.</div>
+        <div class="input-row">
+          <label>Base Hz</label>
+          <input type="number" id="eq-hz" value="261.63" oninput="updateEQ()">
+        </div>
+        <div id="eq-list"></div>
+        <div class="btn-group">
+          <button class="btn btn-a" style="font-size:.72em;" onclick="exportEQSettings()">📋 Copy EQ Points</button>
+        </div>
+      </div>
+
+      <!-- PITCH SHIFTER -->
+      <div class="card">
+        <h2><span class="icon">🎛</span> Pitch & Tune Calculator</h2>
+        <div class="input-row">
+          <label>Source Hz</label>
+          <input type="number" id="ps-src" value="261.63" oninput="calcPitch()">
+        </div>
+        <div class="input-row">
+          <label>Target Note</label>
+          <select id="ps-target-note" onchange="calcPitch()">
+            <option value="0">C</option><option value="1">C#</option><option value="2">D</option>
+            <option value="3">D#</option><option value="4">E</option><option value="5">F</option>
+            <option value="6">F#</option><option value="7">G</option><option value="8">G#</option>
+            <option value="9">A</option><option value="10">A#</option><option value="11">B</option>
+          </select>
+          <select id="ps-target-oct" onchange="calcPitch()">
+            <option value="2">Oct 2</option><option value="3">Oct 3</option>
+            <option value="4" selected>Oct 4</option><option value="5">Oct 5</option>
+          </select>
+        </div>
+        <table class="data-table" style="margin-top:8px;">
+          <tr><td>Target Hz</td><td class="val" id="ps-target-hz">—</td></tr>
+          <tr><td>Semitone shift</td><td class="val" id="ps-semitones">—</td></tr>
+          <tr><td>Speed ratio</td><td class="val" id="ps-ratio">—</td></tr>
+          <tr><td>Cents deviation</td><td class="val" id="ps-cents">—</td></tr>
+          <tr><td>Octave shift</td><td class="val" id="ps-oct">—</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB: TIPS ═══ -->
+  <div class="tab-panel" id="tab-tips">
+    <div class="grid-3">
+      <div class="card">
+        <h2><span class="icon">⚡</span> Kick & Bass Separation</h2>
+        <div class="tip-list" id="tips-kick"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🌌</span> Atmospheric Design</h2>
+        <div class="tip-list" id="tips-atmos"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🎹</span> Lead & Melody</h2>
+        <div class="tip-list" id="tips-lead"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">📐</span> Phase & Alignment</h2>
+        <div class="tip-list" id="tips-phase"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🔊</span> Mix Bus Mastering</h2>
+        <div class="tip-list" id="tips-master"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🛸</span> Psytrance Sound Design</h2>
+        <div class="tip-list" id="tips-sd"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ TAB: EXTRA ═══ -->
+  <div class="tab-panel" id="tab-tools">
+    <div class="grid-2">
+      <!-- PINK NOISE -->
+      <div class="card">
+        <h2><span class="icon">🌸</span> Pink Noise Reference</h2>
+        <div class="input-row">
+          <label>Level</label>
+          <input type="range" id="noise-level" min="-40" max="0" value="-12" oninput="updateNoiseLevel()">
+          <span id="noise-level-val" style="color:var(--accent)">-12dB</span>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-r" id="noise-btn" onclick="toggleNoise()">▶ Play Pink Noise</button>
+          <button class="btn btn-a" onclick="openModal('pinkNoiseTips')">📖 Pink Noise Guide</button>
+        </div>
+        <div class="meter-bar" style="margin-top:12px;"><div class="meter-fill" id="noise-meter" style="width:0%"></div></div>
+        <div class="tip-list" style="margin-top:14px;">
+          <div class="tip-item"><strong>Step 1:</strong> Play Pink Noise at <strong>-12dBFS</strong>. Bring ALL faders to -∞.</div>
+          <div class="tip-item yellow"><strong>Step 2:</strong> Raise each track until you can <em>barely</em> hear it over the noise. This is its correct level.</div>
+          <div class="tip-item green"><strong>Step 3:</strong> The Kick & Bass should be louder (you should hear them), the rest near equal or slightly below.</div>
+          <div class="tip-item"><strong>Why it works:</strong> Pink noise has equal energy per octave — same as human hearing. Your mix will be spectrally balanced.</div>
+        </div>
+      </div>
+
+      <!-- SPECTRUM REFERENCE -->
+      <div class="card">
+        <h2><span class="icon">📊</span> Spectrum Reference</h2>
+        <div id="spectrum-viz"></div>
+        <div class="tip-list" style="margin-top:12px;">
+          <div class="tip-item red"><strong>Sub Bass (20-60Hz):</strong> Kick transient, Bass fundamental. Cut everything else here.</div>
+          <div class="tip-item yellow"><strong>Bass (60-250Hz):</strong> Bass body. Max 1 element dominant.</div>
+          <div class="tip-item"><strong>Low-Mid (250-500Hz):</strong> Mud zone. Cut pads & leads here to clean the mix.</div>
+          <div class="tip-item green"><strong>Mid (500-2kHz):</strong> Presence, attack. Leads & vocals live here.</div>
+          <div class="tip-item purple"><strong>High-Mid (2-6kHz):</strong> Psychedelic frequencies. Autofilter sweep target.</div>
+          <div class="tip-item"><strong>Air (6-20kHz):</strong> Shimmer. Boost pads +1-2dB at 8kHz for openness.</div>
+        </div>
+      </div>
+
+      <!-- A/B REFERENCE TUNING -->
+      <div class="card">
+        <h2><span class="icon">🎯</span> A=432 vs A=440 Calculator</h2>
+        <div class="input-row">
+          <label>Tuning</label>
+          <select id="tuning-select" onchange="calcTuning()">
+            <option value="440">A = 440 Hz (Standard)</option>
+            <option value="432">A = 432 Hz (Solfeggio)</option>
+            <option value="444">A = 444 Hz (Vedic)</option>
+            <option value="528">C = 528 Hz (Miracle)</option>
+          </select>
+        </div>
+        <div id="tuning-table"></div>
+        <div class="small" id="tuning-note" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- GOLDEN RATIO -->
+      <div class="card">
+        <h2><span class="icon">φ</span> Golden Ratio in Music</h2>
+        <div class="input-row">
+          <label>Song length (bars)</label>
+          <input type="number" id="phi-bars" value="128" oninput="calcGoldenRatio()">
+        </div>
+        <table class="data-table" id="phi-table" style="margin-top:10px;"></table>
+        <div class="small" style="margin-top:8px;">φ = 1.618... — where tension and release feel <em>natural</em>.</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box">
+    <button class="close-btn" onclick="closeModal()">✕</button>
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════
+
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const FREQ_C4 = 261.6255653; // C4
+const A4 = 440;
+
+const SCALES = {
+  phrygian:      [0,1,3,5,7,8,10],
+  locrian:       [0,1,3,5,6,8,10],
+  harmMinor:     [0,2,3,5,7,8,11],
+  pentatonicMin: [0,3,5,7,10],
+  dorian:        [0,2,3,5,7,9,10],
+  lydian:        [0,2,4,6,7,9,11],
+  mixolydian:    [0,2,4,5,7,9,10],
+  hirajoshi:     [0,2,3,7,8],
+  phrygDom:      [0,1,4,5,7,8,10],
+  hungarianMin:  [0,2,3,6,7,8,11],
+  byzantine:     [0,1,4,5,7,8,11],
+  inSen:         [0,1,5,7,10],
+  major:         [0,2,4,5,7,9,11],
+  naturalMinor:  [0,2,3,5,7,8,10],
+  wholeTone:     [0,2,4,6,8,10],
+  diminished:    [0,2,3,5,6,8,9,11],
+};
+
+const CHORD_TYPES = {
+  maj:       { intervals:[0,4,7],      name:"Major",            desc:"Bright, stable, uplifting." },
+  min:       { intervals:[0,3,7],      name:"Minor",            desc:"Dark, emotional, introspective." },
+  dim:       { intervals:[0,3,6],      name:"Diminished",       desc:"Tense, unstable. Great for transitions." },
+  aug:       { intervals:[0,4,8],      name:"Augmented",        desc:"Eerie, suspended. Psychedelic texture." },
+  maj7:      { intervals:[0,4,7,11],   name:"Major 7th",        desc:"Lush, jazzy. Works well in Progressive Psy." },
+  min7:      { intervals:[0,3,7,10],   name:"Minor 7th",        desc:"Deep, floating. Common in Forest Psy." },
+  dom7:      { intervals:[0,4,7,10],   name:"Dominant 7th",     desc:"Driving tension. Pre-drop chord." },
+  sus2:      { intervals:[0,2,7],      name:"Sus2",             desc:"Open, ambiguous. Great for pads." },
+  sus4:      { intervals:[0,5,7],      name:"Sus4",             desc:"Anticipation, movement. Use before root chord." },
+  min9:      { intervals:[0,3,7,10,14],name:"Minor 9th",        desc:"Lush minor with added air. Deep Psy staple." },
+  phrygChord:{ intervals:[0,1,5,7,8],  name:"Phrygian Stack",   desc:"Exotic stack. Typical GOA/Dark texture." },
+};
+
+const INTERVAL_NAMES = ["Unison","m2","M2","m3","M3","P4","Tritone","P5","m6","M6","m7","M7","Octave"];
+const CONSONANCE    = ["Perfect","Dissonant","Imperfect","Imperfect","Consonant","Consonant","Dissonant","Perfect","Dissonant","Consonant","Dissonant","Major","Perfect"];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let audioCtx = null;
+let noiseNode = null;
+let noiseGain = null;
+let notasParaMidi = [];
+let currentRoot = 0;
+let currentFreq = FREQ_C4;
+let tunerActive = false;
+let analyserNode = null;
+let tunerAnimId = null;
+
+// ═══════════════════════════════════════════════════════════
+// INIT AUDIO
+// ═══════════════════════════════════════════════════════════
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+document.body.addEventListener('click', initAudio, { once: true });
+
+// ═══════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'fx') { updateEQ(); updateDelayDesigner(); updateReverbDesigner(); }
+  if (id === 'tips') renderTips();
+  if (id === 'tools') { calcTuning(); calcGoldenRatio(); buildSpectrumViz(); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// BPM SYNC
+// ═══════════════════════════════════════════════════════════
+function getBPM() { return parseFloat(document.getElementById('bpm-input').value) || 145; }
+
+function updateAll() {
+  const bpm = getBPM();
+  document.getElementById('bpm-range').value = bpm;
+  document.getElementById('bpm-display').textContent = bpm;
+  const beat = 60000 / bpm;
+  const bar  = beat * 4;
+  s('ms-1',  bar.toFixed(2));
+  s('ms-2',  (bar/2).toFixed(2));
+  s('ms-4',  beat.toFixed(2));
+  s('ms-8',  (beat/2).toFixed(2));
+  s('ms-16', (beat/4).toFixed(2));
+  s('ms-32', (beat/8).toFixed(2));
+  s('ms-t8', (beat * 2/3).toFixed(2));
+  s('ms-d8', (beat * 3/4).toFixed(2));
+  s('hz-bpm', (bpm/60).toFixed(4));
+  // Compression
+  s('comp-kick',  (beat/4).toFixed(2) + ' ms');
+  s('comp-bass',  (beat/8).toFixed(2) + ' ms');
+  s('comp-lead',  (beat/2).toFixed(2) + ' ms');
+  s('comp-atmos', beat.toFixed(2) + ' ms');
+  s('comp-hats',  (beat/8).toFixed(2) + ' ms');
+  s('comp-bus',   (beat/4).toFixed(2) + ' ms');
+  // Compressor bars
+  updateCompBars(beat);
+  // LFO
+  s('lfo-rate', (bpm/60).toFixed(4));
+  s('lfo-attack', (beat/16).toFixed(2));
+  s('lfo-release', (beat/4).toFixed(2));
+  // AR
+  calcAR();
+  // Delay
+  updateDelayDesigner();
+  updateReverbDesigner();
+  // Sidechain
+  drawSidechain();
+  // Loudness
+  calcLoudness();
+}
+
+function syncBpmRange(el) {
+  document.getElementById('bpm-input').value = el.value;
+  updateAll();
+}
+
+function hzToBpm() {
+  const hz = parseFloat(document.getElementById('hz-to-bpm').value);
+  s('hz-bpm-result', isNaN(hz) ? '—' : (hz * 60).toFixed(2));
+}
+function bpmToHz() {
+  const bpm = parseFloat(document.getElementById('bpm-to-hz').value);
+  s('bpm-hz-result', isNaN(bpm) ? '—' : (bpm/60).toFixed(4));
+}
+
+// ═══════════════════════════════════════════════════════════
+// FREQUENCY / NOTE ANALYSIS
+// ═══════════════════════════════════════════════════════════
+function freqToNote() {
+  const freq = parseFloat(document.getElementById('freq-input').value);
+  if (!freq || freq <= 0) return;
+  currentFreq = freq;
+  const semiFromA4 = 12 * Math.log2(freq / A4);
+  const midiNum = Math.round(semiFromA4) + 69;
+  const noteName = NOTE_NAMES[((midiNum % 12) + 12) % 12];
+  const oct = Math.floor(midiNum / 12) - 1;
+  const exactFreq = A4 * Math.pow(2, (midiNum - 69) / 12);
+  const cents = Math.round(1200 * Math.log2(freq / exactFreq));
+  const phase = (1000 / freq).toFixed(3);
+  const wavelength = (343 / freq).toFixed(2);
+
+  s('note-name', noteName + oct);
+  s('note-midi', midiNum);
+  s('note-cents', (cents >= 0 ? '+' : '') + cents + '¢');
+  s('note-oct', oct);
+  s('phase-ms', phase);
+  s('period-m', wavelength);
+  buildHarmonicList(freq);
+  calcTranspose();
+  document.getElementById('eq-hz').value = freq.toFixed(2);
+  updateEQ();
+}
+
+function buildHarmonicList(freq) {
+  const container = document.getElementById('harmonic-list');
+  const harmonics = [1,2,3,4,5,6,7,8];
+  const maxFreq = freq * 8;
+  container.innerHTML = harmonics.map(h => {
+    const hf = freq * h;
+    const bar = Math.round((hf / maxFreq) * 100);
+    const name = h === 1 ? 'Fundamental' : h === 2 ? 'H2 (Octave)' : h === 3 ? 'H3 (5th)' : `H${h}`;
+    return `<div class="harmonic-row">
+      <span class="h-name">${name}</span>
+      <span class="h-val">${hf.toFixed(1)} Hz</span>
+      <div class="h-bar"><div class="h-fill" style="width:${bar}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function calcTranspose() {
+  const st = parseFloat(document.getElementById('st-input').value) || 0;
+  const ratio = Math.pow(2, st/12);
+  s('st-result', ratio.toFixed(4));
+  s('transposed-freq', (currentFreq * ratio).toFixed(2));
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════
+function noteIndexToFreq(noteIndex) {
+  // noteIndex = semitone from C4
+  return FREQ_C4 * Math.pow(2, noteIndex / 12);
+}
+
+function rebuildKeyboard() {
+  const container = document.getElementById('teclado');
+  container.innerHTML = '';
+  const root = parseInt(document.getElementById('root-select').value);
+  currentRoot = root;
+  const scaleName = document.getElementById('scale-select').value;
+  const octave = parseInt(document.getElementById('octave-select').value);
+  const scaleIntervals = new Set(SCALES[scaleName]);
+  notasParaMidi = [];
+
+  for (let i = 0; i < 24; i++) {
+    const noteOffset = (root + i) % 12;
+    const octaveOffset = Math.floor((root + i) / 12);
+    const noteName = NOTE_NAMES[noteOffset];
+    const isBlack = noteName.includes('#');
+    const inScale = scaleIntervals.has(i % 12);
+    const div = document.createElement('div');
+    div.className = 'tecla ' + (isBlack ? 'negra' : 'blanca') + (inScale ? ' activa' : '');
+    div.id = 'key-' + i;
+    div.innerText = noteName + (octave + octaveOffset + (i >= 12 ? 1 : 0));
+    div.onclick = () => { initAudio(); playKeyNote(i); };
+    container.appendChild(div);
+  }
+}
+
+function playKeyNote(index) {
+  const root = parseInt(document.getElementById('root-select').value);
+  const oct  = parseInt(document.getElementById('octave-select').value);
+  const midiOffset = (oct - 4) * 12;
+  const noteOffset = root + index;
+  const freq = noteIndexToFreq(noteOffset + midiOffset);
+  currentFreq = freq;
+  document.getElementById('freq-input').value = freq.toFixed(2);
+  freqToNote();
+  const wave = document.getElementById('wave-select').value;
+  triggerNote(freq, 0.5, wave);
+  highlight('key-' + index);
+}
+
+function triggerNote(freq, dur, type='sawtooth', startOffset=0) {
+  if (!audioCtx) initAudio();
+  const osc = audioCtx.createOscillator();
+  const env = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  env.gain.setValueAtTime(0.18, audioCtx.currentTime + startOffset);
+  env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startOffset + dur);
+  osc.connect(env); env.connect(audioCtx.destination);
+  osc.start(audioCtx.currentTime + startOffset);
+  osc.stop(audioCtx.currentTime + startOffset + dur);
+  return osc;
+}
+
+function highlight(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('sonando');
+  setTimeout(() => el.classList.remove('sonando'), 300);
+}
+
+function getScaleFreqs(direction) {
+  const root = parseInt(document.getElementById('root-select').value);
+  const oct  = parseInt(document.getElementById('octave-select').value);
+  const midiOffset = (oct - 4) * 12;
+  const scaleName = document.getElementById('scale-select').value;
+  const intervals = SCALES[scaleName];
+  let allIntervals = [];
+  for (let o = 0; o < 2; o++) intervals.forEach(iv => allIntervals.push(iv + o * 12));
+  if (direction === 'down') allIntervals = allIntervals.reverse();
+  if (direction === 'bounce') {
+    const rev = [...allIntervals].reverse().slice(1, allIntervals.length - 1);
+    allIntervals = [...allIntervals, ...rev];
+  }
+  return allIntervals.map(iv => {
+    const ni = root + iv + midiOffset;
+    notasParaMidi.push(60 + root + iv);
+    return { freq: noteIndexToFreq(ni), keyId: 'key-' + (iv % 24) };
+  });
+}
+
+function playArpeggio() { playArp('up'); }
+function playArpeggioDown() { playArp('down'); }
+function playArpeggioBounce() { playArp('bounce'); }
+
+function playArp(dir) {
+  initAudio();
+  const notes = getScaleFreqs(dir);
+  const bpm = getBPM();
+  const step = (60 / bpm) / 4;
+  const wave = document.getElementById('wave-select').value;
+  notes.forEach((n, i) => {
+    triggerNote(n.freq, step * 0.85, wave, i * step);
+    setTimeout(() => highlight(n.keyId), i * step * 1000);
+  });
+  document.getElementById('midi-log').textContent = '✓ MIDI READY — ' + notes.length + ' notes';
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHORD BUILDER
+// ═══════════════════════════════════════════════════════════
+function buildChord() {
+  const root = parseInt(document.getElementById('chord-root').value);
+  const type = document.getElementById('chord-type').value;
+  const data = CHORD_TYPES[type];
+  const oct = 4;
+  const midiOffset = (oct - 4) * 12;
+  const display = document.getElementById('chord-display');
+  const desc = document.getElementById('chord-desc');
+  display.innerHTML = data.intervals.map((iv, i) => {
+    const ni = root + iv + midiOffset;
+    const freq = noteIndexToFreq(ni);
+    const nn = NOTE_NAMES[((root + iv) % 12 + 12) % 12];
+    return `<div class="chord-note${i===0?' root':''}">
+      <span class="note-name">${nn}</span>
+      <span class="note-hz">${freq.toFixed(1)}Hz</span>
+    </div>`;
+  }).join('');
+  desc.textContent = data.name + ' — ' + data.desc;
+}
+
+function playChord() {
+  initAudio();
+  const root = parseInt(document.getElementById('chord-root').value);
+  const type = document.getElementById('chord-type').value;
+  const intervals = CHORD_TYPES[type].intervals;
+  const wave = document.getElementById('wave-select').value;
+  intervals.forEach(iv => {
+    const ni = root + iv;
+    triggerNote(noteIndexToFreq(ni), 1.2, wave);
+  });
+}
+
+function playChordArpeggio() {
+  initAudio();
+  const root = parseInt(document.getElementById('chord-root').value);
+  const type = document.getElementById('chord-type').value;
+  const intervals = CHORD_TYPES[type].intervals;
+  const wave = document.getElementById('wave-select').value;
+  const bpm = getBPM();
+  const step = (60 / bpm) / 2;
+  intervals.forEach((iv, i) => triggerNote(noteIndexToFreq(root + iv), step*0.9, wave, i * step));
+}
+
+// ═══════════════════════════════════════════════════════════
+// INTERVAL CALCULATOR
+// ═══════════════════════════════════════════════════════════
+function calcInterval() {
+  const a = parseFloat(document.getElementById('int-a').value);
+  const b = parseFloat(document.getElementById('int-b').value);
+  if (!a || !b || a <= 0 || b <= 0) return;
+  const ratio = b / a;
+  const semitones = 12 * Math.log2(ratio);
+  const roundedSt = Math.round(semitones);
+  const idx = Math.max(0, Math.min(12, ((roundedSt % 12) + 12) % 12));
+  const cents = Math.round((semitones - roundedSt) * 100);
+  s('int-ratio', ratio.toFixed(4));
+  s('int-st', semitones.toFixed(2));
+  s('int-name', INTERVAL_NAMES[idx] || '> Octave');
+  s('int-cents', (cents >= 0 ? '+' : '') + cents + '¢');
+  s('int-cons', CONSONANCE[idx] || '—');
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPRESSOR / SIDECHAIN
+// ═══════════════════════════════════════════════════════════
+function updateCompBars(beat) {
+  const kick = Math.min(58, (beat/4) / 8);
+  const bass = Math.min(58, (beat/8) / 8);
+  const lead = Math.min(58, (beat/2) / 8);
+  const atmos= Math.min(58, beat / 8);
+  document.getElementById('cb-kick').style.height = kick + 'px';
+  document.getElementById('cb-bass').style.height = bass + 'px';
+  document.getElementById('cb-lead').style.height = lead + 'px';
+  document.getElementById('cb-atmos').style.height = atmos + 'px';
+}
+
+function drawSidechain() {
+  const canvas = document.getElementById('sc-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const depth = parseInt(document.getElementById('sc-depth').value) / 100;
+  const holdMs = parseInt(document.getElementById('sc-hold').value);
+  const shape = document.getElementById('sc-shape').value;
+  document.getElementById('sc-depth-val').textContent = Math.round(depth*100) + '%';
+  document.getElementById('sc-hold-val').textContent = holdMs + 'ms';
+
+  const bpm = getBPM();
+  const beatW = W / 4;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg3') || '#111d35';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,255,231,0.08)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    ctx.beginPath(); ctx.moveTo(i * beatW, 0); ctx.lineTo(i * beatW, H); ctx.stroke();
+  }
+  [0.25, 0.5, 0.75].forEach(r => {
+    ctx.beginPath(); ctx.moveTo(0, r * H); ctx.lineTo(W, r * H); ctx.stroke();
+  });
+
+  // Curve
+  ctx.strokeStyle = '#00ffe7';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  const holdFrac = holdMs / (60000 / bpm / 4) / 4;
+
+  for (let b = 0; b < 4; b++) {
+    const x0 = b * beatW;
+    const pts = 80;
+    for (let p = 0; p <= pts; p++) {
+      const t = p / pts;
+      let vol;
+      const beatEnd = 1 - holdFrac;
+      if (t <= holdFrac) { vol = 1 - depth; }
+      else {
+        const tt = (t - holdFrac) / beatEnd;
+        switch(shape) {
+          case 'exp':    vol = (1-depth) + depth * Math.pow(tt, 0.4); break;
+          case 'linear': vol = (1-depth) + depth * tt; break;
+          case 'pump':   vol = (1-depth) + depth * (tt < .5 ? 0 : Math.pow((tt-.5)*2, 0.5)); break;
+          case 'soft':   vol = (1-depth) + depth * (0.5 - 0.5*Math.cos(Math.PI*tt)); break;
+          default:       vol = (1-depth) + depth * tt;
         }
-    </script>
-    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+      }
+      const x = x0 + t * beatW;
+      const y = H - vol * (H - 8) - 4;
+      p === 0 && b === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
 
-    <script>
-        let notasParaMidi = [];
-        let audioCtx = null;
-        let ultimaRaiz = 0; 
-        let noiseNode = null;
+  // Labels
+  ctx.fillStyle = 'rgba(0,255,231,0.5)';
+  ctx.font = '10px Share Tech Mono, monospace';
+  for (let b = 0; b < 4; b++) {
+    ctx.fillText(`${b+1}`, b * beatW + 4, H - 4);
+  }
 
-        const notasNombres = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-        const frecuenciasBase = [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88];
-        
-        const escalas = {
-            frigia: [0, 1, 3, 5, 7, 8, 10], locria: [0, 1, 3, 5, 6, 8, 10], dorica: [0, 2, 3, 5, 7, 9, 10], 
-            menorArmonica: [0, 2, 3, 5, 7, 8, 11], hirajoshi: [0, 2, 3, 7, 8], pentatonicaMenor: [0, 3, 5, 7, 10],
-            lidia: [0, 2, 4, 6, 7, 9, 11], mixolidia: [0, 2, 4, 5, 7, 9, 10], dominanteFrigia: [0, 1, 4, 5, 7, 8, 10],
-            hungaraMenor: [0, 2, 3, 6, 7, 8, 11], bizantina: [0, 1, 4, 5, 7, 8, 11], inSen: [0, 1, 5, 7, 10]
-        };
+  const shapeDesc = {
+    exp: 'Exponential recovery — fast snap back, classic psy pump.',
+    linear: 'Linear — clean, even rise. Good for minimal/tech.',
+    pump: 'Delayed pump — hard ducking with late snap. Hardstyle feel.',
+    soft: 'Cosine curve — smooth, musical. Best for progressive.'
+  };
+  document.getElementById('sc-tip').textContent = shapeDesc[shape] || '';
+}
 
-        function initAudio() {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+// ═══════════════════════════════════════════════════════════
+// LOUDNESS
+// ═══════════════════════════════════════════════════════════
+function calcLoudness() {
+  const peak = parseFloat(document.getElementById('peak-input').value) || -3;
+  const ceil = parseFloat(document.getElementById('ceil-input').value) || -1;
+  const lufs = parseFloat(document.getElementById('lufs-target').value) || -11;
+  const gr = (ceil - peak).toFixed(1);
+  const headroom = Math.abs(ceil).toFixed(1);
+  const rms = (peak - 12).toFixed(1);
+  const meterPct = Math.min(100, Math.max(0, (peak + 60) / 60 * 100));
+  s('gain-reduction', gr + ' dB');
+  s('headroom', headroom + ' dB');
+  s('rms-est', rms + ' dBFS');
+  const platform = lufs === '-14' ? 'Spotify — normalize to -14 LUFS integrated.' :
+                   lufs === '-16' ? 'Apple Music — -16 LUFS for loudness normalization.' :
+                   lufs === '-11' ? 'Club/DJ — aim for -11 LUFS RMS, peak -1 dBFS.' :
+                                    'Broadcast — -23 LUFS (EBU R128 standard).';
+  s('platform-rec', platform);
+  document.getElementById('loud-meter').style.width = meterPct + '%';
+  document.getElementById('loud-tip').textContent = peak > -3
+    ? '⚠ Peak above -3dBFS. Risk of distortion after mastering. Lower by ' + (peak + 3).toFixed(1) + 'dB.'
+    : '✓ Good headroom for mastering chain.';
+}
+
+// ═══════════════════════════════════════════════════════════
+// ATTACK/RELEASE FINE-TUNER
+// ═══════════════════════════════════════════════════════════
+function calcAR() {
+  const el = document.getElementById('ar-element').value;
+  const bpm = getBPM();
+  const beat = 60000 / bpm;
+  const customRow = document.getElementById('ar-custom-row');
+  customRow.style.display = el === 'custom' ? 'flex' : 'none';
+
+  const map = {
+    kick:   { attack:'10–20ms', relDiv:4,  knee:'Soft (3–6dB)', makeup:'+2–4dB', tips:['Keep attack 10-20ms so the transient punch passes through untouched.','1/16 release ensures the bass fills in clean on every 16th note.','High ratio (6:1-8:1) for a tight, punchy sound.'] },
+    bass:   { attack:'2–5ms',   relDiv:8,  knee:'Hard',         makeup:'+1–3dB', tips:['Very fast attack clamps the bass immediately to avoid muddying the kick.','1/32 release ties perfectly to the kick release so they breathe together.','Sidechain the bass compressor to the kick for maximum punch.'] },
+    lead:   { attack:'20–40ms', relDiv:2,  knee:'Medium',       makeup:'+1–2dB', tips:['Slower attack lets the transient sparkle through before clamping.','1/8 release keeps leads dynamic without cluttering the mid-range.'] },
+    atmos:  { attack:'80+ms',   relDiv:1,  knee:'Soft (2–4dB)', makeup:'+0–1dB', tips:['Very slow attack avoids pumping on pads and atmospheric layers.','1/4 release gives a slow, musical breathing quality to pads.'] },
+    hat:    { attack:'1–2ms',   relDiv:8,  knee:'Hard',         makeup:'+0dB',   tips:['Ultra-fast attack tames hi-hat transients precisely.','Match the release to 1/32 so hi-hats sit cleanly between kick hits.'] },
+    custom: { attack:'Manual',  relDiv:null,knee:'—',            makeup:'—',      tips:[] },
+  };
+  const d = map[el];
+  let relDiv = d.relDiv;
+  if (el === 'custom') relDiv = parseFloat(document.getElementById('ar-custom-div').value) || 16;
+  const release = relDiv ? (beat / relDiv).toFixed(2) + ' ms' : '—';
+
+  s('ar-attack', d.attack);
+  s('ar-release', release);
+  s('ar-knee', d.knee);
+  s('ar-makeup', d.makeup);
+
+  const tc = document.getElementById('ar-tips');
+  tc.innerHTML = d.tips.map(t => `<div class="tip-item"><strong>Tip:</strong> ${t}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// DELAY DESIGNER
+// ═══════════════════════════════════════════════════════════
+function updateDelayDesigner() {
+  const bpm = getBPM();
+  const beat = 60000 / bpm;
+  const mode = document.getElementById('delay-mode').value;
+  const fb = parseInt(document.getElementById('delay-fb').value);
+  document.getElementById('delay-fb-val').textContent = fb + '%';
+
+  const modes = {
+    offbeat:  { L: beat/2,     R: beat/2,     label: '1/8 Offbeat' },
+    slapback: { L: beat/4,     R: beat/4,     label: '1/16 Slapback' },
+    ping:     { L: beat/2,     R: beat,       label: 'Ping-Pong' },
+    triplet:  { L: beat*2/3,   R: beat*2/3,   label: 'Triplet 1/8' },
+    dotted:   { L: beat*3/4,   R: beat*3/4,   label: 'Dotted 1/8' },
+    haas:     { L: 0,          R: 15,         label: 'Haas Widener' },
+  };
+  const m = modes[mode];
+  const repeats = Math.ceil(Math.log(0.01) / Math.log(fb/100 || 0.01));
+  const tail = (m.L * repeats).toFixed(0);
+
+  s('delay-L', m.L > 0 ? m.L.toFixed(2) + ' ms' : '0 ms (dry)');
+  s('delay-R', m.R.toFixed(2) + ' ms');
+  s('delay-fb-ms', fb + '% ≈ ' + (m.L * fb/100).toFixed(2) + ' ms gap');
+  s('delay-repeats', isFinite(repeats) ? Math.abs(repeats) : 'inf');
+  s('delay-tail', tail + ' ms');
+
+  const tips = {
+    offbeat:  ['1/8 offbeat is the backbone of Psytrance. Creates that hypnotic bouncing groove.','Set the hi-cut to 8kHz on the delay return to keep it from fighting the main signal.','Use a ducking compressor on the delay return keyed to the dry lead.'],
+    slapback: ['1/16 slapback thickens a sound without audible echo.','Keep feedback below 15% to stay subtle.','Great on leads, stabs, and percussion.'],
+    ping:     ['L at 1/8 and R at 1/4 creates a rhythmic stereo spread.','Keep mono-compatibility in check — hit Mono on your master to verify no cancellation.','Works beautifully on lead synths and psychedelic FX.'],
+    triplet:  ['Triplet delays shift the groove from 4/4 to 12/8 feel.','Excellent for psychedelic, flowing melody lines.','Best used as a secondary delay send, not the main one.'],
+    dotted:   ['Dotted eighth gives a signature reggae/dub feel — hugely psychedelic.','Keep the mix below 25% wet to maintain tightness.'],
+    haas:     ['Haas below 40ms: pure stereo widening, no audible echo.','Only apply to one channel (L or R), not both.','Use to widen a mono Bass or Lead without losing center image.'],
+  };
+  const tc = document.getElementById('delay-tips');
+  tc.innerHTML = (tips[mode] || []).map(t => `<div class="tip-item"><strong>→</strong> ${t}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// REVERB DESIGNER
+// ═══════════════════════════════════════════════════════════
+function updateReverbDesigner() {
+  const bpm = getBPM();
+  const beat = 60000 / bpm;
+  const type = document.getElementById('rev-type').value;
+  const mult = parseFloat(document.getElementById('rev-mult').value);
+  document.getElementById('rev-mult-val').textContent = mult.toFixed(1) + 'x';
+
+  const base = {
+    room:   { preMult:.5,  decMult:1,   lc:200,  hc:8000,  wet:20, tips:['Room reverbs keep the mix tight — ideal for kicks, basses, and leads.','Short tails (under 500ms) avoid muddying fast Psy rhythms.'] },
+    hall:   { preMult:1,   decMult:2,   lc:300,  hc:6000,  wet:15, tips:['Apply only on atmos and pads in Psytrance — never on bass!','Use a high wet/dry mix of 15-20% to blend without dominating.'] },
+    large:  { preMult:2,   decMult:4,   lc:400,  hc:4000,  wet:25, tips:['Large spaces work for epic breakdowns and buildups.','Sidechain the reverb return to the kick to prevent buildup.'] },
+    plate:  { preMult:.3,  decMult:1.5, lc:150,  hc:12000, wet:30, tips:['Plate reverb has a metallic, dense quality — classic on leads in Psy.','Short plate (300-500ms) glues lead synths together wonderfully.'] },
+    spring: { preMult:.1,  decMult:1.2, lc:100,  hc:5000,  wet:35, tips:['Spring reverb wobble adds a lo-fi psychedelic feel.','Use on effects, FX sweeps, and psychedelic FX chains.'] },
+  };
+
+  const b = base[type];
+  const predelay = (beat * b.preMult / 4).toFixed(2);
+  const decay    = (beat * b.decMult * mult / 4).toFixed(2);
+
+  s('rev-predelay', predelay + ' ms');
+  s('rev-decay', decay + ' ms');
+  s('rev-lowcut', b.lc + ' Hz');
+  s('rev-highcut', b.hc + ' Hz');
+  s('rev-wet', b.wet + '%');
+
+  const tc = document.getElementById('rev-tips');
+  tc.innerHTML = b.tips.map(t => `<div class="tip-item"><strong>→</strong> ${t}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// EQ GUIDE
+// ═══════════════════════════════════════════════════════════
+function updateEQ() {
+  const freq = parseFloat(document.getElementById('eq-hz').value) || currentFreq;
+  const list = document.getElementById('eq-list');
+  if (!list) return;
+  const harmonics = [1,2,3,4,5,6,7,8];
+  const eqTips = [
+    { h:1, action:'Fundamental — ensure clean, no notch needed unless room mode.' },
+    { h:2, action:'Octave (+2dB bell): adds presence on small speakers & phones.' },
+    { h:3, action:'5th harmonic — subtle boost (+1dB) adds warmth to bass.' },
+    { h:4, action:'2nd octave — narrow cut (-3dB) if it clashes with upper bass.' },
+    { h:5, action:'3rd harmonic — adds "woody" character. Cut if harsh (narrow -2dB).' },
+    { h:6, action:'Cut narrow -4dB if the note has a "honky" quality in this register.' },
+    { h:7, action:'Naturally slightly flat (harmonic 7 ≈ 31¢ flat). Often cut -3dB.' },
+    { h:8, action:'Air range — gentle high shelf boost for openness and clarity.' },
+  ];
+  list.innerHTML = eqTips.map(t => {
+    const hf = (freq * t.h).toFixed(1);
+    return `<div class="harmonic-row">
+      <span class="h-name">H${t.h} — ${hf}Hz</span>
+      <div style="flex:1; font-size:.75em; color:var(--text); padding-left:8px;">${t.action}</div>
+    </div>`;
+  }).join('');
+}
+
+function exportEQSettings() {
+  const freq = parseFloat(document.getElementById('eq-hz').value) || currentFreq;
+  const lines = [1,2,3,4,5,6,7,8].map(h => `H${h}: ${(freq*h).toFixed(1)} Hz`).join('\n');
+  navigator.clipboard.writeText('EQ Points for ' + freq.toFixed(2) + 'Hz:\n' + lines);
+  alert('EQ points copied to clipboard!');
+}
+
+// ═══════════════════════════════════════════════════════════
+// PITCH CALCULATOR
+// ═══════════════════════════════════════════════════════════
+function calcPitch() {
+  const src = parseFloat(document.getElementById('ps-src').value) || currentFreq;
+  const tn  = parseInt(document.getElementById('ps-target-note').value);
+  const to  = parseInt(document.getElementById('ps-target-oct').value);
+  const targetFreq = A4 * Math.pow(2, (tn - 9 + (to - 4) * 12) / 12);
+  const semitones = 12 * Math.log2(targetFreq / src);
+  const ratio = targetFreq / src;
+  const roundedSt = Math.round(semitones);
+  const cents = Math.round((semitones - roundedSt) * 100);
+  s('ps-target-hz', targetFreq.toFixed(3));
+  s('ps-semitones', (semitones >= 0 ? '+' : '') + semitones.toFixed(2));
+  s('ps-ratio', ratio.toFixed(4));
+  s('ps-cents', (cents >= 0 ? '+' : '') + cents + '¢');
+  s('ps-oct', (semitones / 12 >= 0 ? '+' : '') + (semitones / 12).toFixed(2));
+}
+
+// ═══════════════════════════════════════════════════════════
+// PINK NOISE
+// ═══════════════════════════════════════════════════════════
+function updateNoiseLevel() {
+  const v = document.getElementById('noise-level').value;
+  document.getElementById('noise-level-val').textContent = v + 'dB';
+  if (noiseGain) {
+    const linear = Math.pow(10, v / 20);
+    noiseGain.gain.value = linear * 0.08;
+  }
+}
+
+function toggleNoise() {
+  initAudio();
+  const btn = document.getElementById('noise-btn');
+  const meter = document.getElementById('noise-meter');
+  if (noiseNode) {
+    noiseNode.stop(); noiseNode = null; noiseGain = null;
+    btn.textContent = '▶ Play Pink Noise';
+    btn.className = 'btn btn-r';
+    meter.style.width = '0%';
+  } else {
+    const bufSize = 2 * audioCtx.sampleRate;
+    const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    const out = buf.getChannelData(0);
+    let lastOut = 0;
+    for (let i = 0; i < bufSize; i++) {
+      const white = Math.random() * 2 - 1;
+      out[i] = (lastOut + 0.02 * white) / 1.02;
+      lastOut = out[i]; out[i] *= 3.5;
+    }
+    noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = buf; noiseNode.loop = true;
+    noiseGain = audioCtx.createGain();
+    const db = parseFloat(document.getElementById('noise-level').value);
+    noiseGain.gain.value = Math.pow(10, db/20) * 0.08;
+    noiseNode.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+    noiseNode.start();
+    btn.textContent = '■ Stop Pink Noise';
+    btn.className = 'btn btn-a';
+    meter.style.width = '60%';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// TUNER
+// ═══════════════════════════════════════════════════════════
+function toggleTuner() {
+  initAudio();
+  const statusEl = document.getElementById('tuner-status');
+  if (tunerActive) {
+    tunerActive = false;
+    cancelAnimationFrame(tunerAnimId);
+    statusEl.style.display = 'none';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    const src = audioCtx.createMediaStreamSource(stream);
+    analyserNode = audioCtx.createAnalyser();
+    analyserNode.fftSize = 2048;
+    src.connect(analyserNode);
+    tunerActive = true;
+    statusEl.style.display = 'block';
+    tunerLoop();
+  }).catch(() => alert('Microphone access denied.'));
+}
+
+function tunerLoop() {
+  if (!tunerActive) return;
+  const canvas = document.getElementById('scope');
+  const ctx = canvas.getContext('2d');
+  const buf = new Float32Array(analyserNode.fftSize);
+  analyserNode.getFloatTimeDomainData(buf);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#00ffe7'; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let i = 0; i < buf.length; i++) {
+    const x = (i / buf.length) * canvas.width;
+    const y = (1 + buf[i]) / 2 * canvas.height;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  const freq = autoCorrelate(buf, audioCtx.sampleRate);
+  if (freq > 0) {
+    const semi = 12 * Math.log2(freq / A4);
+    const midiNum = Math.round(semi) + 69;
+    const nn = NOTE_NAMES[((midiNum % 12) + 12) % 12];
+    const oct = Math.floor(midiNum / 12) - 1;
+    const exactF = A4 * Math.pow(2, (midiNum - 69) / 12);
+    const cents = Math.round(1200 * Math.log2(freq / exactF));
+    s('tuner-note', nn + oct + ' — ' + freq.toFixed(1) + 'Hz');
+    s('tuner-cents', (cents >= 0 ? '+' : '') + cents + '¢');
+  }
+  tunerAnimId = requestAnimationFrame(tunerLoop);
+}
+
+function autoCorrelate(buf, rate) {
+  let rms = 0;
+  for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / buf.length);
+  if (rms < 0.01) return -1;
+  let r1 = 0, r2 = buf.length - 1;
+  const thresh = 0.2;
+  while (r1 < buf.length/2 && Math.abs(buf[r1]) < thresh) r1++;
+  while (r2 > buf.length/2 && Math.abs(buf[r2]) < thresh) r2--;
+  const sub = buf.slice(r1, r2+1);
+  const c = new Array(sub.length).fill(0);
+  for (let i = 0; i < sub.length; i++)
+    for (let j = 0; j < sub.length - i; j++)
+      c[i] += sub[j] * sub[j+i];
+  let d = 0; while (c[d] > c[d+1]) d++;
+  let maxVal = -1, maxPos = -1;
+  for (let i = d; i < sub.length; i++) if (c[i] > maxVal) { maxVal = c[i]; maxPos = i; }
+  let T0 = maxPos;
+  const x1 = c[T0-1], x2 = c[T0], x3 = c[T0+1];
+  const a = (x1 + x3 - 2*x2)/2, b2 = (x3 - x1)/2;
+  if (a) T0 = T0 - b2/(2*a);
+  return rate / T0;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TIPS RENDERER
+// ═══════════════════════════════════════════════════════════
+function renderTips() {
+  const bpm = getBPM();
+  const beat = 60000 / bpm;
+  const phase = (1000 / currentFreq).toFixed(2);
+  const ms16 = (beat/4).toFixed(0);
+  const ms8  = (beat/2).toFixed(0);
+  const ms4  = beat.toFixed(0);
+
+  const categories = {
+    'tips-kick': [
+      { c:'red',    t:'Kick Tuning',         b:`Tune your kick to the root note of your track (${NOTE_NAMES[currentRoot]}). A kick at ${currentFreq.toFixed(0)}Hz fundamentally will lock with the bass.` },
+      { c:'',       t:'Kick Envelope',        b:`Hold/Decay should be exactly ${ms16}ms (1/16 of bar at ${bpm}BPM) for the bass to fill perfectly after each kick hit.` },
+      { c:'yellow', t:'Sub Sidechain',        b:`Set your sidechain release to ${ms16}ms. That's the time the bass has to recover volume before the next kick transient.` },
+      { c:'',       t:'Layering',             b:`Use 2 kicks: a transient-heavy one (high punch, no sub) + a sub-kick. Crossover at 80–120Hz.` },
+      { c:'red',    t:'Phase Check',          b:`Check kick + bass phase: invert one and compare. Choose the polarity with MORE energy. Do this every time you change tuning.` },
+    ],
+    'tips-atmos': [
+      { c:'purple', t:'Predelay',             b:`Set reverb predelay to ${phase}ms (one full phase cycle of the note). This separates the dry signal from the reverb cloud perfectly.` },
+      { c:'',       t:'LFO Texture',          b:`Modulate pad filter cutoff with an LFO set to ${ms8}ms (1/8 note). Creates a subtle pulsing that syncs with the groove.` },
+      { c:'purple', t:'Stereo Width',         b:`Wide stereo is NOT mono-compatible. Check your atmos track in mono — if it disappears, use Mid/Side EQ to recover the center.` },
+      { c:'',       t:'Sidechain Reverb',     b:`Send atmos reverb to a separate bus and sidechain it to the kick with a ${ms16}ms release. The reverb 'breathes' with the groove.` },
+    ],
+    'tips-lead': [
+      { c:'',       t:'Arp Speed',            b:`At ${bpm}BPM, fast arpeggios should use ${ms16}ms steps (1/16). Release envelope should NOT exceed ${ms16}ms to avoid mud.` },
+      { c:'yellow', t:'Saturation',           b:`Add light saturation (+2–4 harmonics) to leads so they cut through on small speakers without being harsh on loud systems.` },
+      { c:'',       t:'Filter Envelope',      b:`Filter sweep depth: attack on the filter matches the phrase length (${ms4}ms for a 1-bar sweep). Time it perfectly for dramatic builds.` },
+      { c:'yellow', t:'Detuning',             b:`Unison detune: ±3–8 cents is the psy standard. More than 12 cents sounds out of tune at high volumes.` },
+    ],
+    'tips-phase': [
+      { c:'',       t:'Phase Cycle',          b:`At ${currentFreq.toFixed(1)}Hz, one complete wave cycle = ${phase}ms. Use this for fade-in lengths to avoid the initial 'click' in samples.` },
+      { c:'red',    t:'Zero-crossing Edits',  b:`Always trim audio clips at zero-crossing points. A ${phase}ms fade-in on a synth sample eliminates the pop artifact.` },
+      { c:'',       t:'Time Stretch',         b:`To transpose ${document.getElementById('st-input').value} semitones without changing tempo: multiply clip speed by ${document.getElementById('st-result').textContent}.` },
+      { c:'yellow', t:'Transient Alignment',  b:`Move bass clip forward in the timeline by ${(phase * 0.5).toFixed(1)}ms (half a phase cycle) to align its attack with the kick transient.` },
+    ],
+    'tips-master': [
+      { c:'',       t:'Stereo Bus Chain',     b:`Recommended Psytrance bus: EQ → Multi-Band → Stereo Image → Limiter. Maximum GR on limiter: 2-3dB. More = pumping artifacts.` },
+      { c:'yellow', t:'Low End Mono',         b:`Apply a mono sum below 80–120Hz on the master bus. All sub content should be mono — stereo sub causes phase cancellation in clubs.` },
+      { c:'red',    t:'Reference Loudness',   b:`Club Psytrance targets -11 to -8 LUFS integrated. Peak limiter ceiling: -0.3 to -0.5 dBFS (true peak).` },
+      { c:'',       t:'Pre-Master EQ',        b:`Before limiting: cut ~200-400Hz with a wide shelf (-1.5dB) to reduce muddiness. Boost 50-60Hz (+1dB) for subwoofer weight.` },
+      { c:'purple', t:'Parallel Compression', b:`New York style on the bus: blend heavily-compressed duplicate at 20-30% wet. Keeps transients alive while increasing perceived loudness.` },
+    ],
+    'tips-sd': [
+      { c:'',       t:'Psytrance Bass',       b:`Classic 303-style bass: Sawtooth → Filter (LP 24dB/oct) → Distortion/Overdrive → Filter Envelope. The magic is in the filter accent amount.` },
+      { c:'purple', t:'Acid Line Tuning',     b:`Acid basslines are most psychedelic when played in Phrygian mode (intervals: ${SCALES.phrygian.join(', ')} semitones from root).` },
+      { c:'',       t:'FX Sweeps',            b:`Psy FX sweeps should take exactly ${ms4}ms (1 beat) to travel from start to end. Automate the filter cutoff across exactly one bar.` },
+      { c:'yellow', t:'Distortion Stack',     b:`Stack distortions: Soft Clip → Waveshaper → Bitcrusher (subtle). Each adds different harmonic content. EQ between stages.` },
+      { c:'purple', t:'Goa Lead Classic',     b:`Classic GOA lead: Square + Sawtooth (detuned ±7 cents) → LP Filter sweep → Chorus/Ensemble → Short Reverb. Autofilter speed: ${ms8}ms.` },
+    ],
+  };
+
+  Object.entries(categories).forEach(([id, items]) => {
+    document.getElementById(id).innerHTML = items.map(item =>
+      `<div class="tip-item ${item.c}"><strong>${item.t}:</strong> ${item.b}</div>`
+    ).join('');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// TUNING CALCULATOR
+// ═══════════════════════════════════════════════════════════
+function calcTuning() {
+  const base = parseFloat(document.getElementById('tuning-select').value);
+  const t = document.getElementById('tuning-table');
+  if (!t) return;
+  // A4 ref
+  let aRef = base;
+  if (base === 528) aRef = 528 * Math.pow(2, (9 - 0) / 12); // C=528 → compute A4
+  const noteDescs = { 0:'C',1:'C#',2:'D',3:'D#',4:'E',5:'F',6:'F#',7:'G',8:'G#',9:'A',10:'A#',11:'B' };
+  const rows = [3,4,5].flatMap(oct =>
+    [0,3,7,9].map(n => {
+      const semi = (oct-4)*12 + n - 9;
+      const freq = aRef * Math.pow(2, semi/12);
+      return `<tr><td>${noteDescs[n]}${oct}</td><td class="val">${freq.toFixed(3)} Hz</td></tr>`;
+    })
+  );
+  t.innerHTML = `<thead><tr><th>Note</th><th>Freq (A=${aRef.toFixed(1)}Hz)</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+  const notes = {440:'Standard concert pitch. Universal DAW default.',432:'432Hz supporters claim warmth & resonance. -31.77 cents from 440.',444:'444Hz used in Vedic/ancient Indian music traditions.',528:'C=528Hz "Miracle Tone" — claimed healing/meditation properties.'};
+  document.getElementById('tuning-note').textContent = notes[base] || '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// GOLDEN RATIO
+// ═══════════════════════════════════════════════════════════
+function calcGoldenRatio() {
+  const bars = parseInt(document.getElementById('phi-bars').value) || 128;
+  const PHI = 1.6180339887;
+  const bpm = getBPM();
+  const barsTime = bars * (60000 / bpm) * 4;
+  const points = [
+    { name:'φ Climax',     bar: Math.round(bars / PHI),     desc:'Peak energy point — drop or main build' },
+    { name:'φ² Release',   bar: Math.round(bars / (PHI*PHI)), desc:'Breakdown or variation' },
+    { name:'φ³ Intro end', bar: Math.round(bars / Math.pow(PHI,3)), desc:'Intro → main theme transition' },
+    { name:'Full length',  bar: bars,  desc:'Track end' },
+  ];
+  const t = document.getElementById('phi-table');
+  t.innerHTML = `<thead><tr><th>Point</th><th>Bar</th><th>Time</th><th>Use</th></tr></thead><tbody>` +
+    points.map(p => {
+      const timeMs = p.bar * (60000/bpm) * 4;
+      const timeSec = (timeMs/1000).toFixed(0);
+      return `<tr><td>${p.name}</td><td class="val">${p.bar}</td><td class="val">${timeSec}s</td><td style="font-size:.75em;color:var(--dim)">${p.desc}</td></tr>`;
+    }).join('') + '</tbody>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// SPECTRUM VIZ
+// ═══════════════════════════════════════════════════════════
+function buildSpectrumViz() {
+  const bands = [
+    { label:'Sub', range:'20-60Hz',   color:'#ff2d55', w:8 },
+    { label:'Bass', range:'60-250Hz', color:'#f0a030', w:14 },
+    { label:'Lo-Mid', range:'250-500Hz', color:'#f0fa6b', w:10 },
+    { label:'Mid', range:'0.5-2kHz',  color:'#39ff14', w:16 },
+    { label:'Hi-Mid', range:'2-6kHz', color:'#00ffe7', w:14 },
+    { label:'Presence', range:'6-10kHz', color:'#b44bff', w:12 },
+    { label:'Air', range:'10-20kHz',  color:'#e0e0ff', w:8 },
+  ];
+  const el = document.getElementById('spectrum-viz');
+  if (!el) return;
+  el.innerHTML = `<div style="display:flex; align-items:flex-end; gap:4px; height:80px; margin-bottom:6px;">` +
+    bands.map(b => `<div style="flex:${b.w}; height:${b.w * 4}px; background:${b.color}; border-radius:4px 4px 0 0; opacity:.8;"></div>`).join('') +
+    `</div><div style="display:flex; gap:4px;">` +
+    bands.map(b => `<div style="flex:${b.w}; text-align:center; font-size:.55em; color:${b.color};">${b.label}<br>${b.range}</div>`).join('') +
+    `</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MIDI
+// ═══════════════════════════════════════════════════════════
+if (navigator.requestMIDIAccess) {
+  navigator.requestMIDIAccess().then(acc => {
+    for (let inp of acc.inputs.values()) {
+      inp.onmidimessage = msg => {
+        const [cmd, note, vel] = msg.data;
+        if (cmd === 144 && vel > 0) {
+          initAudio();
+          const freq = A4 * Math.pow(2, (note - 69) / 12);
+          triggerNote(freq, 0.5);
+          currentFreq = freq;
+          document.getElementById('freq-input').value = freq.toFixed(2);
+          freqToNote();
         }
+      };
+      s('midi-status', 'MIDI: ' + inp.name + ' ✅');
+    }
+  }, () => s('midi-status', 'MIDI: Not supported in this browser.'));
+}
 
-        function generarTeclado() {
-            const contenedor = document.getElementById('teclado');
-            contenedor.innerHTML = '';
-            for(let i = 0; i < 24; i++) {
-                const nombreNota = notasNombres[i % 12];
-                const div = document.createElement('div');
-                div.innerText = nombreNota + (i < 12 ? "" : "'");
-                div.id = "nota-" + i;
-                div.className = nombreNota.includes("#") ? "tecla negra" : "tecla blanca";
-                div.onclick = () => {
-                    initAudio();
-                    procesarEntradaNota(i);
-                };
-                contenedor.appendChild(div);
-            }
-            iluminarEscala(ultimaRaiz);
-        }
+function downloadMIDI() {
+  if (!notasParaMidi.length) return alert('Play a scale first!');
+  const bpm = getBPM();
+  const header = [0x4d,0x54,0x68,0x64,0,0,0,6,0,0,0,1,0,0x80];
+  let body = [];
+  notasParaMidi.forEach(n => body.push(0,0x90,n,0x64, 0x60,0x80,n,0));
+  body.push(0,0xFF,0x2F,0);
+  const trkHead = [0x4d,0x54,0x72,0x6b,0,0,0,body.length];
+  const midi = new Uint8Array([...header,...trkHead,...body]);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([midi], {type:'audio/midi'}));
+  a.download = `Nykro_${bpm}BPM.mid`; a.click();
+}
 
-        function procesarEntradaNota(index) {
-            initAudio();
-            ultimaRaiz = index; 
-            const freq = frecuenciasBase[index % 12] * (index >= 12 ? 2 : 1);
-            
-            document.getElementById('nombre-nota').innerText = notasNombres[index % 12];
-            document.getElementById('hz-nota').innerText = freq.toFixed(2);
-            document.getElementById('fase-ms').innerText = (1000/freq).toFixed(2);
-            document.getElementById('midi-val').innerText = 60 + index;
-            
-            document.getElementById('h2-val').innerText = (freq * 2).toFixed(2);
-            document.getElementById('h3-val').innerText = (freq * 3).toFixed(2);
-            
-            arpegiarEscala(index);
-            iluminarEscala(index); 
-        }
+// ═══════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════
+function openModal(type) {
+  const modals = {
+    pinkNoiseTips: {
+      title: '🌸 Pink Noise Reference Guide',
+      body: `<div class="tip-list">
+        <div class="tip-item"><strong>Theory:</strong> Pink noise has equal energy per octave — perfectly mirroring the human ear's frequency response. It is the most neutral mixing reference available.</div>
+        <div class="tip-item yellow"><strong>Procedure:</strong> Set pink noise to -12dBFS. Lower ALL faders. Raise each element until it's <em>just barely audible</em> above the noise floor. Don't try to 'compete' with the noise.</div>
+        <div class="tip-item green"><strong>Kick & Bass:</strong> These should be slightly louder than the noise (they are dominant). Everything else should sit just under.</div>
+        <div class="tip-item red"><strong>Warning:</strong> This technique sets RELATIVE levels, not master loudness. After balancing, apply gain staging on your master bus to hit target LUFS.</div>
+        <div class="tip-item"><strong>Pro Tip:</strong> Use pink noise at different levels (-6dB, -12dB, -18dB) to check the mix at different monitoring volumes. A good mix holds its balance at ALL levels.</div>
+      </div>`,
+    },
+  };
+  const m = modals[type];
+  if (!m) return;
+  document.getElementById('modal-title').innerHTML = m.title;
+  document.getElementById('modal-body').innerHTML = m.body;
+  document.getElementById('modal-overlay').classList.add('open');
+}
 
-        function actualizarTodo() {
-            const bpm = document.getElementById('bpm-input').value;
-            if (bpm > 0) {
-                const ms1 = (60000 / bpm) * 4; 
-                const ms4 = ms1 / 4;           
-                const ms8 = ms4 / 2;           
-                const ms16 = ms4 / 4;           
-                const ms32 = ms4 / 8;
-                document.getElementById('nota-1').innerText = ms1.toFixed(2);
-                document.getElementById('nota-2').innerText = (ms1/2).toFixed(2);
-                document.getElementById('nota-4').innerText = ms4.toFixed(2);
-                document.getElementById('nota-8').innerText = ms8.toFixed(2);
-                document.getElementById('nota-16').innerText = ms16.toFixed(2);
-                document.getElementById('comp-kick').innerText = ms16.toFixed(2) + " ms";
-                document.getElementById('comp-bass').innerText = ms32.toFixed(2) + " ms";
-                document.getElementById('comp-leads').innerText = ms8.toFixed(2) + " ms";
-                document.getElementById('comp-atmos').innerText = ms4.toFixed(2) + " ms";
-                return ms4 / 1000;
-            }
-            return 0.5;
-        }
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+}
 
-        function calcTranspose() {
-            const st = document.getElementById('st-input').value;
-            document.getElementById('st-result').innerText = (Math.pow(2, st/12) * 100).toFixed(1) + "%";
-        }
+// ═══════════════════════════════════════════════════════════
+// MISC UTILS
+// ═══════════════════════════════════════════════════════════
+function s(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
 
-        function toggleNoise() {
-            initAudio();
-            if (noiseNode) {
-                noiseNode.stop(); noiseNode = null;
-                document.getElementById('noise-btn').innerText = "PLAY";
-                document.getElementById('noise-btn').style.background = "#e94560";
-            } else {
-                const bufferSize = 2 * audioCtx.sampleRate, noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate), output = noiseBuffer.getChannelData(0);
-                let lastOut = 0;
-                for (let i = 0; i < bufferSize; i++) {
-                    let white = Math.random() * 2 - 1;
-                    output[i] = (lastOut + (0.02 * white)) / 1.02; lastOut = output[i]; output[i] *= 3.5; 
-                }
-                noiseNode = audioCtx.createBufferSource(); noiseNode.buffer = noiseBuffer; noiseNode.loop = true;
-                const gain = audioCtx.createGain(); gain.gain.value = 0.08;
-                noiseNode.connect(gain); gain.connect(audioCtx.destination); noiseNode.start();
-                document.getElementById('noise-btn').innerText = "STOP";
-                document.getElementById('noise-btn').style.background = "#4ecca3";
-            }
-        }
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  document.getElementById('theme-btn').textContent =
+    document.body.classList.contains('light') ? '🌙 Dark' : '☀️ Light';
+}
 
-        function arpegiarEscala(rootIndex) {
-            if (!audioCtx) initAudio();
-            const seleccion = document.getElementById('escala-select').value;
-            const intervalosBase = escalas[seleccion];
-            const bpmSec = actualizarTodo();
-            const sixteenthNote = bpmSec / 4;
-            let now = audioCtx.currentTime;
-            notasParaMidi = [];
-            
-            let escalaExtendida = [];
-            for (let oct = 0; oct < 2; oct++) {
-                intervalosBase.forEach(inter => {
-                    escalaExtendida.push(inter + (oct * 12));
-                });
-            }
+function copyShareLink() {
+  const url = window.location.href + '?bpm=' + getBPM();
+  navigator.clipboard.writeText(url).then(() => alert('Link copied!'));
+}
 
-            escalaExtendida.forEach((intervalo, i) => {
-                const noteIndex = (rootIndex + intervalo);
-                if (noteIndex < 36) { 
-                    const freq = frecuenciasBase[noteIndex % 12] * Math.pow(2, Math.floor(noteIndex / 12));
-                    notasParaMidi.push(60 + noteIndex);
-                    playNote(freq, sixteenthNote * 0.9, now + (i * sixteenthNote), "nota-" + (noteIndex % 24));
-                }
-            });
-            document.getElementById('midi-log').innerText = "✓ MIDI READY";
-        }
-
-        function playNote(frequency, duration, startTime, elementId) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(frequency, startTime);
-            gain.gain.setValueAtTime(0.15, startTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(startTime); osc.stop(startTime + duration);
-            setTimeout(() => {
-                const el = document.getElementById(elementId);
-                if(el) { el.classList.add('sonando'); setTimeout(() => el.classList.remove('sonando'), duration*1000); }
-            }, (startTime - audioCtx.currentTime) * 1000);
-        }
-
-        function iluminarEscala(raiz) {
-            const seleccion = document.getElementById('escala-select').value;
-            const intervalos = escalas[seleccion];
-            document.querySelectorAll('.tecla').forEach(el => el.classList.remove("activa"));
-            
-            for (let oct = 0; oct < 3; oct++) {
-                intervalos.forEach(paso => {
-                    const noteIdx = (raiz + paso + (oct * 12));
-                    if(noteIdx < 24) {
-                        const el = document.getElementById("nota-" + noteIdx);
-                        if(el) el.classList.add("activa");
-                    }
-                });
-            }
-        }
-
-        if (navigator.requestMIDIAccess) {
-            navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
-        }
-
-        function onMIDISuccess(midiAccess) {
-            const inputs = midiAccess.inputs.values();
-            for (let input of inputs) { input.onmidimessage = handleMIDIMessage; document.getElementById('midi-status').innerText = "MIDI: " + input.name + " Connected ✅"; }
-            midiAccess.onstatechange = (e) => {
-                if(e.port.type === 'input') document.getElementById('midi-status').innerText = e.port.state === "connected" ? "MIDI: " + e.port.name + " Connected ✅" : "MIDI: Disconnected";
-            };
-        }
-
-        function onMIDIFailure() { document.getElementById('midi-status').innerText = "MIDI: Not supported."; }
-
-        function handleMIDIMessage(message) {
-            const command = message.data[0], note = message.data[1], velocity = (message.data.length > 2) ? message.data[2] : 0;
-            if (!audioCtx || audioCtx.state !== 'running') initAudio();
-            if (command === 144 && velocity > 0) {
-                const noteIndex = note % 24;
-                procesarEntradaNota(noteIndex);
-            }
-        }
-
-        function abrirModal(tipo) {
-            const modal = document.getElementById("modalGuia");
-            const values = {
-                v1: document.getElementById('nota-1').innerText,
-                v2: document.getElementById('nota-2').innerText,
-                v4: document.getElementById('nota-4').innerText,
-                v8: document.getElementById('nota-8').innerText,
-                v16: document.getElementById('nota-16').innerText,
-                vHz: document.getElementById('hz-nota').innerText,
-                vFase: document.getElementById('fase-ms').innerText,
-                vH2: document.getElementById('h2-val').innerText,
-                vH3: document.getElementById('h3-val').innerText,
-                vST: document.getElementById('st-input').value,
-                vRatio: document.getElementById('st-result').innerText
-            };
-            
-            const contenido = {
-                quicktips: { 
-                    t: "Quick Tips: MS Application", 
-                    c: `<p>🎯 <b>Kicks:</b> Set the total Hold/Decay of your Kick to <b>${values.v16}ms</b> for perfect integration with the bass.</p>` +
-                        `<p>🥁 <b>Psy-Groove:</b> Set your filter's LFO to 1/8 sync or <b>${values.v8}ms</b> for that classic bounce.</p>` +
-                        `<p>🔥 <b>Stabs:</b> Send your stabs to a bus with a Gate set to <b>${values.v16}ms</b> for surgical cuts.</p>` +
-                        `<p>🎹 <b>Arps:</b> If using fast arpeggios, the envelope Release should not exceed <b>${values.v16}ms</b> to avoid mud.</p>`
-                },
-                delay_guide: { 
-                    t: "Delay Master Guide", 
-                    c: `<p>🌀 <b>Offbeat Psy:</b> Standard delay is 1/8 (${values.v8}ms). Adjust feedback to 30%.</p>` +
-                        `<p>✨ <b>Slapback Lead:</b> Use 1/16 (${values.v16}ms) with low feedback to add thickness without clutter.</p>` +
-                        `<p>🌌 <b>Tripled Textures:</b> Use a 1/4 (${values.v4}ms) delay with a high Hi-Pass filter for atmospheres that don't interfere.</p>` +
-                        `<p>📐 <b>Perfect Ping-Pong:</b> Channel L at 1/8 (${values.v8}ms) and Channel R at 1/4 (${values.v4}ms) for a rhythmic expansive stereo.</p>` +
-                        `<p>💥 <b>Haas Effect:</b> Set a manual delay between 10ms and <b>${values.vFase}ms</b> on a single channel to widen mono sounds.</p>`
-                },
-                reverb_guide: { 
-                    t: "Surgical Reverb Guide", 
-                    c: `<p>⏱️ <b>Pro Predelay:</b> Set Predelay to exactly <b>${values.vFase}ms</b>. This separates the Lead transient from the reverb cloud.</p>` +
-                        `<p>🧼 <b>Clean Decay:</b> In fast Psytrance, a Reverb Decay longer than <b>${values.v4}ms</b> usually muddies the mix. Keep "Tails" short.</p>` +
-                        `<p>🌑 <b>Dark Reverb:</b> Use a 1/2 (${values.v2}ms) decay but apply a Low-Cut up to 400Hz and a High-Cut at 5kHz.</p>` +
-                        `<p>🌊 <b>Sidechained Reverb:</b> Send your reverb to a bus and sidechain it to the Kick using a <b>${values.v16}ms</b> release so the reverb "breathes".</p>`
-                },
-                sidechain: { 
-                    t: "Sidechain & LFO Tool", 
-                    c: `<p>📉 <b>Bass Release:</b> Set your sidechain compressor release to <b>${values.v16}ms</b>. It's the exact time for the bass to recover volume before the next note.</p>` +
-                        `<p>🛸 <b>LFO Shaping:</b> If using LFO Tool, draw the curve so it reaches 100% volume right at the <b>${values.v8}ms</b> mark.</p>` +
-                        `<p>🔊 <b>Pumping Atmos:</b> For dramatic pumping on pads, use a slower sidechain with 1/4 (<b>${values.v4}ms</b>) release.</p>` +
-                        `<p>⚡ <b>Surgical Precision:</b> Use the phase cycle of <b>${values.vFase}ms</b> as the "Lookahead" time to anticipate compression.</p>`
-                },
-                eq_pro: { 
-                    t: "Harmonic Analysis (EQ) 🔊", 
-                    c: `<p>Use these exact points for the current note (<b>${values.vHz}Hz</b>):</p>` +
-                        `<p>• <b>Resonance Cleaning:</b> Reduce with a narrow bell at <b>${values.vH3}Hz</b> to remove harsh harmonics.</p>` +
-                        `<p>• <b>Bass Punch:</b> Boost +2dB at <b>${values.vH2}Hz</b> (the octave) so the bass is audible on mobiles and laptops.</p>` +
-                        `<p>• <b>Air Cut:</b> Apply a gentle Low Pass starting at harmonic H8 for a more "Forest" and organic sound.</p>` 
-                },
-                fase_pro: { 
-                    t: "Phase & Samplers 🌀", 
-                    c: `<p>• <b>Phase Alignment:</b> Your note completes a cycle every <b>${values.vFase}ms</b>. Move your audio clip in milliseconds to find the point where it adds with the Kick.</p>` +
-                        `<p>• <b>Time Stretching:</b> To transpose <b>${values.vST} semitones</b> without losing rhythm, stretch your sample to <b>${values.vRatio}</b>.</p>` +
-                        `<p>• <b>Zero Crossing:</b> Make your Fade-ins <b>${values.vFase}ms</b> to avoid the initial "pop" in synth samples.</p>`
-                },
-                pink_noise: {
-                    t: "Pink Noise Mixing Guide 🌸",
-                    c: `<p><b>Mixing Technique:</b></p>` +
-                        `<p>1. Play the Pink Noise and set it to <b>-12dB</b> (or your target loudness).</p>` +
-                        `<p>2. Bring all your faders down.</p>` +
-                        `<p>3. Bring up each track one by one until you can <i>just barely</i> hear it over the noise.</p>` +
-                        `<p>4. This creates a balanced, professional spectrum. Pink Noise has equal energy per octave, mirroring human hearing.</p>`
-                }
-            };
-            document.getElementById("modalTitulo").innerHTML = contenido[tipo].t;
-            document.getElementById("modalCuerpo").innerHTML = contenido[tipo].c;
-            modal.style.display = "block";
-        }
-        function cerrarModal() { document.getElementById("modalGuia").style.display = "none"; }
-        window.onclick = e => { if(e.target == document.getElementById("modalGuia")) cerrarModal(); }
-
-        function descargarMIDI() {
-            if (notasParaMidi.length === 0) return alert("Play the keyboard first!");
-            const bpm = document.getElementById('bpm-input').value;
-            const header = [0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x80];
-            let body = [];
-            notasParaMidi.forEach(n => body.push(0x00, 0x90, n, 0x64, 0x60, 0x80, n, 0x00));
-            body.push(0x00, 0xFF, 0x2F, 0x00);
-            const trackHeader = [0x4d, 0x54, 0x72, 0x6b, 0, 0, 0, body.length];
-            const midi = new Uint8Array([...header, ...trackHeader, ...body]);
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(new Blob([midi], {type: "audio/midi"}));
-            a.download = `Nykro_Scale_${bpm}BPM.mid`; a.click();
-        }
-
-        /* ========================================= */
-        /* NUEVO: LÓGICA DE BOTONES TEMA E IDIOMA    */
-        /* ========================================= */
-        
-        // Función para el Modo Claro / Oscuro
-        function toggleTheme() {
-            document.body.classList.toggle('light-mode');
-            const isLight = document.body.classList.contains('light-mode');
-            document.getElementById('theme-btn').innerText = isLight ? '🌙 Dark' : '☀️ Light';
-        }
-
-        // Función para cambiar el idioma usando el traductor nativo ya existente
-        function toggleLanguage() {
-            const select = document.querySelector('.goog-te-combo');
-            if (select) {
-                select.value = select.value === 'es' ? 'en' : 'es';
-                select.dispatchEvent(new Event('change'));
-            } else {
-                alert("El traductor de Google aún está cargando. ¡Intenta en un segundo!");
-            }
-        }
-
-        generarTeclado();
-        actualizarTodo();
-        calcTranspose();
-    </script>
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  rebuildKeyboard();
+  updateAll();
+  freqToNote();
+  buildChord();
+  calcInterval();
+  calcPitch();
+  calcAR();
+  renderTips();
+  document.getElementById('ar-element').addEventListener('change', () => {
+    document.getElementById('ar-custom-row').style.display =
+      document.getElementById('ar-element').value === 'custom' ? 'flex' : 'none';
+  });
+});
+</script>
 </body>
 </html>
