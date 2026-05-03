@@ -601,9 +601,12 @@
       </div>
 
       <div class="control-group">
-        <div class="control-label">BPM <span class="control-val" id="bpm-val">120</span></div>
-        <input type="range" id="seq-speed" min="40" max="300" value="120"
-          oninput="document.getElementById('bpm-val').textContent=this.value;document.getElementById('bpm-big').textContent=this.value">
+        <div class="control-label">BPM</div>
+        <div style="display:flex; gap:4px; margin-bottom:4px;">
+          <input type="number" id="bpm-input" min="40" max="300" value="120" style="flex:1; background:var(--surface2); color:var(--green); border:1px solid var(--border); font-family:var(--font); font-size:10px; padding:4px 6px; border-radius:3px;" oninput="document.getElementById('seq-speed').value=this.value; document.getElementById('bpm-val').textContent=this.value; document.getElementById('bpm-big').textContent=this.value;">
+        </div>
+        <input type="range" id="seq-speed" min="40" max="300" value="120" style="width:100%;" oninput="document.getElementById('bpm-input').value=this.value; document.getElementById('bpm-val').textContent=this.value; document.getElementById('bpm-big').textContent=this.value;">
+        <div class="control-val" id="bpm-val" style="text-align:center; margin-top:4px;">120</div>
       </div>
 
       <div class="control-group">
@@ -1228,6 +1231,22 @@ function handlePress(midiNote) {
   currentRootNote = midiNote;
   document.getElementById('root-display').textContent = midiToName(midiNote);
   updateKeyboardUI(midiNote, true);
+  
+  const scaleKey = document.getElementById('scale-type').value;
+  const scalePattern = scales[scaleKey];
+  const noteInScale = midiNote % 12;
+  let scaleIndexForNote = 0;
+  for (let i = 0; i < scalePattern.length; i++) {
+    if (scalePattern[i] % 12 === noteInScale) {
+      scaleIndexForNote = i;
+      break;
+    }
+  }
+  pianoRollScaleIndex = scaleIndexForNote - 7;
+  pianoRollScaleIndex = Math.max(-42, Math.min(42, pianoRollScaleIndex));
+  const octaveNum = Math.floor(pianoRollScaleIndex / scalePattern.length);
+  document.getElementById('octave-display').textContent = octaveNum >= 0 ? '+' + octaveNum : octaveNum;
+  
   if (isSequencerRunning) {
     activeVoices.set(midiNote, 'held');
   } else {
