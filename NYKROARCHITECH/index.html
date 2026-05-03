@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCHITECT LAB V3 — Melodic Intelligence</title>
+<link rel="stylesheet" href="style.css" type="text/css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script src="https://unpkg.com/@tonejs/midi"></script>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="logo">ARCH<span>ITECT</span> LAB <span class="v3">V3</span></div>
+    <select id="rootTone" onchange="buildGrid()"></select>
+    <select id="scaleType" style="min-width:190px" onchange="buildGrid()"></select>
+    <div class="bpm-wrap">
+      <label>BPM</label>
+      <input type="range" id="bpmSlider" min="40" max="250" value="120" oninput="updateBPM(this.value)">
+      <span id="bpmDisplay" class="bpm-val">120</span>
+    </div>
+  </div>
+  <div class="toolbar-right">
+    <button class="btn btn-ai"     onclick="aiCompose()">🤖 AI COMPOSE</button>
+    <button class="btn btn-random" onclick="smartRandom()">🎲 RANDOM</button>
+    <button class="btn btn-midi"   onclick="exportMIDI()">💾 MIDI</button>
+    <button class="btn btn-clear"  onclick="clearAll()">✕ CLEAR</button>
+    <button id="chordsBtn" class="btn btn-chords active" onclick="toggleChords()">🎼 CHORDS ON</button>
+    <button id="odesiBtn" class="btn btn-odesi inactive" onclick="toggleOdesi()">💡 ODESI C/R</button>
+    <button id="playBtn" class="btn btn-play" onclick="togglePlayback()">▶ START</button>
+  </div>
+</div>
+
+<div class="main-layout">
+
+  <div class="chord-composer" id="chordComposer">
+    <div class="cp-header">
+      <span class="cp-title">CHORD COMPOSER</span>
+      <div class="cp-tabs">
+        <button class="cp-tab active" onclick="switchCPTab('progressions',this)">PROGRESSIONS</button>
+        <button class="cp-tab" onclick="switchCPTab('voicings',this)">VOICINGS</button>
+        <button class="cp-tab" onclick="switchCPTab('builder',this)">BUILDER</button>
+      </div>
+    </div>
+
+    <div class="cp-panel" id="panel-progressions">
+      <div class="cp-section-label">CURRENT SCALE PROGRESSIONS</div>
+      <div id="scaleProgs" class="prog-list-v"></div>
+      <div class="cp-section-label" style="margin-top:8px;">UNIVERSAL PROGRESSIONS</div>
+      <div id="universalProgs" class="prog-list-v"></div>
+    </div>
+
+    <div class="cp-panel hidden" id="panel-voicings">
+      <div class="cp-section-label">CHORD VOICING</div>
+      <div class="voicing-grid" id="voicingGrid"></div>
+      <div class="cp-section-label" style="margin-top:8px;">INVERSION</div>
+      <div class="inv-row">
+        <button class="inv-btn active" onclick="setInversion(0,this)">ROOT</button>
+        <button class="inv-btn" onclick="setInversion(1,this)">1ST</button>
+        <button class="inv-btn" onclick="setInversion(2,this)">2ND</button>
+        <button class="inv-btn" onclick="setInversion(3,this)">3RD</button>
+      </div>
+      <div class="cp-section-label" style="margin-top:8px;">CHORD TYPE</div>
+      <div class="chord-type-grid" id="chordTypeGrid"></div>
+    </div>
+
+    <div class="cp-panel hidden" id="panel-builder">
+      <div class="cp-section-label">CHORD SEQUENCE BUILDER</div>
+      <div class="builder-slots" id="builderSlots"></div>
+      <div class="cp-section-label" style="margin-top:8px;">AVAILABLE CHORDS</div>
+      <div class="available-chords" id="availableChords"></div>
+      <button class="apply-builder-btn" onclick="applyBuilderSequence()">▶ APPLY TO MEASURES</button>
+    </div>
+
+    <div class="cp-chord-volume">
+      <span class="cp-section-label" style="margin:0">CHORD VOL</span>
+      <input type="range" id="chordVolSlider" min="-40" max="-6" value="-24" step="1"
+             oninput="updateChordVol(this.value)" style="flex:1;accent-color:#c084fc">
+      <span id="chordVolVal" style="font-size:0.5rem;color:#c084fc;min-width:30px;text-align:right;">-24</span>
+    </div>
+  </div>
+
+  <div class="workarea">
+    <div class="measure-row" id="measureRow"></div>
+    <div class="seq-wrap" id="seqWrap">
+      <div id="playhead" class="playhead"></div>
+      <div id="chordsDisplay" class="chords-display"></div>
+      <div id="editor" class="grid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="prog-bar">
+    <span class="prog-label">STYLES ▸</span>
+    <div id="progList" style="display:flex;gap:5px;flex-wrap:nowrap;"></div>
+  </div>
+  <div class="footer-bottom">
+    <div class="legend">
+      <span><span class="dot" style="background:var(--safe)"></span>SAFE</span>
+      <span><span class="dot" style="background:var(--cool)"></span>COOL</span>
+      <span><span class="dot" style="background:var(--warn)"></span>DANGER</span>
+      <span><span class="dot" style="background:var(--lead)"></span>LEAD</span>
+      <span><span class="dot" style="background:var(--orn)"></span>ORNAMENT</span>
+      <span><span class="dot" style="background:#a855f7"></span>BASS</span>
+    </div>
+    <div class="advisor" id="advisor">SELECT SCALE & STYLE</div>
+    <div class="chord-display" id="chordDisplay">—</div>
+  </div>
+</div>
+
+<script src="script.js" type="text/javascript"></script>
+</body>
+</html>
