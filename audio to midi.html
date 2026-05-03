@@ -2,293 +2,1247 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>NYKRODELIC | NEURAL MIDI ENGINE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYKRODELIC | NEURAL MIDI ENGINE V3</title>
+    <!-- Librerías de IA y MIDI -->
     <script src="https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/dist/magentamusic.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.1.4/browser/midiwriter.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #00ffa3; --bg: #030303; --sc: #ff5500; --fb: #1877f2; --card: #0a0a0a; --error: #ff3333; }
+        :root { 
+            --accent: #00ffa3; 
+            --accent-hover: #00cc82;
+            --bg: #030303; 
+            --card: #0a0a0a; 
+            --border: #1a1a1a;
+            --text-muted: #888;
+            --camelot-color: #ff00ea;
+            --warning: #ffaa00;
+            --error: #ff3366;
+        }
+        
+        * { box-sizing: border-box; }
         
         body { 
-            font-family: 'Rajdhani', sans-serif; background: var(--bg); color: #fff; margin: 0; 
-            display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden;
-            background: radial-gradient(circle at center, #0a1a14 0%, #030303 100%);
+            font-family: 'Rajdhani', sans-serif; 
+            background: radial-gradient(circle at center, #0a1a14 0%, var(--bg) 100%); 
+            color: #fff; 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh;
+            padding: 20px;
         }
 
         /* Capa CRT Overlay */
         body::before {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
+            content: " "; 
+            display: block; 
+            position: fixed; 
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2; 
+            background-size: 100% 2px, 3px 100%; 
+            pointer-events: none;
         }
 
         .app-container { 
-            background: var(--card); border: 1px solid #1a1a1a; border-radius: 20px; 
-            padding: 40px; width: 440px; text-align: center; z-index: 3;
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            border-radius: 15px; 
+            padding: 30px; 
+            width: 100%;
+            max-width: 600px;
+            z-index: 3;
             box-shadow: 0 0 50px rgba(0,255,163,0.05), inset 0 0 20px rgba(0,0,0,0.5);
-            position: relative; border-top: 3px solid var(--accent);
+            border-top: 3px solid var(--accent);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
-        h1 { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; letter-spacing: 6px; color: var(--accent); margin: 0; text-transform: uppercase; text-shadow: 0 0 10px var(--accent); }
-        .sub { font-size: 9px; color: #444; letter-spacing: 3px; margin-bottom: 30px; }
+        /* Ocultar scrollbar para diseño más limpio */
+        .app-container::-webkit-scrollbar { width: 8px; }
+        .app-container::-webkit-scrollbar-track { background: #000; }
+        .app-container::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
 
-        .panel { display: none; animation: slideUp 0.4s ease-out; }
-        .panel.active { display: block; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .header-title { text-align: center; margin-bottom: 25px; }
+        h1 { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 1.8rem; 
+            letter-spacing: 5px; 
+            color: var(--accent); 
+            margin: 0; 
+            text-shadow: 0 0 10px rgba(0,255,163,0.5); 
+        }
+        .sub { 
+            font-size: 11px; 
+            color: var(--text-muted); 
+            letter-spacing: 3px; 
+            margin-top: 5px;
+        }
+        .version-badge {
+            display: inline-block;
+            background: var(--accent);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
 
+        /* Drag & Drop Zone */
+        .drop-zone {
+            border: 2px dashed #333; 
+            border-radius: 8px; 
+            padding: 30px; 
+            text-align: center;
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            background: #050505; 
+            margin-bottom: 15px;
+            position: relative; 
+            overflow: hidden;
+        }
+        .drop-zone.dragover { 
+            border-color: var(--accent); 
+            background: rgba(0,255,163,0.05);
+            transform: scale(1.02);
+        }
+        .drop-zone.has-file {
+            border-color: var(--accent);
+            background: rgba(0,255,163,0.02);
+        }
+        .drop-zone p { 
+            margin: 0; 
+            font-size: 13px; 
+            color: var(--text-muted); 
+            pointer-events: none; 
+        }
+        .drop-zone span { 
+            color: var(--accent); 
+            font-weight: bold; 
+        }
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: #000;
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--accent);
+            display: none;
+        }
+        .file-info.visible {
+            display: block;
+        }
+        .supported-formats {
+            font-size: 9px;
+            color: #555;
+            margin-top: 8px;
+        }
+        #fileInput { display: none; }
+
+        /* Player y Visualizador */
+        #audioPlayer { 
+            width: 100%; 
+            height: 40px; 
+            margin-bottom: 15px; 
+            outline: none; 
+            display: none;
+            background: #000;
+            border-radius: 4px;
+        }
+        
+        .canvas-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        
+        #waveCanvas { 
+            width: 100%; 
+            height: 80px; 
+            background: #000; 
+            border-radius: 4px; 
+            border: 1px solid #111; 
+            display: none;
+        }
+        
+        #spectrumCanvas {
+            width: 100%;
+            height: 120px;
+            background: #000;
+            border-radius: 4px;
+            border: 1px solid #111;
+            display: none;
+            margin-top: 10px;
+        }
+
+        /* Controles Modulares */
+        .control-group { 
+            border: 1px solid #1a1a1a; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+            background: #070707; 
+        }
+        .group-title { 
+            font-size: 10px; 
+            color: var(--accent); 
+            text-transform: uppercase; 
+            margin-bottom: 10px; 
+            letter-spacing: 1px; 
+            border-bottom: 1px solid #1a1a1a; 
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .grid-controls { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+        }
+        
+        label { 
+            font-size: 10px; 
+            color: #aaa; 
+            text-transform: uppercase; 
+            display: block; 
+            margin-bottom: 4px; 
+        }
+        
+        input[type="number"], select { 
+            background: #000; 
+            border: 1px solid #222; 
+            color: var(--accent); 
+            padding: 8px; 
+            border-radius: 4px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 12px;
+        }
+        
+        input[type="range"] { 
+            width: 100%; 
+            margin-top: 5px; 
+            accent-color: var(--accent);
+            height: 4px;
+        }
+        
+        .range-value {
+            font-size: 11px;
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        /* Análisis de Tonalidad (Camelot) */
+        #keyAnalysisPanel { 
+            display: none; 
+            text-align: center; 
+            border-color: var(--camelot-color); 
+            box-shadow: 0 0 15px rgba(255, 0, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #keyAnalysisPanel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--camelot-color), transparent);
+        }
+        
+        .camelot-title { color: var(--camelot-color); }
+        
+        .key-result { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 28px; 
+            color: #fff; 
+            margin: 15px 0;
+            text-shadow: 0 0 10px rgba(255, 0, 234, 0.3);
+        }
+        
+        .camelot-code { 
+            color: var(--camelot-color); 
+            font-weight: bold;
+            font-size: 32px;
+        }
+        
+        .confidence-bar {
+            width: 100%;
+            height: 6px;
+            background: #000;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--error), var(--warning), var(--accent));
+            transition: width 0.5s ease;
+        }
+        
+        .confidence-text {
+            font-size: 10px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .mix-matches { 
+            font-size: 11px; 
+            color: #aaa; 
+            background: #000; 
+            padding: 12px; 
+            border-radius: 4px; 
+            border: 1px solid #222; 
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+        
+        .alternative-keys {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 0, 234, 0.05);
+            border-radius: 4px;
+            font-size: 10px;
+        }
+        
+        .alternative-keys strong {
+            color: var(--camelot-color);
+        }
+
+        /* Botón de Acción */
         .btn { 
-            display: block; width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 6px; 
-            border: none; font-weight: 700; cursor: pointer; font-size: 11px; text-transform: uppercase; 
-            transition: all 0.3s; color: #fff; letter-spacing: 1px;
+            display: block; 
+            width: 100%; 
+            padding: 16px; 
+            border-radius: 6px; 
+            border: none; 
+            font-weight: 700; 
+            cursor: pointer; 
+            font-size: 13px; 
+            text-transform: uppercase; 
+            transition: all 0.3s; 
+            background: var(--accent); 
+            color: #000; 
+            letter-spacing: 1.5px;
+            font-family: 'Orbitron', sans-serif;
+            position: relative;
+            overflow: hidden;
         }
-        .btn-fb { background: var(--fb); box-shadow: 0 4px 0 #0d59b3; }
-        .btn-sc { background: var(--sc); box-shadow: 0 4px 0 #cc4400; }
-        .btn-gen { background: var(--accent); color: #000; box-shadow: 0 4px 0 #00b372; }
-        .btn:disabled { background: #1a1a1a !important; color: #333 !important; box-shadow: none !important; cursor: not-allowed; opacity: 0.5; }
-
-        .phrase-box { background: #000; border: 1px dashed var(--accent); padding: 25px; border-radius: 12px; margin: 20px 0; cursor: pointer; }
-        .phrase-out { font-family: 'Orbitron', sans-serif; font-size: 24px; color: var(--accent); font-weight: 900; }
         
-        /* Visualizer */
-        #waveCanvas { width: 100%; height: 60px; background: #000; border-radius: 4px; margin-bottom: 15px; border: 1px solid #111; display: none; }
-
-        .loader { width: 100%; height: 2px; background: #111; margin-top: 20px; display: none; overflow: hidden; }
-        .bar { width: 0%; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: width 4s linear; }
-
-        #status { font-size: 10px; color: #444; font-family: monospace; margin-top: 25px; border-top: 1px solid #111; padding-top: 10px; height: 20px; }
+        .btn:disabled { 
+            background: #1a1a1a; 
+            color: #444; 
+            cursor: not-allowed; 
+        }
         
-        input[type="file"] { width: 100%; background: #000; border: 1px solid #222; color: var(--accent); padding: 10px; border-radius: 4px; margin-bottom: 10px; box-sizing: border-box; cursor: pointer; }
-        input[type="number"], input[type="range"] { background: #000; border: 1px solid #222; color: var(--accent); padding: 8px; border-radius: 4px; width: 100%; box-sizing: border-box; }
-        label { font-size: 9px; color: #555; text-transform: uppercase; display: block; margin-bottom: 5px; text-align: left; }
+        .btn:not(:disabled):hover { 
+            background: var(--accent-hover); 
+            box-shadow: 0 0 15px rgba(0,255,163,0.4);
+            transform: translateY(-2px);
+        }
         
-        .error-msg { color: var(--error); font-size: 10px; font-weight: 800; margin: 15px 0; display: none; border: 1px solid var(--error); padding: 10px; border-radius: 4px; }
+        /* Animación de procesamiento */
+        .processing { 
+            animation: pulse 1.5s infinite; 
+            background: var(--warning) !important; 
+            color: #000 !important; 
+        }
+        
+        @keyframes pulse { 
+            0% { opacity: 1; } 
+            50% { opacity: 0.7; } 
+            100% { opacity: 1; } 
+        }
+        
+        .btn-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        #status { 
+            font-size: 10px; 
+            color: #555; 
+            font-family: monospace; 
+            margin-top: 20px; 
+            text-align: center;
+            padding: 10px;
+            background: #000;
+            border-radius: 4px;
+            border: 1px solid #111;
+        }
+        
+        .status-line {
+            margin: 2px 0;
+        }
+        
+        .status-success {
+            color: var(--accent);
+        }
+        
+        .status-error {
+            color: var(--error);
+        }
+        
+        .status-warning {
+            color: var(--warning);
+        }
+
+        /* Stats Panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stat-item {
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #222;
+        }
+        
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            color: var(--accent);
+            font-weight: 700;
+        }
+        
+        .stat-label {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .app-container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.4rem;
+            }
+            .grid-controls {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 40px;
+            height: 20px;
+            background: #222;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: var(--accent);
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(20px);
+        }
+        
+        .toggle-label {
+            font-size: 11px;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <h1>NYKRODELIC</h1>
-    <div class="sub" id="versionTag">NEURAL MIDI TRANSCRIPTION v7.5 PRO</div>
-
-    <div id="p1" class="panel active">
-        <p style="font-size: 12px; color: #888; margin-bottom: 20px;">Sincroniza tus redes para activar los algoritmos</p>
-        <div id="p1-err" class="error-msg">⚠️ ACCIÓN NO DETECTADA: Dale Like y Follow para desbloquear.</div>
-        <button class="btn btn-fb" id="bFb" onclick="secureSocial('fb', 'https://www.facebook.com/nykrodelic')">FOLLOW + LIKE EN FACEBOOK</button>
-        <button class="btn btn-sc" id="bSc" onclick="secureSocial('sc', 'https://soundcloud.com/nykronds')">FOLLOW + LIKE EN SOUNDCLOUD</button>
-        <button class="btn btn-gen" id="bNext1" disabled onclick="showStep(2)">DESBLOQUEAR GENERADOR</button>
+    <div class="header-title">
+        <h1>NYKRODELIC</h1>
+        <div class="sub">NEURAL AUDIO TO MIDI ENGINE</div>
+        <span class="version-badge">V3.0 ENHANCED</span>
     </div>
 
-    <div id="p2" class="panel">
-        <p style="font-size: 12px; color: #888;">Permisos concedidos. Generando llave...</p>
-        <div class="phrase-box" style="cursor: default;"><div class="phrase-out">***</div></div>
-        <button class="btn btn-gen" onclick="generateToken()">OBTENER FRASE DE ACCESO</button>
-    </div>
-
-    <div id="p3" class="panel">
-        <p style="font-size: 11px; color: #888;">Misión final: <b>PLAY</b> y <b>COMENTA</b> esta frase:</p>
-        <div class="phrase-box" onclick="copyPhrase()">
-            <div class="phrase-out" id="finalToken">---</div>
-            <div style="font-size:8px; color:#444;">CLICK PARA COPIAR FRASE</div>
+    <!-- Zona de Carga de Archivo -->
+    <div class="drop-zone" id="dropZone">
+        <p>ARRASTRA UN ARCHIVO DE AUDIO O <span>HAZ CLIC AQUÍ</span></p>
+        <div class="supported-formats">
+            Soporta: MP3, WAV, OGG, FLAC, M4A, AAC, WEBM
         </div>
-        <div id="p3-err" class="error-msg">⚠️ COMENTARIO NO DETECTADA: Escucha 10s y comenta para validar.</div>
-        <button class="btn btn-sc" id="bDead" onclick="secureDeadhead('https://soundcloud.com/nykronds/08-deadhead-nykronds#comments')">IR AL TRACK (PLAY + COMENTAR)</button>
-        <button class="btn btn-gen" id="vBtn" onclick="verifySecure()">VERIFICAR ACTIVIDAD IA</button>
-        <div class="loader" id="lContainer"><div class="bar" id="lBar"></div></div>
+        <input type="file" id="fileInput" accept="audio/*">
+        <div class="file-info" id="fileInfo"></div>
     </div>
 
-    <div id="p4" class="panel">
-        <p style="font-size: 11px; color: var(--accent); margin-bottom: 15px;">NÚCLEO NEURONAL ACTIVO</p>
-        
+    <!-- Visualizadores -->
+    <div class="canvas-container">
         <canvas id="waveCanvas"></canvas>
-        <input type="file" id="audioInput" accept="audio/*">
+        <canvas id="spectrumCanvas"></canvas>
+    </div>
+    
+    <audio id="audioPlayer" controls></audio>
+    
+    <!-- Panel de Análisis Camelot (Se muestra al procesar) -->
+    <div class="control-group" id="keyAnalysisPanel">
+        <div class="group-title camelot-title">
+            <span>HARMONIC INTELLIGENCE (CAMELOT)</span>
+        </div>
+        <div class="key-result" id="primaryKeyDisplay">-</div>
         
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 15px;">
-            <div><label>BPM</label><input type="number" id="bpm" value="145"></div>
-            <div><label>ROOT OFFSET</label><input type="number" id="root" value="0"></div>
+        <div class="confidence-text">CONFIANZA DEL ANÁLISIS</div>
+        <div class="confidence-bar">
+            <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
         </div>
-
-        <div style="text-align: left; margin-bottom: 20px;">
-            <label>SENSIBILIDAD NEURONAL (FILTRO DE RUIDO)</label>
-            <input type="range" id="threshold" min="10" max="80" value="35">
+        
+        <div class="stats-grid" id="keyStats">
+            <div class="stat-item">
+                <div class="stat-value" id="notesDetected">0</div>
+                <div class="stat-label">Notas</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="durationStat">0s</div>
+                <div class="stat-label">Duración</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="bpmDetected">-</div>
+                <div class="stat-label">BPM Est.</div>
+            </div>
         </div>
-
-        <button id="go" class="btn btn-gen" disabled>CARGANDO MOTOR...</button>
+        
+        <div class="mix-matches" id="mixMatchesDisplay">Esperando análisis...</div>
+        
+        <div class="alternative-keys" id="alternativeKeys" style="display: none;">
+            <strong>TONALIDADES ALTERNATIVAS:</strong><br>
+            <span id="altKeysList"></span>
+        </div>
     </div>
 
-    <div id="status">SISTEMA: ESPERANDO ACCIÓN SOCIAL</div>
+    <!-- Opciones de Análisis -->
+    <div class="control-group">
+        <div class="group-title">OPCIONES DE ANÁLISIS</div>
+        
+        <div class="toggle-container">
+            <div class="toggle-switch" id="realtimeToggle">
+                <div class="toggle-slider"></div>
+            </div>
+            <span class="toggle-label">Análisis en Tiempo Real (durante reproducción)</span>
+        </div>
+        
+        <div class="toggle-container">
+            <div class="toggle-switch" id="spectrumToggle">
+                <div class="toggle-slider"></div>
+            </div>
+            <span class="toggle-label">Mostrar Análisis Espectral</span>
+        </div>
+    </div>
+
+    <!-- Parámetros del Motor Neuronal -->
+    <div class="control-group">
+        <div class="group-title">RED NEURONAL & FILTROS</div>
+        
+        <label>Umbral de Sensibilidad (Filtra ruido e imperfecciones)</label>
+        <input type="range" id="threshold" min="10" max="90" value="35">
+        <div class="range-value" id="thresholdValue">35</div>
+        <div style="display: flex; justify-content: space-between; font-size: 9px; color: #666; margin-top: 5px;">
+            <span>Más Notas (Ruido)</span><span>Solo Notas Claras</span>
+        </div>
+        
+        <label style="margin-top: 15px;">Algoritmo de Detección de Tonalidad</label>
+        <select id="keyAlgorithm">
+            <option value="krumhansl">Krumhansl-Schmuckler (Preciso)</option>
+            <option value="temperley">Temperley (Balanceado)</option>
+            <option value="combined">Combinado (Más Confiable)</option>
+        </select>
+    </div>
+
+    <!-- Parámetros de Salida MIDI -->
+    <div class="control-group">
+        <div class="group-title">CONFIGURACIÓN MIDI SALIENTE</div>
+        <div class="grid-controls">
+            <div>
+                <label>BPM (Tempo base)</label>
+                <input type="number" id="bpm" value="120" min="40" max="300">
+            </div>
+            <div>
+                <label>Tono (Root Offset)</label>
+                <input type="number" id="root" value="0" min="-24" max="24" title="Sube o baja semitonos">
+            </div>
+            <div>
+                <label>Dinámica (Velocity %)</label>
+                <input type="number" id="velocityBoost" value="100" min="10" max="200" title="Multiplicador de fuerza de las notas">
+            </div>
+            <div>
+                <label>Canal MIDI</label>
+                <select id="midiChannel">
+                    <option value="1">Canal 1</option>
+                    <option value="2">Canal 2</option>
+                    <option value="3">Canal 3</option>
+                    <option value="4">Canal 4</option>
+                    <option value="10">Canal 10 (Drums)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="toggle-container" style="margin-top: 15px;">
+            <div class="toggle-switch active" id="metadataToggle">
+                <div class="toggle-slider"></div>
+            </div>
+            <span class="toggle-label">Incluir Metadatos de Tonalidad en MIDI</span>
+        </div>
+    </div>
+
+    <!-- Botón Principal -->
+    <button class="btn" id="goBtn" disabled>
+        CARGAR AUDIO PRIMERO
+        <div class="btn-progress" id="btnProgress"></div>
+    </button>
+
+    <!-- Estado -->
+    <div id="status">
+        <div class="status-line">SISTEMA LISTO | NEURAL ENGINE V3.0</div>
+    </div>
 </div>
 
 <script>
-    let checks = {fb: false, sc: false};
-    let attempt = 0;
-    let deadheadTime = 0;
-    let isDeadheadOpen = false;
-    let verificationInProcess = false;
-    const phrases = ["VIVA NYKRONDS", "AUU AUU", "RAVER MODE"];
-    let ready = false;
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const waveCanvas = document.getElementById('waveCanvas');
+    const spectrumCanvas = document.getElementById('spectrumCanvas');
+    const goBtn = document.getElementById('goBtn');
+    const statusDiv = document.getElementById('status');
+    const keyAnalysisPanel = document.getElementById('keyAnalysisPanel');
+    const primaryKeyDisplay = document.getElementById('primaryKeyDisplay');
+    const mixMatchesDisplay = document.getElementById('mixMatchesDisplay');
+    const confidenceFill = document.getElementById('confidenceFill');
+    const alternativeKeys = document.getElementById('alternativeKeys');
+    const altKeysList = document.getElementById('altKeysList');
+    const notesDetected = document.getElementById('notesDetected');
+    const durationStat = document.getElementById('durationStat');
+    const bpmDetected = document.getElementById('bpmDetected');
+    const thresholdValue = document.getElementById('thresholdValue');
+    const btnProgress = document.getElementById('btnProgress');
+    
+    let currentAudioFile = null;
+    let audioContext = null;
+    let analyser = null;
+    let animationId = null;
+    let currentNotes = null;
+    
+    // Magenta AI Setup
     const ai = new mm.OnsetsAndFrames('https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni');
+    ai.initialize().then(() => consoleLog('MOTOR NEURONAL LISTO'));
 
-    window.onload = () => {
-        const unlockTime = localStorage.getItem('nykro_unlock_time');
-        const now = Date.now();
-        if (unlockTime && (now - unlockTime < 86400000)) { 
-            document.getElementById('versionTag').innerText = "NYKRODELIC | PREMIUM ACCESS (24H)";
-            showStep(4);
-        } else {
-            consoleLog("ESPERANDO VALIDACIÓN SOCIAL");
-        }
-    };
-
-    ai.initialize().then(() => { ready = true; checkFinalReady(); consoleLog("MOTOR_LISTO"); });
-
-    function consoleLog(msg) { document.getElementById('status').innerText = "SYS_LOG: " + msg; }
-
-    function secureSocial(p, url) {
-        const start = Date.now();
-        const btn = document.getElementById('b' + p.charAt(0).toUpperCase() + p.slice(1));
-        window.open(url, '_blank');
-        btn.innerText = "ESCANEANDO..."; btn.disabled = true;
-        
-        const checkFocus = setInterval(() => {
-            if (document.hasFocus()) {
-                clearInterval(checkFocus);
-                if ((Date.now() - start) / 1000 < 8) {
-                    document.getElementById('p1-err').style.display = 'block';
-                    btn.innerText = "REINTENTAR " + p.toUpperCase(); btn.disabled = false;
-                } else {
-                    document.getElementById('p1-err').style.display = 'none';
-                    checks[p] = true;
-                    btn.innerText = "ACTIVADO ✓"; btn.style.opacity = "0.5";
-                    if(checks.fb && checks.sc) document.getElementById('bNext1').disabled = false;
+    // Toggle switches
+    const realtimeToggle = document.getElementById('realtimeToggle');
+    const spectrumToggle = document.getElementById('spectrumToggle');
+    const metadataToggle = document.getElementById('metadataToggle');
+    
+    [realtimeToggle, spectrumToggle, metadataToggle].forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            toggle.classList.toggle('active');
+            if (toggle === spectrumToggle) {
+                spectrumCanvas.style.display = toggle.classList.contains('active') && currentAudioFile ? 'block' : 'none';
+                if (toggle.classList.contains('active') && audioPlayer.style.display !== 'none') {
+                    startSpectrumAnalysis();
                 }
             }
-        }, 500);
+        });
+    });
+    
+    // Threshold slider
+    document.getElementById('threshold').addEventListener('input', (e) => {
+        thresholdValue.textContent = e.target.value;
+    });
+
+    function consoleLog(msg, type = 'info') {
+        const statusLine = document.createElement('div');
+        statusLine.className = `status-line status-${type}`;
+        statusLine.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        statusDiv.appendChild(statusLine);
+        statusDiv.scrollTop = statusDiv.scrollHeight;
+        console.log(msg);
     }
 
-    // --- VISUALIZADOR DE ONDA ---
-    document.getElementById('audioInput').onchange = async (e) => {
-        const file = e.target.files[0];
-        if(!file) return;
-        
-        const canvas = document.getElementById('waveCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.style.display = 'block';
-        consoleLog("ANALIZANDO FORMA DE ONDA...");
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const arrayBuffer = await file.arrayBuffer();
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        
-        const data = audioBuffer.getChannelData(0);
-        const step = Math.ceil(data.length / canvas.width);
-        const amp = canvas.height / 2;
-        
-        ctx.fillStyle = "#000"; ctx.fillRect(0,0, canvas.width, canvas.height);
-        ctx.beginPath(); ctx.strokeStyle = "#00ffa3"; ctx.lineWidth = 1;
-        for(let i=0; i < canvas.width; i++) {
-            let min = 1.0, max = -1.0;
-            for(let j=0; j<step; j++) {
-                const dat = data[(i*step)+j];
-                if(dat < min) min = dat; if(dat > max) max = dat;
-            }
-            ctx.moveTo(i, (1+min)*amp); ctx.lineTo(i, (1+max)*amp);
+    // Drag & Drop
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if(e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
         }
-        ctx.stroke();
-        consoleLog("AUDIO_READY: " + file.name.substring(0,15));
-    };
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        if(e.target.files.length) {
+            handleFile(e.target.files[0]);
+        }
+    });
 
-    function secureDeadhead(url) {
-        deadheadTime = Date.now(); isDeadheadOpen = true;
-        window.open(url, '_blank');
-        consoleLog("ESCUCHANDO TRACK...");
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     }
 
-    function generateToken() {
-        document.getElementById('finalToken').innerText = phrases[Math.floor(Math.random() * phrases.length)];
-        showStep(3);
-    }
-
-    function copyPhrase() {
-        navigator.clipboard.writeText(document.getElementById('finalToken').innerText);
-        consoleLog("TOKEN_COPIADO");
-    }
-
-    function verifySecure() {
-        const elapsed = (Date.now() - deadheadTime) / 1000;
-        if (!isDeadheadOpen || elapsed < 10) {
-            document.getElementById('p3-err').style.display = 'block';
+    function handleFile(file) {
+        const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/flac', 'audio/mp4', 'audio/aac', 'audio/webm', 'audio/x-m4a'];
+        
+        if (!file.type.startsWith('audio/') && !validTypes.includes(file.type)) {
+            alert('Por favor selecciona un archivo de audio válido');
+            consoleLog('ERROR: Tipo de archivo no válido', 'error');
             return;
         }
-        verificationInProcess = true;
-        document.getElementById('p3-err').style.display = 'none';
-        document.getElementById('vBtn').style.display = 'none';
-        document.getElementById('lContainer').style.display = 'block';
-        document.getElementById('lBar').style.width = '100%';
         
-        setTimeout(() => {
-            attempt++;
-            if (attempt === 1) {
-                document.getElementById('p3-err').innerText = "⚠️ TOKEN NO ENCONTRADO. REINTENTA.";
-                document.getElementById('p3-err').style.display = 'block';
-                document.getElementById('vBtn').style.display = 'block';
-                document.getElementById('lContainer').style.display = 'none';
-            } else {
-                localStorage.setItem('nykro_unlocked', 'true');
-                localStorage.setItem('nykro_unlock_time', Date.now());
-                showStep(4);
+        currentAudioFile = file;
+        dropZone.classList.add('has-file');
+        
+        fileInfo.innerHTML = `
+            <strong>📁 ${file.name}</strong><br>
+            Tamaño: ${formatFileSize(file.size)} | Tipo: ${file.type || 'audio'}
+        `;
+        fileInfo.classList.add('visible');
+        
+        const url = URL.createObjectURL(file);
+        audioPlayer.src = url;
+        audioPlayer.style.display = 'block';
+        waveCanvas.style.display = 'block';
+        
+        goBtn.disabled = false;
+        goBtn.innerText = '⚡ ANALIZAR Y CONVERTIR A MIDI';
+        
+        consoleLog(`ARCHIVO CARGADO: ${file.name} (${formatFileSize(file.size)})`, 'success');
+        
+        drawWaveform(url);
+    }
+
+    // Dibuja forma de onda mejorada
+    function drawWaveform(url) {
+        const ctx = waveCanvas.getContext('2d');
+        waveCanvas.width = waveCanvas.offsetWidth;
+        waveCanvas.height = 80;
+        
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+        
+        const tempAudio = new Audio(url);
+        tempAudio.addEventListener('loadeddata', async () => {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                
+                const rawData = audioBuffer.getChannelData(0);
+                const samples = 1000;
+                const blockSize = Math.floor(rawData.length / samples);
+                const filteredData = [];
+                
+                for (let i = 0; i < samples; i++) {
+                    let blockStart = blockSize * i;
+                    let sum = 0;
+                    for (let j = 0; j < blockSize; j++) {
+                        sum += Math.abs(rawData[blockStart + j]);
+                    }
+                    filteredData.push(sum / blockSize);
+                }
+                
+                const normalizedData = filteredData.map(n => n / Math.max(...filteredData));
+                
+                const sliceWidth = waveCanvas.width / normalizedData.length;
+                const gradient = ctx.createLinearGradient(0, 0, 0, waveCanvas.height);
+                gradient.addColorStop(0, '#00ffa3');
+                gradient.addColorStop(0.5, '#00cc82');
+                gradient.addColorStop(1, '#008855');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                
+                normalizedData.forEach((amplitude, i) => {
+                    const x = sliceWidth * i;
+                    const y = (1 - amplitude) * waveCanvas.height / 2;
+                    const height = amplitude * waveCanvas.height;
+                    
+                    ctx.fillRect(x, y, sliceWidth - 1, height);
+                });
+                
+                consoleLog('FORMA DE ONDA RENDERIZADA', 'success');
+            } catch (error) { 
+                consoleLog("ADVERTENCIA: NO SE PUDO DIBUJAR LA ONDA", 'warning'); 
             }
-        }, 2200);
+        });
     }
 
-    function showStep(n) {
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        document.getElementById('p'+n).classList.add('active');
-        checkFinalReady();
+    // Análisis espectral en tiempo real
+    function startSpectrumAnalysis() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaElementSource(audioPlayer);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+        }
+        
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        const canvas = spectrumCanvas;
+        canvas.width = canvas.offsetWidth;
+        canvas.height = 120;
+        const ctx = canvas.getContext('2d');
+        
+        function draw() {
+            if (!spectrumToggle.classList.contains('active')) {
+                if (animationId) cancelAnimationFrame(animationId);
+                return;
+            }
+            
+            animationId = requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+            
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+            
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = (dataArray[i] / 255) * canvas.height;
+                
+                const hue = (i / bufferLength) * 120 + 140;
+                ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                
+                x += barWidth + 1;
+            }
+        }
+        
+        draw();
+    }
+    
+    audioPlayer.addEventListener('play', () => {
+        if (spectrumToggle.classList.contains('active')) {
+            startSpectrumAnalysis();
+        }
+        
+        if (realtimeToggle.classList.contains('active') && currentNotes) {
+            updateRealtimeKeyAnalysis();
+        }
+    });
+    
+    audioPlayer.addEventListener('pause', () => {
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+        }
+    });
+
+    // --- LÓGICA DE DETECCIÓN DE TONALIDAD ---
+    const pitchClasses = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
+    
+    // Mapeo Rueda Camelot completo
+    const camelotWheel = {
+        'C Major': '8B', 'A Minor': '8A', 
+        'G Major': '9B', 'E Minor': '9A',
+        'D Major': '10B', 'B Minor': '10A', 
+        'A Major': '11B', 'F♯/G♭ Minor': '11A',
+        'E Major': '12B', 'C♯/D♭ Minor': '12A', 
+        'B Major': '1B', 'G♯/A♭ Minor': '1A',
+        'F♯/G♭ Major': '2B', 'D♯/E♭ Minor': '2A', 
+        'C♯/D♭ Major': '3B', 'A♯/B♭ Minor': '3A',
+        'G♯/A♭ Major': '4B', 'F Minor': '4A', 
+        'D♯/E♭ Major': '5B', 'C Minor': '5A',
+        'A♯/B♭ Major': '6B', 'G Minor': '6A', 
+        'F Major': '7B', 'D Minor': '7A'
+    };
+
+    // Perfiles mejorados de Krumhansl-Schmuckler
+    const majorProfile = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
+    const minorProfile = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+    
+    // Perfil Temperley (alternativo)
+    const temperleyMajor = [5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0];
+    const temperleyMinor = [5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0];
+
+    function calculatePearsonCorrelation(x, y) {
+        const n = x.length;
+        const sumX = x.reduce((a, b) => a + b, 0);
+        const sumY = y.reduce((a, b) => a + b, 0);
+        const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+        const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+        const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
+        
+        const numerator = (n * sumXY) - (sumX * sumY);
+        const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+        
+        return denominator === 0 ? 0 : numerator / denominator;
     }
 
-    function checkFinalReady() {
-        const b = document.getElementById('go');
-        if(ready && document.getElementById('p4').classList.contains('active')) {
-            b.disabled = false; b.innerText = "TRANSFORMAR AUDIO A MIDI";
+    function estimateKey(notes, algorithm = 'krumhansl') {
+        // Crear Pitch Class Profile (PCP)
+        let pcp = new Array(12).fill(0);
+        let totalDuration = 0;
+        
+        notes.forEach(n => {
+            const pitchClass = n.pitch % 12;
+            const duration = n.endTime - n.startTime;
+            const weight = duration * (n.velocity / 127);
+            pcp[pitchClass] += weight;
+            totalDuration += duration;
+        });
+        
+        // Normalizar PCP
+        const maxPCP = Math.max(...pcp);
+        if (maxPCP > 0) {
+            pcp = pcp.map(v => v / maxPCP);
+        }
+        
+        let results = [];
+        
+        // Seleccionar perfiles según algoritmo
+        let majorProf = algorithm === 'temperley' ? temperleyMajor : majorProfile;
+        let minorProf = algorithm === 'temperley' ? temperleyMinor : minorProfile;
+        
+        // Comparar con todos los tonos
+        for (let i = 0; i < 12; i++) {
+            // Rotar perfil Mayor
+            const rotatedMajor = [...majorProf.slice(12 - i), ...majorProf.slice(0, 12 - i)];
+            const corrMajor = calculatePearsonCorrelation(pcp, rotatedMajor);
+            results.push({
+                key: `${pitchClasses[i]} Major`,
+                score: corrMajor,
+                isMinor: false,
+                index: i
+            });
+
+            // Rotar perfil Menor
+            const rotatedMinor = [...minorProf.slice(12 - i), ...minorProf.slice(0, 12 - i)];
+            const corrMinor = calculatePearsonCorrelation(pcp, rotatedMinor);
+            results.push({
+                key: `${pitchClasses[i]} Minor`,
+                score: corrMinor,
+                isMinor: true,
+                index: i
+            });
+        }
+        
+        // Ordenar por score
+        results.sort((a, b) => b.score - a.score);
+        
+        return {
+            primary: results[0],
+            alternatives: results.slice(1, 4),
+            allResults: results,
+            pcp: pcp
+        };
+    }
+
+    function getMixMatches(camelotCode) {
+        if (!camelotCode || camelotCode === 'N/A') return [];
+        
+        const number = parseInt(camelotCode);
+        const letter = camelotCode.replace(/[0-9]/g, '');
+        
+        const prevNum = number === 1 ? 12 : number - 1;
+        const nextNum = number === 12 ? 1 : number + 1;
+        const oppositeLetter = letter === 'A' ? 'B' : 'A';
+
+        return [
+            { code: `${number}${oppositeLetter}`, desc: 'Cambio de Modo (Energía Similar)' },
+            { code: `${prevNum}${letter}`, desc: 'Bajar Energía (Suave)' },
+            { code: `${nextNum}${letter}`, desc: 'Subir Energía (Intenso)' }
+        ];
+    }
+    
+    function estimateBPM(notes) {
+        if (notes.length < 10) return null;
+        
+        // Calcular intervalos entre notas
+        const intervals = [];
+        for (let i = 1; i < Math.min(notes.length, 100); i++) {
+            const interval = notes[i].startTime - notes[i-1].startTime;
+            if (interval > 0.1 && interval < 2) { // Filtrar intervalos razonables
+                intervals.push(interval);
+            }
+        }
+        
+        if (intervals.length === 0) return null;
+        
+        // Calcular intervalo promedio
+        const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        
+        // Convertir a BPM (60 segundos / intervalo)
+        const bpm = Math.round(60 / avgInterval);
+        
+        // Validar rango razonable
+        if (bpm >= 40 && bpm <= 300) {
+            return bpm;
+        }
+        
+        return null;
+    }
+
+    function updateRealtimeKeyAnalysis() {
+        // Implementación simplificada para actualización en tiempo real
+        if (!currentNotes || !audioPlayer.currentTime) return;
+        
+        const currentTime = audioPlayer.currentTime;
+        const windowSize = 10; // segundos
+        
+        const relevantNotes = currentNotes.filter(n => 
+            n.startTime >= currentTime - windowSize && 
+            n.startTime <= currentTime + windowSize
+        );
+        
+        if (relevantNotes.length > 5) {
+            const algorithm = document.getElementById('keyAlgorithm').value;
+            const result = estimateKey(relevantNotes, algorithm);
+            
+            // Actualizar UI con fade
+            primaryKeyDisplay.style.opacity = '0.5';
+            setTimeout(() => {
+                const camelotCode = camelotWheel[result.primary.key] || 'N/A';
+                primaryKeyDisplay.innerHTML = `${result.primary.key} <span class="camelot-code">[${camelotCode}]</span>`;
+                primaryKeyDisplay.style.opacity = '1';
+            }, 200);
         }
     }
 
-    document.getElementById('go').onclick = async () => {
-        const file = document.getElementById('audioInput').files[0];
-        if(!file) return alert("Sube un audio.");
-        document.getElementById('go').disabled = true;
-        consoleLog("PROCESAMIENTO NEURONAL...");
+    // --- PROCESAMIENTO PRINCIPAL ---
+    goBtn.addEventListener('click', async () => {
+        if(!currentAudioFile) return;
+        
+        goBtn.disabled = true;
+        goBtn.classList.add('processing');
+        goBtn.innerText = "🧠 PROCESANDO CON IA...";
+        btnProgress.style.width = '0%';
+        
+        consoleLog("INICIANDO ANÁLISIS NEURAL...", 'info');
+        keyAnalysisPanel.style.display = 'none';
         
         try {
+            // Progreso: 10%
+            btnProgress.style.width = '10%';
+            
+            // Crear contexto de audio optimizado
             const ctx = new AudioContext({ sampleRate: 16000 });
-            const buf = await ctx.decodeAudioData(await file.arrayBuffer());
+            const arrayBuffer = await currentAudioFile.arrayBuffer();
+            
+            btnProgress.style.width = '30%';
+            consoleLog("DECODIFICANDO AUDIO...", 'info');
+            
+            const buf = await ctx.decodeAudioData(arrayBuffer);
+            
+            btnProgress.style.width = '50%';
+            consoleLog("EXTRAYENDO NOTAS CON MAGENTA AI...", 'info');
+            
+            // Transcripción con Magenta
             const ns = await ai.transcribeFromAudioBuffer(buf);
-            const bpm = parseInt(document.getElementById('bpm').value);
-            const root = parseInt(document.getElementById('root').value);
-            const thresh = parseInt(document.getElementById('threshold').value);
+            currentNotes = ns.notes;
+            
+            btnProgress.style.width = '70%';
+            consoleLog(`${ns.notes.length} NOTAS DETECTADAS`, 'success');
+            
+            // Análisis de tonalidad
+            const algorithm = document.getElementById('keyAlgorithm').value;
+            let keyResult;
+            
+            if (algorithm === 'combined') {
+                // Combinar ambos algoritmos
+                const krumhansl = estimateKey(ns.notes, 'krumhansl');
+                const temperley = estimateKey(ns.notes, 'temperley');
+                
+                // Si ambos coinciden, alta confianza
+                if (krumhansl.primary.key === temperley.primary.key) {
+                    keyResult = krumhansl;
+                    keyResult.primary.score = Math.min(keyResult.primary.score * 1.2, 1);
+                } else {
+                    // Usar el de mayor score
+                    keyResult = krumhansl.primary.score > temperley.primary.score ? krumhansl : temperley;
+                }
+            } else {
+                keyResult = estimateKey(ns.notes, algorithm);
+            }
+            
+            const detectedKey = keyResult.primary.key;
+            const confidence = Math.max(0, Math.min(100, keyResult.primary.score * 100));
+            const camelotCode = camelotWheel[detectedKey] || 'N/A';
+            const compatibleKeys = getMixMatches(camelotCode);
+            
+            // Estimar BPM
+            const estimatedBPM = estimateBPM(ns.notes);
+            
+            btnProgress.style.width = '85%';
+            
+            // Actualizar UI de análisis
+            primaryKeyDisplay.innerHTML = `${detectedKey}<br><span class="camelot-code">${camelotCode}</span>`;
+            confidenceFill.style.width = `${confidence}%`;
+            
+            notesDetected.textContent = ns.notes.length;
+            durationStat.textContent = `${buf.duration.toFixed(1)}s`;
+            bpmDetected.textContent = estimatedBPM ? estimatedBPM : '-';
+            
+            // Sugerir BPM si se detectó
+            if (estimatedBPM) {
+                document.getElementById('bpm').value = estimatedBPM;
+                consoleLog(`BPM ESTIMADO: ${estimatedBPM}`, 'success');
+            }
+            
+            if (compatibleKeys.length > 0) {
+                mixMatchesDisplay.innerHTML = `
+                    <strong>🎚️ MEZCLAR CON:</strong><br>
+                    ${compatibleKeys.map(k => `<span style="color: var(--camelot-color)">${k.code}</span> - ${k.desc}`).join('<br>')}
+                `;
+            }
+            
+            // Mostrar alternativas
+            if (keyResult.alternatives && keyResult.alternatives.length > 0) {
+                const alts = keyResult.alternatives.slice(0, 3).map(alt => {
+                    const altCamelot = camelotWheel[alt.key] || '?';
+                    const altConfidence = (alt.score * 100).toFixed(0);
+                    return `${alt.key} [${altCamelot}] (${altConfidence}%)`;
+                });
+                
+                altKeysList.textContent = alts.join(' • ');
+                alternativeKeys.style.display = 'block';
+            }
+            
+            keyAnalysisPanel.style.display = 'block';
+            
+            // -- Generación de MIDI --
+            consoleLog("GENERANDO ARCHIVO MIDI...", 'info');
+            
+            const bpm = parseInt(document.getElementById('bpm').value) || 120;
+            const root = parseInt(document.getElementById('root').value) || 0;
+            const thresh = parseInt(document.getElementById('threshold').value) || 35;
+            const velBoost = (parseInt(document.getElementById('velocityBoost').value) || 100) / 100;
+            const midiChannel = parseInt(document.getElementById('midiChannel').value) || 1;
+            const includeMetadata = metadataToggle.classList.contains('active');
             
             const track = new MidiWriter.Track();
             track.setTempo(bpm);
             
-            ns.notes.forEach(n => {
-                if (n.velocity < thresh) return; // Filtro de Sensibilidad
-                track.addEvent(new MidiWriter.NoteEvent({
-                    pitch: n.pitch + root,
-                    duration: 'T' + Math.round((n.endTime - n.startTime) * (bpm/60) * 128),
-                    startTick: Math.round(n.startTime * (bpm/60) * 128),
-                    velocity: Math.min(n.velocity + 12, 127)
+            // Agregar metadatos si está activado
+            if (includeMetadata) {
+                track.addEvent(new MidiWriter.MetaEvent({
+                    type: 'text',
+                    data: `Key: ${detectedKey} (${camelotCode})`
                 }));
+                track.addEvent(new MidiWriter.MetaEvent({
+                    type: 'text',
+                    data: `Confidence: ${confidence.toFixed(1)}%`
+                }));
+                track.addEvent(new MidiWriter.MetaEvent({
+                    type: 'text',
+                    data: `Generated by NYKRODELIC Neural Engine V3`
+                }));
+            }
+            
+            let noteCount = 0;
+            const filteredNotes = ns.notes.filter(n => n.velocity >= thresh);
+
+            filteredNotes.forEach(n => {
+                const durationTicks = Math.round((n.endTime - n.startTime) * (bpm/60) * 128);
+                const startTicks = Math.round(n.startTime * (bpm/60) * 128);
+                const finalVelocity = Math.min(Math.round((n.velocity + 12) * velBoost), 127);
+                
+                if(durationTicks > 0) {
+                    track.addEvent(new MidiWriter.NoteEvent({
+                        pitch: Math.max(0, Math.min(127, n.pitch + root)),
+                        duration: 'T' + durationTicks,
+                        startTick: startTicks,
+                        velocity: finalVelocity,
+                        channel: midiChannel
+                    }));
+                    noteCount++;
+                }
             });
 
-            const blob = new Blob([new MidiWriter.Writer(track).buildFile()], { type: 'audio/midi' });
+            btnProgress.style.width = '95%';
+
+            if(noteCount === 0) {
+                throw new Error("No se detectaron notas claras con el umbral actual");
+            }
+
+            // Descargar Archivo
+            const build = new MidiWriter.Writer(track).buildFile();
+            const blob = new Blob([build], { type: 'audio/midi' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `NYKRODELIC_PRO.mid`;
+            
+            const fileName = currentAudioFile.name.replace(/\.[^/.]+$/, "");
+            a.download = `NYKRO_${camelotCode}_${fileName}_${bpm}bpm.mid`;
             a.click();
-            consoleLog("ÉXITO: MIDI DESCARGADO");
-            document.getElementById('go').disabled = false;
-        } catch (e) { consoleLog("ERROR DE MOTOR"); document.getElementById('go').disabled = false; }
-    };
+            
+            btnProgress.style.width = '100%';
+            
+            consoleLog(`✅ ÉXITO: ${noteCount} NOTAS | ${detectedKey} (${camelotCode}) | ${confidence.toFixed(0)}% CONF`, 'success');
+            consoleLog(`📥 DESCARGADO: ${a.download}`, 'success');
+            
+        } catch (error) { 
+            consoleLog(`❌ ERROR: ${error.message}`, 'error'); 
+            console.error(error);
+            alert(`Error durante el procesamiento:\n${error.message}\n\nIntenta ajustar el umbral de sensibilidad o usar otro archivo de audio.`);
+        } finally {
+            goBtn.classList.remove('processing');
+            goBtn.disabled = false;
+            goBtn.innerText = '⚡ NUEVA CONVERSIÓN';
+            btnProgress.style.width = '0%';
+        }
+    });
 </script>
 </body>
 </html>
