@@ -443,14 +443,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
   <div class="slicer-bar">
     <span class="slicer-bar-lbl">LOOP SLICER v3</span>
     <div class="sl-ctrl">
-      <span class="sl-ctrl-lbl">SLICES</span>
+      <span class="sl-ctrl-lbl">SLICES ALL</span>
       <select class="tb-select" id="sliceCountSel" style="color:var(--c-purple);">
         <option value="4">4</option><option value="8" selected>8</option>
         <option value="16">16</option><option value="32">32</option><option value="64">64</option>
       </select>
     </div>
     <div class="sl-ctrl">
-      <span class="sl-ctrl-lbl">MODE</span>
+      <span class="sl-ctrl-lbl">MODE ALL</span>
       <select class="tb-select" id="sliceModeSelect" style="color:var(--c-purple);">
         <option value="equal">EQUAL</option>
         <option value="transient">TRANSIENT</option>
@@ -1383,6 +1383,8 @@ function createSlicerChannel(name, color){
     buffer:null, slices:[], players:[],
     seqPattern: new Array(32).fill(-1),
     muted:false, soloed:false, vol:0.9,
+    sliceMode: 'equal',   // per-channel: 'equal' | 'transient'
+    sliceCount: 8,        // per-channel slice count
     volNode, gainNode, analyserNode,
     busyUntilStep: -1,   // step global hasta el que está ocupado este canal
     lastSliceIdx: -1,    // índice de la última slice disparada
@@ -1418,6 +1420,21 @@ function renderChannelLane(ch){
   delBtn.style.color='var(--c-red)'; delBtn.style.borderColor='#3a1520';
   delBtn.onclick=()=>removeSlicerChannel(ch.id);
 
+  // ── Per-channel SLICE COUNT selector ──
+  const scSel=document.createElement('select'); scSel.className='tb-select'; scSel.id='chslicecnt_'+ch.id;
+  scSel.style.cssText='font-size:0.36rem;padding:1px 2px;height:13px;color:var(--c-purple);border-color:'+ch.color+'44;';
+  [4,8,16,32,64].forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v+'sl'; if(v===ch.sliceCount)o.selected=true; scSel.appendChild(o); });
+  scSel.onchange=()=>{ ch.sliceCount=parseInt(scSel.value); if(ch.buffer){ sliceChannel(ch); slicerDrawOverview(); } };
+
+  // ── Per-channel SLICE MODE selector ──
+  const smSel=document.createElement('select'); smSel.className='tb-select'; smSel.id='chslicemode_'+ch.id;
+  smSel.style.cssText='font-size:0.36rem;padding:1px 2px;height:13px;min-width:52px;border-color:'+ch.color+'44;';
+  [{v:'equal',t:'EQ'},{v:'transient',t:'TR'}].forEach(({v,t})=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; if(v===ch.sliceMode)o.selected=true; smSel.appendChild(o); });
+  // Color coding: EQ=cyan, TR=yellow
+  const updateModeColor=()=>{ smSel.style.color=smSel.value==='equal'?'var(--c-cyan)':'var(--c-yellow)'; };
+  updateModeColor();
+  smSel.onchange=()=>{ ch.sliceMode=smSel.value; updateModeColor(); if(ch.buffer){ sliceChannel(ch); slicerDrawOverview(); } };
+
   // Drop zone inside header
   const dropZone=document.createElement('div');
   dropZone.className='ch-drop'; dropZone.id='chdrop_'+ch.id; dropZone.style.borderColor=ch.color+'44';
@@ -1434,6 +1451,7 @@ function renderChannelLane(ch){
   volWrap.appendChild(volLbl); volWrap.appendChild(volSlider);
 
   ctrls.appendChild(muteBtn); ctrls.appendChild(soloBtn); ctrls.appendChild(delBtn);
+  ctrls.appendChild(scSel); ctrls.appendChild(smSel);
   hdr.appendChild(nm); hdr.appendChild(ctrls); hdr.appendChild(dropZone); hdr.appendChild(volWrap);
 
   // ─ Sequencer steps ─
@@ -1590,8 +1608,9 @@ function snapToZC(data, pos, windowSamples){
 
 function sliceChannel(ch){
   if(!ch.buffer)return;
-  const n=parseInt(document.getElementById('sliceCountSel').value)||8;
-  const mode=document.getElementById('sliceModeSelect').value;
+  // Use per-channel settings; fall back to global selectors for backwards compat
+  const n=ch.sliceCount||parseInt(document.getElementById('sliceCountSel').value)||8;
+  const mode=ch.sliceMode||document.getElementById('sliceModeSelect').value;
   const raw=ch.buffer.getChannelData(0);
   const sr=ch.buffer.sampleRate;
   const totalSamples=raw.length;
@@ -2222,7 +2241,27 @@ document.getElementById('slicerStepsSel').onchange=()=>{
   });
   updateStepSizes();
 };
-document.getElementById('sliceCountSel').onchange=()=>doSlice();
+document.getElementById('sliceCountSel').onchange=()=>{
+  // Global selector = "set all channels" shortcut
+  const n=parseInt(document.getElementById('sliceCountSel').value)||8;
+  slicerChannels.forEach(ch=>{
+    ch.sliceCount=n;
+    const sel=document.getElementById('chslicecnt_'+ch.id);
+    if(sel) sel.value=n;
+  });
+  doSlice();
+};
+
+// Global slice mode = "set all channels" shortcut
+document.getElementById('sliceModeSelect').onchange=()=>{
+  const m=document.getElementById('sliceModeSelect').value;
+  slicerChannels.forEach(ch=>{
+    ch.sliceMode=m;
+    const sel=document.getElementById('chslicemode_'+ch.id);
+    if(sel){ sel.value=m; sel.style.color=m==='equal'?'var(--c-cyan)':'var(--c-yellow)'; }
+  });
+  doSlice();
+};
 
 // ─── OVERVIEW WAVEFORM ──────────────────────────────
 function slicerResizeCanvas(){ slicerDrawOverview(); }
@@ -2233,18 +2272,25 @@ function slicerDrawOverview(){
   const ctx=canvas.getContext('2d');
   ctx.fillStyle='#07090f'; ctx.fillRect(0,0,W,H);
   if(!masterSlicerBuffer&&!slicerChannels.some(c=>c.buffer)){return;}
-  // Use first channel with buffer as reference
+  // Use first channel with buffer as reference for waveform
   const refCh=slicerChannels.find(c=>c.buffer);
   if(!refCh)return;
   const buf=refCh.buffer, raw=buf.getChannelData(0), dur=buf.duration;
-  // Draw slice regions from first channel
-  refCh.slices.forEach((sl,i)=>{
-    const x1=Math.floor(sl.start/dur*W), x2=Math.floor(sl.end/dur*W);
-    const col=refCh.color||SCOLS[i%SCOLS.length];
-    ctx.fillStyle=col+'18'; ctx.fillRect(x1,0,x2-x1,H);
-    ctx.strokeStyle=col+'88'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x1,0); ctx.lineTo(x1,H); ctx.stroke();
-    ctx.fillStyle=col+'bb'; ctx.font='bold 8px Share Tech Mono, monospace';
-    ctx.fillText(i+1,x1+3,12);
+  // Draw slice regions for ALL channels (each channel may have different slicing)
+  slicerChannels.forEach((sch,ci)=>{
+    if(!sch.slices.length)return;
+    const rowH=Math.floor(H/Math.max(1,slicerChannels.filter(c=>c.buffer).length));
+    const rowY=ci*rowH;
+    sch.slices.forEach((sl,i)=>{
+      const refDur=sch.buffer?sch.buffer.duration:dur;
+      const x1=Math.floor(sl.start/refDur*W), x2=Math.floor(sl.end/refDur*W);
+      const col=sch.color||SCOLS[i%SCOLS.length];
+      ctx.fillStyle=col+'12'; ctx.fillRect(x1,0,x2-x1,H);
+      ctx.strokeStyle=col+(ci===0?'cc':'66'); ctx.lineWidth=ci===0?1.5:1;
+      ctx.beginPath(); ctx.moveTo(x1,0); ctx.lineTo(x1,H); ctx.stroke();
+      ctx.fillStyle=col+'bb'; ctx.font='bold 8px Share Tech Mono, monospace';
+      ctx.fillText(i+1,x1+3,14+ci*11);
+    });
   });
   // Draw waveform
   const step=Math.max(1,Math.ceil(raw.length/W));
