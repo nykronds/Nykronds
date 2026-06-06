@@ -278,6 +278,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
 .ch-step:hover{border-color:var(--border-hi);filter:brightness(1.4);}
 .ch-step.on{color:#000;font-weight:700;}
 .ch-step.playing-step{filter:brightness(2.5)!important;transform:scaleY(1.1);}
+.ch-step.eligible-step{opacity:0.35;}
 .ch-drop{width:90px;flex-shrink:0;height:34px;background:var(--bg0);border:1px dashed var(--border);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:0.38rem;color:var(--text-dim);letter-spacing:1px;cursor:pointer;transition:0.15s;margin:0 4px;white-space:nowrap;text-align:center;padding:2px;}
 .ch-drop:hover{border-color:var(--border-hi);color:var(--text);}
 .ch-drop.loaded{border-style:solid;border-color:inherit;}
@@ -466,6 +467,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
     <button class="sl-btn" onclick="shuffleAllChannels()">⟳ SHUFFLE</button>
     <button class="sl-btn" onclick="randomizeAllChannels()">★ RANDOM</button>
     <button class="sl-btn" onclick="clearAllChannels()">⌫ CLEAR</button>
+    <div class="sl-ctrl">
+      <span class="sl-ctrl-lbl">MODE</span>
+      <select class="tb-select" id="slicerPlayMode" style="color:var(--c-yellow);">
+        <option value="poly">POLY</option>
+        <option value="interlock" selected>INTERLOCK</option>
+        <option value="roundrobin">ROUND-ROBIN</option>
+      </select>
+    </div>
     <button class="sl-btn" onclick="addSlicerChannel()" style="color:var(--c-purple);border-color:var(--c-purple)44;">+ CHANNEL</button>
     <button class="sl-btn" id="slicerRecBtn" onclick="toggleSlicerRec()">⏺ REC</button>
     <button class="sl-btn green" id="slicerExpBtn" onclick="exportSlicerWav()">⬇ WAV</button>
@@ -1480,46 +1489,87 @@ function playChannelSlice(ch, idx, time){
 }
 
 // ─── SLICER SEQUENCER LOOP ──────────────────────────
+// Round-robin counter: tracks whose turn it is in RR mode
+let rrIndex = 0;
+
 function toggleSlicerPlay(){
   const btn=document.getElementById('slicerPlayBtn');
   if(slicerIsPlaying){
     if(slicerLoopId!==null) Tone.Transport.clear(slicerLoopId);
-    slicerIsPlaying=false; slicerCurrentStep=0;
+    slicerIsPlaying=false; slicerCurrentStep=0; rrIndex=0;
     btn.textContent='▶ PLAY ALL'; btn.classList.remove('active');
     document.querySelectorAll('.ch-step').forEach(s=>s.classList.remove('playing-step'));
     document.getElementById('slicerPlayhead').style.left='0%';
     slicerChannels.forEach(ch=>document.getElementById('clane_'+ch.id)?.classList.remove('playing-lane'));
   } else {
-    slicerIsPlaying=true;
+    slicerIsPlaying=true; rrIndex=0;
     btn.textContent='■ STOP'; btn.classList.add('active');
-    const stutter=parseInt(document.getElementById('slicerStutterSel').value)||1;
     slicerLoopId=Tone.Transport.scheduleRepeat((time)=>{
       slicerSteps=parseInt(document.getElementById('slicerStepsSel').value)||16;
       const step=slicerCurrentStep%slicerSteps;
-      const soloActive=slicerChannels.some(c=>c.soloed);
+      const stutter=parseInt(document.getElementById('slicerStutterSel').value)||1;
       const interval=Tone.Time('16n').toSeconds()/stutter;
-      slicerChannels.forEach(ch=>{
-        if(ch.muted)return;
-        if(soloActive&&!ch.soloed)return;
+      const playMode=document.getElementById('slicerPlayMode').value;
+      const soloActive=slicerChannels.some(c=>c.soloed);
+
+      // Build list of "eligible" channels for this step
+      // (not muted, not filtered by solo, and has a slice assigned at this step)
+      const eligible=slicerChannels.filter(ch=>{
+        if(ch.muted) return false;
+        if(soloActive&&!ch.soloed) return false;
+        if(ch.seqPattern[step]<0) return false;
+        return true;
+      });
+
+      let toPlay=[]; // channels that will actually fire this step
+
+      if(playMode==='poly'){
+        // All eligible channels play simultaneously (original behavior)
+        toPlay=eligible;
+
+      } else if(playMode==='interlock'){
+        // Only the FIRST eligible channel with a slice assigned plays.
+        // Priority follows channel order — first channel wins each step.
+        // If no channel has a slice on this step, silence.
+        if(eligible.length>0) toPlay=[eligible[0]];
+
+      } else if(playMode==='roundrobin'){
+        // Cycle through eligible channels one at a time, step by step.
+        // Each time a step fires, advance the RR pointer among eligible channels.
+        if(eligible.length>0){
+          rrIndex = rrIndex % eligible.length;
+          toPlay=[eligible[rrIndex]];
+          rrIndex=(rrIndex+1)%eligible.length;
+        }
+      }
+
+      // Fire the chosen channels
+      toPlay.forEach(ch=>{
         const idx=ch.seqPattern[step];
-        if(idx<0)return;
         for(let si=0;si<stutter;si++) playChannelSlice(ch,idx,time+si*interval);
         Tone.Draw.schedule(()=>{
           const vu=document.getElementById('chvu_'+ch.id);
           if(vu){vu.style.width=(30+Math.random()*70)+'%';setTimeout(()=>{vu.style.width='5%';},80);}
-          updateSlicerMeters();
         },time);
       });
+
       const sn=step;
+      const toPlayIds=new Set(toPlay.map(c=>c.id));
       Tone.Draw.schedule(()=>{
+        // Clear all step highlights first
         document.querySelectorAll('.ch-step').forEach(s=>s.classList.remove('playing-step'));
         slicerChannels.forEach(ch=>{
-          document.getElementById('chstep_'+ch.id+'_'+sn)?.classList.add('playing-step');
-          const playing=ch.seqPattern[sn]>=0&&!ch.muted&&!(slicerChannels.some(c=>c.soloed)&&!ch.soloed);
-          document.getElementById('clane_'+ch.id)?.classList.toggle('playing-lane',playing);
+          // Highlight step cell — dim for eligible-but-silenced, bright for actually playing
+          const stepEl=document.getElementById('chstep_'+ch.id+'_'+sn);
+          if(stepEl){
+            stepEl.classList.remove('playing-step','eligible-step');
+            if(toPlayIds.has(ch.id)) stepEl.classList.add('playing-step');
+            else if(eligible.find(c=>c.id===ch.id)) stepEl.classList.add('eligible-step');
+          }
+          // Lane highlight only for channels actually playing
+          document.getElementById('clane_'+ch.id)?.classList.toggle('playing-lane', toPlayIds.has(ch.id));
         });
         document.getElementById('slicerPlayhead').style.left=((sn/slicerSteps)*100).toFixed(1)+'%';
-        // update recorder meter
         const rm=document.getElementById('slicerRecMeter');
         if(rm&&slicerIsRecording){rm.style.width=(30+Math.random()*60)+'%';setTimeout(()=>{rm.style.width='10%';},80);}
       },time);
