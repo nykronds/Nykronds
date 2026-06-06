@@ -1390,11 +1390,8 @@ function buildChannelSeqSteps(ch, container){
       if(vv>=0){s.classList.add('on');s.textContent=vv+1;s.style.background=ch.color+'33';s.style.borderColor=ch.color;s.style.color=ch.color;}
       else{s.classList.remove('on');s.textContent='·';s.style.background='';s.style.borderColor='';s.style.color='';}
     };
-    s.ondblclick=e=>{
-      e.stopPropagation();
-      ch.seqPattern[i]=-1;
-      s.classList.remove('on');s.textContent='·';s.style.background='';s.style.borderColor='';s.style.color='';
-    };
+    s.addEventListener('mouseenter',()=>{ window._hoveredStep={ch,i,el:s}; });
+    s.addEventListener('mouseleave',()=>{ if(window._hoveredStep?.el===s) window._hoveredStep=null; });
     container.appendChild(s);
   }
 }
@@ -1727,6 +1724,17 @@ CH_DEFAULTS.forEach(d=>createSlicerChannel(d.name, d.color));
 // Sync BPM
 document.getElementById('slicerBpmKnob').value=128;
 document.getElementById('slicerBpmDisp').textContent='128';
+
+// ─── BORRAR STEP CON TECLA "." ───────────────────────
+window._hoveredStep=null;
+window.addEventListener('keydown',e=>{
+  if(e.key!=='.'&&e.key!=='>') return;
+  const h=window._hoveredStep; if(!h) return;
+  const {ch,i,el}=h;
+  ch.seqPattern[i]=-1;
+  el.classList.remove('on','eligible-step');
+  el.textContent='·'; el.style.background=''; el.style.borderColor=''; el.style.color='';
+});
 </script>
 </body>
 </html>
