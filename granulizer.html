@@ -484,9 +484,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
       </select>
     </div>
     <button class="sl-btn" onclick="addSlicerChannel()" style="color:var(--c-purple);border-color:var(--c-purple)44;">+ CHANNEL</button>
+    <button class="sl-btn" onclick="removeAllSlicerChannels()" style="color:var(--c-red);border-color:var(--c-red)44;" title="Remove all channels">✕ ALL CH</button>
+    <button class="sl-btn" onclick="resetSlicerFx()" style="color:var(--c-yellow);border-color:var(--c-yellow)44;" title="Reset all params/fx to default">↺ RESET FX</button>
     <button class="sl-btn" id="slicerRecBtn" onclick="toggleSlicerRec()">⏺ REC</button>
     <button class="sl-btn green" id="slicerExpBtn" onclick="exportSlicerWav()">⬇ WAV</button>
     <div style="font-size:0.4rem;padding:0 4px;" id="slicerStatus">● READY</div>
+    <div style="font-size:0.36rem;color:var(--text-dim);letter-spacing:1px;padding:0 6px;border-left:1px solid var(--border);white-space:nowrap;" title="Hover a step and press keys">
+      <span style="color:var(--c-cyan);font-family:var(--font-mono);">-</span> ADD STEP &nbsp;
+      <span style="color:var(--c-red);font-family:var(--font-mono);">.</span> DEL STEP
+    </div>
   </div>
 
   <!-- OVERVIEW WAVEFORM -->
@@ -1495,33 +1501,6 @@ function buildChannelSeqSteps(ch, container){
       const vv=ch.seqPattern[i];
       if(vv>=0){
         s.classList.add('on');s.textContent=vv+1;s.style.background=ch.color+'33';s.style.borderColor=ch.color;s.style.color=ch.color;
-        // ── Limpiar los steps que caen dentro de la duración de esta slice ──
-        const span=getSliceStepSpan(ch.slices[vv]?.dur||0, ch.slices[vv]);
-        const stepsNow=slicerSteps||parseInt(document.getElementById('slicerStepsSel').value)||16;
-        for(let k=i+1;k<Math.min(i+span,stepsNow);k++){
-          ch.seqPattern[k]=-1;
-          const bloqueado=document.getElementById('chstep_'+ch.id+'_'+k);
-          if(bloqueado){
-            bloqueado.classList.remove('on');
-            bloqueado.textContent='·';
-            bloqueado.style.background='';
-            bloqueado.style.borderColor='';
-            bloqueado.style.color='';
-          }
-        }
-        // ── También verificar que ningún step previo se solapa con este ──
-        for(let k=i-1;k>=0;k--){
-          const pv=ch.seqPattern[k]; if(pv<0) continue;
-          const pspan=getSliceStepSpan(ch.slices[pv]?.dur||0, ch.slices[pv]);
-          if(k+pspan>i){
-            // el step anterior solapaba — recortarlo a 1 step de span
-            // simplemente borramos ese step ya que el usuario ha decidido poner uno aquí
-            ch.seqPattern[k]=-1;
-            const prev=document.getElementById('chstep_'+ch.id+'_'+k);
-            if(prev){prev.classList.remove('on');prev.textContent='·';prev.style.background='';prev.style.borderColor='';prev.style.color='';}
-          }
-          break; // solo revisamos el más cercano anterior
-        }
       } else {
         s.classList.remove('on');s.textContent='·';s.style.background='';s.style.borderColor='';s.style.color='';
       }
@@ -1908,62 +1887,145 @@ function autoFitAllChannels(){
   });
 }
 
-// Botón ⊞ AUTO FIT: recalcula Y recoloca todos los steps según BPM actual.
-// Escalona los canales para que no todos empiecen en el step 0.
+// ─── SMART AUTO FIT ──────────────────────────────────
+// Lee el patrón que ya existe (del random u otro origen),
+// calcula el span real de cada hit, y reposiciona inteligentemente:
+//  • Respeta la ESTRUCTURA rítmica existente (qué steps tienen hit, no los borra)
+//  • Ajusta cada hit para que su duración no solape el siguiente
+//  • Coordina entre canales: si dos canales solapan el mismo step, los separa musicalmente
+//  • Con más canales crea más variedad de offsets para que se entrelacen
 function manualFitAllChannels(){
-  const totalSteps = parseInt(document.getElementById('slicerStepsSel').value)||16;
+  const n=parseInt(document.getElementById('slicerStepsSel').value)||16;
+  slicerSteps=n;
+  const bpm=Tone.Transport.bpm.value||128;
+  const stepDurSec=(60/bpm)/4;
 
-  // Primera pasada: calcular spans de todos los canales
-  slicerChannels.forEach(ch=>{ if(ch.slices.length) autoFitChannel(ch); });
+  const active=slicerChannels.filter(ch=>ch.slices.length>0);
+  if(!active.length) return;
 
-  // Segunda pasada: escalonar canales con slices largas para que jueguen juntos
-  // Regla: si dos canales tienen spans >= 4 steps, separar sus triggers
-  // encontrando el "hueco" más limpio para el segundo canal.
-  const longChannels = slicerChannels.filter(ch=>{
-    if(!ch.slices.length) return false;
-    // tiene al menos una slice larga (>= 4 steps)
-    return ch.slices.some(sl=>(sl.gridSteps||getSliceStepSpan(sl.dur,sl))>=4);
+  // ── PASO 1: Para cada canal, calcular los hits existentes y sus spans reales ──
+  // Si el canal tiene hits (del random), los usamos como base.
+  // Si está vacío, aplicar autoFitChannel clásico como fallback.
+  active.forEach(ch=>{
+    const hits=ch.seqPattern.slice(0,n).map((v,i)=>({v,i})).filter(x=>x.v>=0);
+    if(!hits.length){ autoFitChannel(ch); return; }
+
+    // Calcular span de cada hit
+    hits.forEach(h=>{
+      const sl=ch.slices[h.v];
+      h.span = sl
+        ? (sl.gridSteps ? Math.min(n,Math.max(1,sl.gridSteps))
+                        : Math.min(n,Math.max(1,Math.round(sl.dur/stepDurSec))))
+        : 1;
+    });
+
+    // ── PASO 2: Ajuste intra-canal ──
+    // Recorrer hits en orden; si un hit solaparía el siguiente,
+    // comprimir su span para que llegue justo al hit siguiente (−1 step de margen).
+    // NO mueve los hits — solo ajusta la duración "efectiva" para saber si hay colisión.
+    // (El span no afecta al seqPattern, solo al playback — aquí lo usamos para saber si hay colisión visual)
+    for(let i=0;i<hits.length-1;i++){
+      const gap=hits[i+1].i - hits[i].i;
+      if(hits[i].span > gap) hits[i].span=Math.max(1,gap);
+    }
+    // Último hit: puede extenderse hasta el final + wrap
+    const lastH=hits[hits.length-1];
+    const spaceAfterLast=n - lastH.i;
+    if(lastH.span > spaceAfterLast) lastH.span=Math.max(1,spaceAfterLast);
   });
 
-  if(longChannels.length >= 2){
-    // Canal 0: queda como está (autoFit ya lo colocó)
-    // Canales 1+: buscar el primer step libre que no colisione con el canal anterior
-    for(let ci=1; ci<longChannels.length; ci++){
-      const ch  = longChannels[ci];
-      const prev= longChannels[ci-1];
+  // ── PASO 3: Coordinación inter-canal ──
+  // Construir mapa global de ocupación por step (cuántos canales tocan en ese step).
+  // Identificar "puntos calientes" donde ≥2 canales coinciden exactamente.
+  // Para cada punto caliente, rotar el canal MENOS denso un número de steps que
+  // preserve su estructura rítmica (rotate-by-offset del patrón completo).
+  const numCh=active.length;
+  if(numCh>=2){
+    // Calcular densidad de cada canal (hits por step)
+    const density=active.map(ch=>ch.seqPattern.slice(0,n).filter(v=>v>=0).length);
 
-      // Mapa de steps ocupados por el canal anterior
-      const prevOccupied = new Set();
-      for(let i=0;i<totalSteps;i++){
-        const v=prev.seqPattern[i]; if(v<0) continue;
-        const span=prev.slices[v]?.gridSteps || getSliceStepSpan(prev.slices[v]?.dur||0, prev.slices[v]);
-        for(let k=i;k<Math.min(i+span,totalSteps);k++) prevOccupied.add(k);
+    // Ordenar por densidad descendente: el más denso ancla, los demás se adaptan
+    const ordered=[...active.keys()].sort((a,b)=>density[b]-density[a]);
+    const anchor=active[ordered[0]]; // canal más denso — no se mueve
+
+    // Para cada canal no-ancla, calcular cuántos steps colisiona con el acumulado ya fijado
+    // y aplicar la rotación que minimice colisiones, entre offsets musicales: 1,2,4,n/4,n/3,n/2
+    const fixedOccupied=new Set(); // steps con hit de canales ya colocados
+    anchor.seqPattern.slice(0,n).forEach((v,i)=>{ if(v>=0) fixedOccupied.add(i); });
+
+    ordered.slice(1).forEach(ci=>{
+      const ch=active[ci];
+      const hits=ch.seqPattern.slice(0,n).map((v,i)=>v>=0?i:-1).filter(v=>v>=0);
+      if(!hits.length) return;
+
+      // Candidatos de offset: valores musicalmente significativos
+      const offsets=[0,1,2,3,n/8,n/4,Math.round(n/3),Math.round(n/2),
+                     Math.round(2*n/3),Math.round(3*n/4)].map(Math.round)
+        .filter((v,i,a)=>v>=0&&v<n&&a.indexOf(v)===i);
+
+      // Escoger el offset que minimiza colisiones con fixedOccupied
+      // En caso de empate, preferir el que produce más complementariedad (hits en gaps)
+      let bestOffset=0, bestScore=-Infinity;
+      offsets.forEach(off=>{
+        let collisions=0, complements=0;
+        hits.forEach(h=>{
+          const newPos=(h+off)%n;
+          if(fixedOccupied.has(newPos)) collisions++;
+          else complements++;
+        });
+        // Score: complementariedad - penalización por colisiones
+        const score=complements - collisions*2;
+        if(score>bestScore){ bestScore=score; bestOffset=off; }
+      });
+
+      // Aplicar rotación si mejora la situación
+      if(bestOffset>0){
+        const newPat=new Array(n).fill(-1);
+        for(let i=0;i<n;i++){
+          if(ch.seqPattern[i]>=0) newPat[(i+bestOffset)%n]=ch.seqPattern[i];
+        }
+        ch.seqPattern=newPat;
       }
 
-      // Encontrar el primer step libre (no en prevOccupied) para el primer trigger del canal
-      const firstTrigger = ch.seqPattern.findIndex(v=>v>=0);
-      if(firstTrigger < 0) continue;
+      // Añadir los hits de este canal al mapa fijo para los siguientes
+      ch.seqPattern.slice(0,n).forEach((v,i)=>{ if(v>=0) fixedOccupied.add(i); });
+    });
+  }
 
-      // Encontrar el mejor offset: primer step libre
-      let offset = 0;
-      for(let s=0; s<totalSteps; s++){
-        if(!prevOccupied.has(s)){ offset=s; break; }
+  // ── PASO 4: Con 3+ canales, rellenar huecos muertos ──
+  // Pasos donde NINGÚN canal toca durante más de n/4 steps consecutivos
+  // → asignar un hit en el canal menos activo en esa zona (musical gap fill)
+  if(numCh>=3){
+    let silenceRun=0, silenceStart=0;
+    const maxSilence=Math.max(3,Math.floor(n/4));
+    for(let i=0;i<=n;i++){
+      const anyHit=i<n && active.some(ch=>ch.seqPattern[i]>=0);
+      if(!anyHit){
+        if(silenceRun===0) silenceStart=i;
+        silenceRun++;
+        if(silenceRun>=maxSilence){
+          // insertar hit en el canal con menos hits totales en esa zona
+          const fillStep=silenceStart+Math.floor(silenceRun/2);
+          if(fillStep<n){
+            const sparse=active.reduce((a,b)=>{
+              const ca=a.seqPattern.slice(0,n).filter(v=>v>=0).length;
+              const cb=b.seqPattern.slice(0,n).filter(v=>v>=0).length;
+              return ca<=cb?a:b;
+            });
+            if(sparse.seqPattern[fillStep]<0 && sparse.slices.length){
+              sparse.seqPattern[fillStep]=Math.floor(Math.random()*sparse.slices.length);
+            }
+          }
+          silenceRun=0;
+        }
+      } else {
+        silenceRun=0;
       }
-
-      if(offset === 0) continue; // sin hueco disponible, no mover
-
-      // Reubicar el patrón con el offset
-      const newPattern = new Array(totalSteps).fill(-1);
-      for(let i=0; i<totalSteps; i++){
-        const v=ch.seqPattern[i]; if(v<0) continue;
-        const newPos = (i + offset) % totalSteps;
-        if(newPattern[newPos] < 0) newPattern[newPos]=v;
-      }
-      ch.seqPattern = newPattern;
     }
   }
 
-  slicerChannels.forEach(ch=>buildChannelSeqSteps(ch));
+  active.forEach(ch=>{ ch.busyUntilStep=-1; ch.lastSliceIdx=-1; ch.lastTriggerStep=-1; buildChannelSeqSteps(ch); });
+  slicerSetStatus('FIT OK','var(--c-cyan)');
 }
 
 function doSlice(){
@@ -2161,25 +2223,226 @@ function toggleSlicerPlay(){
   }
 }
 
-// ─── BULK ACTIONS ────────────────────────────────────
-function randomizeAllChannels(){
-  slicerChannels.forEach(ch=>{
-    if(!ch.slices.length)return;
-    // Llenar pattern respetando el span de cada slice asignada
-    for(let i=0;i<slicerSteps;i++) ch.seqPattern[i]=-1;
-    let cursor=0;
-    while(cursor<slicerSteps){
-      if(Math.random()<0.75){
-        const sliceIdx=Math.floor(Math.random()*ch.slices.length);
-        ch.seqPattern[cursor]=sliceIdx;
-        const span=getSliceStepSpan(ch.slices[sliceIdx]?.dur||0, ch.slices[sliceIdx]);
-        cursor+=span; // saltar los steps que ocupa esta slice
-      } else {
-        cursor++; // step vacío, avanzar uno
-      }
-    }
-    buildChannelSeqSteps(ch);
+// ─── REMOVE ALL CHANNELS ────────────────────────────
+function removeAllSlicerChannels(){
+  // Stop playback first
+  if(slicerIsPlaying) toggleSlicerPlay();
+  // Copy ids to avoid mutation during iteration
+  const ids=[...slicerChannels].map(c=>c.id);
+  ids.forEach(id=>removeSlicerChannel(id));
+  masterSlicerBuffer=null;
+  slicerDrawOverview();
+  slicerSetStatus('ALL CLEARED','var(--c-red)');
+}
+
+// ─── RESET SLICER FX / PARAMS ───────────────────────
+function resetSlicerFx(){
+  // PARAMS
+  const defs={slPitch:0, slSpeed:1, slReverse:0, slVolume:0.9, slFadeIn:0.003, slFadeOut:0.003};
+  const labels={slPitch:'0st', slSpeed:'1.00×', slReverse:'0%', slVolume:'90%', slFadeIn:'3ms', slFadeOut:'3ms'};
+  Object.entries(defs).forEach(([id,val])=>{
+    const el=document.getElementById(id); if(el){ el.value=val; }
   });
+  Object.entries(labels).forEach(([id,txt])=>{
+    const el=document.getElementById(id+'Val'); if(el) el.textContent=txt;
+  });
+  updateSlicerMasterVol(0.9);
+  // BPM
+  const bpmK=document.getElementById('slicerBpmKnob');
+  const bpmD=document.getElementById('slicerBpmDisp');
+  if(bpmK){bpmK.value=128;} if(bpmD){bpmD.textContent='128';}
+  applyBpm(128);
+  // Per-channel vol reset
+  slicerChannels.forEach(ch=>{
+    ch.vol=0.9;
+    ch.volNode.volume.value=Tone.gainToDb(0.9);
+    const vSlider=document.querySelector(`#clane_${ch.id} .ch-vol`);
+    if(vSlider) vSlider.value=0.9;
+  });
+  slicerSetStatus('FX RESET','var(--c-cyan)');
+}
+
+// ─── BULK ACTIONS ────────────────────────────────────
+
+// Euclidean rhythm (Bjorklund) — distributes k hits across n steps maximally evenly
+function euclidean(n, k, offset=0){
+  if(k<=0) return new Array(n).fill(false);
+  if(k>=n) return new Array(n).fill(true);
+  let pattern=[];
+  let counts=[], remainders=[];
+  let divisor=n-k; remainders=[k];
+  let level=0;
+  while(true){
+    counts.push(Math.floor(divisor/remainders[level]));
+    remainders.push(divisor%remainders[level]);
+    divisor=remainders[level]; level++;
+    if(remainders[level]<=1) break;
+  }
+  counts.push(1);
+  function build(l){
+    if(l==-1){pattern.push(false);}
+    else if(l==-2){pattern.push(true);}
+    else{ for(let i=0;i<counts[l];i++) build(l-1); if(remainders[l]!=0) build(l-2); }
+  }
+  build(level);
+  const rot=((offset%n)+n)%n;
+  return [...pattern.slice(rot),...pattern.slice(0,rot)];
+}
+
+// Weighted slice pick: bias toward early slices (usually strongest transients) but vary
+function weightedSlice(ch, bias=0.6){
+  const n=ch.slices.length; if(n<=1) return 0;
+  return Math.random()<bias ? Math.floor(Math.random()*Math.ceil(n/2)) : Math.floor(Math.random()*n);
+}
+
+function randomizeAllChannels(){
+  const active=slicerChannels.filter(ch=>ch.slices.length>0);
+  if(!active.length) return;
+  const n=slicerSteps;
+  const numCh=active.length;
+
+  // Clear all patterns
+  active.forEach(ch=>{ for(let i=0;i<n;i++) ch.seqPattern[i]=-1; });
+
+  // ── RHYTHM PERSONALITIES ──────────────────────────────────────────────────
+  // Pool of 8 distinct rhythmic strategies. Each call randomly assigns one per channel.
+  // With more channels: more variety, complementary roles, less step collision.
+  const PERSONALITIES=[
+    // Euclidean dense — maximal even spread, high hit count
+    (ch,ci)=>{
+      const hits=Math.max(2,Math.round(n*(0.55+Math.random()*0.2)));
+      const off=ci===0?0:Math.floor(Math.random()*4);
+      euclidean(n,hits,off).forEach((v,i)=>{ if(v) ch.seqPattern[i]=weightedSlice(ch,0.7); });
+    },
+    // Euclidean sparse — few hits, maximal spread (clave-like)
+    (ch,ci)=>{
+      const hits=Math.max(2,Math.round(n*(0.20+Math.random()*0.15)));
+      const off=(ci*3+Math.floor(Math.random()*3))%n;
+      euclidean(n,hits,off).forEach((v,i)=>{ if(v) ch.seqPattern[i]=weightedSlice(ch,0.5); });
+    },
+    // Offbeat — hits land on the "ands" (odd 16th steps), syncopated feel
+    (ch,ci)=>{
+      const odds=Array.from({length:n},(_,i)=>i).filter(i=>i%2===1);
+      const hits=Math.max(1,Math.round(odds.length*(0.35+Math.random()*0.3)));
+      // shuffle and pick
+      odds.sort(()=>Math.random()-0.5).slice(0,hits).forEach(pos=>{
+        ch.seqPattern[pos]=weightedSlice(ch,0.4);
+      });
+      // occasional downbeat anchor
+      if(Math.random()<0.35) ch.seqPattern[0]=weightedSlice(ch,0.8);
+    },
+    // Syncopated euclidean — euclidean base ±1 step random nudge per hit
+    (ch,ci)=>{
+      const hits=Math.max(2,Math.round(n*(0.30+Math.random()*0.25)));
+      const off=(ci*5)%n;
+      const base=euclidean(n,hits,off);
+      base.forEach((v,i)=>{
+        if(!v) return;
+        const nudge=Math.random()<0.5?(Math.random()<0.5?-1:1):0;
+        const pos=((i+nudge)+n)%n;
+        if(ch.seqPattern[pos]<0) ch.seqPattern[pos]=weightedSlice(ch,0.5);
+      });
+    },
+    // Burst fills — tight clusters of 2-4 hits with big gaps between
+    (ch,ci)=>{
+      const burstSz=2+Math.floor(Math.random()*3);
+      const numBursts=Math.max(1,Math.floor(n/(burstSz*2+Math.floor(Math.random()*3))));
+      const spacing=Math.floor(n/numBursts);
+      for(let b=0;b<numBursts;b++){
+        const base=((ci*Math.ceil(n/numCh))+b*spacing+Math.floor(Math.random()*(spacing*0.5)))%n;
+        for(let j=0;j<burstSz;j++){
+          const pos=(base+j)%n;
+          ch.seqPattern[pos]=weightedSlice(ch,0.45);
+        }
+      }
+    },
+    // Accent — sparse hits only on musical strong points (beats + upbeats)
+    (ch,ci)=>{
+      const strong=[0,n/4,n/2,3*n/4].map(Math.round).filter(p=>p<n);
+      const up=[n/8,3*n/8,5*n/8,7*n/8].map(Math.round).filter(p=>p<n&&p>0);
+      const pool=[...strong,...up].filter(p=>p>=0&&p<n);
+      const hits=Math.max(1,Math.floor(pool.length*(0.3+Math.random()*0.4)));
+      pool.sort(()=>Math.random()-0.5).slice(0,hits).forEach(p=>{
+        ch.seqPattern[p]=weightedSlice(ch,0.8);
+      });
+    },
+    // Alternating — hits on every Nth step with random N (2,3,4), offset by channel
+    (ch,ci)=>{
+      const every=2+Math.floor(Math.random()*3); // 2,3,4
+      const off=(ci*(every-1))%every;
+      for(let i=off;i<n;i+=every){
+        if(Math.random()<0.75) ch.seqPattern[i]=weightedSlice(ch,0.5);
+      }
+    },
+    // Polyrhythm — lay two euclidean patterns with different hit counts on top of each other
+    (ch,ci)=>{
+      const h1=Math.max(2,Math.round(n*0.25));
+      const h2=Math.max(2,Math.round(n*0.33));
+      const off1=(ci*2)%n;
+      const off2=(ci*3+n/4|0)%n;
+      const a=euclidean(n,h1,off1);
+      const b=euclidean(n,h2,off2);
+      for(let i=0;i<n;i++){
+        if(a[i]||b[i]) ch.seqPattern[i]=weightedSlice(ch,b[i]?0.7:0.4);
+      }
+    },
+  ];
+
+  // Shuffle personality pool and assign one per channel (no repeats for first 8 channels)
+  const shuffled=[...PERSONALITIES].sort(()=>Math.random()-0.5);
+
+  active.forEach((ch,ci)=>{
+    const fn=shuffled[ci%shuffled.length];
+    fn(ch,ci);
+  });
+
+  // ── POST PROCESS ────────────────────────────────────────────────────────────
+  // 1. Guarantee every channel has at least 1 hit
+  active.forEach((ch,ci)=>{
+    if(ch.seqPattern.slice(0,n).every(v=>v<0)){
+      const fallback=(ci*Math.ceil(n/numCh))%n;
+      ch.seqPattern[fallback]=weightedSlice(ch,0.6);
+    }
+  });
+
+  // 2. With 2+ channels: break up the "everyone hits step 0" problem
+  //    Keep step 0 only for the densest channel; nudge others off it randomly
+  if(numCh>=2){
+    const densest=active.reduce((a,b)=>{
+      const ca=a.seqPattern.slice(0,n).filter(v=>v>=0).length;
+      const cb=b.seqPattern.slice(0,n).filter(v=>v>=0).length;
+      return ca>=cb?a:b;
+    });
+    active.forEach(ch=>{
+      if(ch===densest) return;
+      if(ch.seqPattern[0]>=0&&Math.random()<0.7){
+        // move step-0 hit to a nearby free slot (1-4 steps away)
+        for(let alt=1;alt<=4;alt++){
+          if(ch.seqPattern[alt]<0){
+            ch.seqPattern[alt]=ch.seqPattern[0];
+            ch.seqPattern[0]=-1;
+            break;
+          }
+        }
+      }
+    });
+  }
+
+  // 3. Add occasional inter-channel complementarity:
+  //    Find steps where NO channel plays and sprinkle a hit on a random channel
+  if(numCh>=2 && Math.random()<0.6){
+    const emptySteps=[];
+    for(let i=0;i<n;i++){
+      if(active.every(ch=>ch.seqPattern[i]<0)) emptySteps.push(i);
+    }
+    const fill=Math.floor(emptySteps.length*0.15);
+    emptySteps.sort(()=>Math.random()-0.5).slice(0,fill).forEach(pos=>{
+      const ch=active[Math.floor(Math.random()*numCh)];
+      ch.seqPattern[pos]=weightedSlice(ch,0.4);
+    });
+  }
+
+  active.forEach(ch=>buildChannelSeqSteps(ch));
 }
 
 // Solo cambia el número de slice en steps que ya tienen uno asignado — no mueve ni borra ningún step
@@ -2395,12 +2658,31 @@ updateStepSizes();
 // ─── BORRAR STEP CON TECLA "." ───────────────────────
 window._hoveredStep=null;
 window.addEventListener('keydown',e=>{
-  if(e.key!=='.'&&e.key!=='>') return;
   const h=window._hoveredStep; if(!h) return;
   const {ch,i,el}=h;
-  ch.seqPattern[i]=-1;
-  el.classList.remove('on','eligible-step');
-  el.textContent='·'; el.style.background=''; el.style.borderColor=''; el.style.color='';
+
+  // "." o ">" → borrar step
+  if(e.key==='.'||e.key==='>'){
+    ch.seqPattern[i]=-1;
+    el.classList.remove('on','eligible-step');
+    el.textContent='·'; el.style.background=''; el.style.borderColor=''; el.style.color='';
+    return;
+  }
+
+  // "-" → activar/avanzar step (igual que click) sin mover el cursor
+  if(e.key==='-'||e.key==='_'){
+    e.preventDefault();
+    if(!ch.slices.length) return;
+    ch.seqPattern[i]=(ch.seqPattern[i]+2)%(ch.slices.length+1)-1;
+    const vv=ch.seqPattern[i];
+    if(vv>=0){
+      el.classList.add('on'); el.textContent=vv+1;
+      el.style.background=ch.color+'33'; el.style.borderColor=ch.color; el.style.color=ch.color;
+    } else {
+      el.classList.remove('on'); el.textContent='·';
+      el.style.background=''; el.style.borderColor=''; el.style.color='';
+    }
+  }
 });
 </script>
 </body>
