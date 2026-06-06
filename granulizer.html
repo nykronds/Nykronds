@@ -34,7 +34,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .tb-logo span{color:var(--c-green);text-shadow:0 0 10px var(--c-green);}
 .tb-section{display:flex;align-items:center;gap:5px;padding:0 10px;height:100%;border-right:1px solid var(--border);}
 .tb-label{font-size:0.44rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;white-space:nowrap;}
-.bpm-num{font-family:var(--font-mono);font-size:1rem;color:var(--c-cyan);text-shadow:0 0 8px var(--c-cyan);min-width:38px;}
+.bpm-num{font-family:var(--font-mono);font-size:1rem;color:var(--c-cyan);text-shadow:0 0 8px var(--c-cyan);min-width:38px;cursor:text;}
+.bpm-num:hover{text-shadow:0 0 14px var(--c-cyan),0 0 28px rgba(0,229,255,0.4);border-bottom:1px dashed var(--c-cyan);}
+.bpm-edit-input{font-family:var(--font-mono);font-size:1rem;color:var(--c-cyan);background:transparent;border:none;border-bottom:2px solid var(--c-cyan);outline:none;width:42px;text-align:center;caret-color:var(--c-cyan);text-shadow:0 0 8px var(--c-cyan);box-shadow:0 2px 8px rgba(0,229,255,0.25);}
 .tb-btn{height:21px;padding:0 9px;background:var(--bg3);border:1px solid var(--border-hi);
   color:var(--text);font-family:var(--font-body);font-size:0.55rem;font-weight:700;
   letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:2px;
@@ -250,7 +252,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
 .sl-btn.green{color:var(--c-green);border-color:#1a4020;}
 .sl-btn.green:hover{border-color:var(--c-green);color:var(--c-green);}
 .slicer-main{display:flex;flex:1;overflow:hidden;}
-.slicer-center{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.slicer-center{display:flex;flex-direction:column;flex:1;overflow:hidden;min-width:0;}
 .slicer-overview{height:110px;position:relative;background:var(--bg1);border-bottom:1px solid var(--border-hi);overflow:hidden;flex-shrink:0;}
 .slicer-wf-canvas{display:block;width:100%;height:100%;}
 .slicer-playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--c-cyan);box-shadow:0 0 6px var(--c-cyan);pointer-events:none;left:0;}
@@ -272,9 +274,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
 .ch-vol-wrap{display:flex;align-items:center;gap:2px;}
 .ch-vol-lbl{font-size:0.34rem;color:var(--text-dim);letter-spacing:1px;}
 .ch-vol{width:50px;accent-color:var(--c-cyan);}
-.ch-seq{flex:1;display:flex;align-items:center;padding:4px 6px;gap:2px;overflow-x:auto;}
-.ch-seq::-webkit-scrollbar{display:none;}
-.ch-step{width:22px;height:22px;flex-shrink:0;border-radius:2px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:all 0.06s;display:flex;align-items:center;justify-content:center;font-size:0.38rem;font-family:var(--font-mono);color:var(--text-dim);}
+.ch-seq{flex:1;display:grid;align-content:center;padding:3px 4px;gap:2px;overflow:hidden;min-width:0;}
+/* step: sin ancho fijo — el grid 1fr lo controla */
+.ch-step{width:100%;height:22px;border-radius:2px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;transition:background 0.06s,border-color 0.06s,filter 0.06s;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);color:var(--text-dim);min-width:0;overflow:hidden;}
 .ch-step:hover{border-color:var(--border-hi);filter:brightness(1.4);}
 .ch-step.on{color:#000;font-weight:700;}
 .ch-step.playing-step{filter:brightness(2.5)!important;transform:scaleY(1.1);}
@@ -287,19 +289,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
 .add-channel-btn{display:flex;align-items:center;justify-content:center;gap:6px;height:32px;background:var(--bg1);border-top:1px solid var(--border-hi);border-bottom:none;cursor:pointer;font-size:0.5rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);transition:0.15s;flex-shrink:0;}
 .add-channel-btn:hover{color:var(--c-purple);background:rgba(191,90,242,0.05);}
 
-/* ─── SLICER RIGHT PANEL ─── */
-.slicer-right{background:var(--bg1);border-left:1px solid var(--border-hi);display:flex;flex-direction:column;overflow-y:auto;padding:6px 8px;width:200px;flex-shrink:0;}
-.slicer-right::-webkit-scrollbar{width:2px;}
-.sl-param-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);gap:4px;}
-.sl-param-lbl{font-size:0.42rem;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;flex-shrink:0;}
-.sl-param-val{font-family:var(--font-mono);font-size:0.56rem;color:var(--c-cyan);min-width:36px;text-align:right;flex-shrink:0;}
-.sl-param-slider{width:60px;flex-shrink:0;accent-color:var(--c-purple);}
-.slicer-meter-row{display:flex;align-items:center;gap:4px;margin:2px 0;}
-.slicer-meter-lbl{font-size:0.38rem;letter-spacing:1px;color:var(--text-dim);width:36px;flex-shrink:0;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
-.slicer-meter-track{flex:1;height:4px;background:var(--bg0);border-radius:2px;overflow:hidden;border:1px solid var(--border);}
+/* ─── SLICER BOTTOM BAR ─── */
+.slicer-bottom-bar{display:flex;flex-direction:row;align-items:flex-start;flex-shrink:0;
+  background:var(--bg1);border-top:2px solid var(--border-hi);padding:5px 10px;gap:0;
+  overflow-x:auto;min-height:72px;}
+.slicer-bottom-bar::-webkit-scrollbar{height:2px;}
+.sbb-group{display:flex;flex-direction:column;gap:3px;padding:0 10px;min-width:100px;}
+.sbb-title{font-size:0.38rem;letter-spacing:2.5px;color:var(--text-dim);text-transform:uppercase;
+  padding-bottom:3px;border-bottom:1px solid var(--border);margin-bottom:1px;white-space:nowrap;}
+.sbb-row{display:flex;align-items:center;gap:4px;}
+.sbb-lbl{font-size:0.38rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;width:44px;flex-shrink:0;}
+.sbb-val{font-family:var(--font-mono);font-size:0.48rem;color:var(--c-cyan);min-width:32px;text-align:right;flex-shrink:0;}
+.sbb-slider{width:80px;flex-shrink:0;accent-color:var(--c-purple);}
+.sbb-divider{width:1px;background:var(--border-hi);margin:0;align-self:stretch;flex-shrink:0;}
+.slicer-meter-row{display:flex;align-items:center;gap:4px;}
+.slicer-meter-lbl{font-size:0.36rem;letter-spacing:1px;color:var(--text-dim);width:32px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.slicer-meter-track{width:70px;height:4px;background:var(--bg0);border-radius:2px;overflow:hidden;border:1px solid var(--border);}
 .slicer-meter-fill{height:100%;width:0%;border-radius:2px;transition:width 0.05s;}
-.slicer-rec-section{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:6px;margin:4px 0;}
-.slicer-export-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:4px;}
 </style>
 </head>
 <body>
@@ -453,7 +459,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
     <div class="sl-ctrl">
       <span class="sl-ctrl-lbl">STEPS</span>
       <select class="tb-select" id="slicerStepsSel" style="color:var(--c-yellow);">
-        <option value="8">8</option><option value="16" selected>16</option><option value="32">32</option>
+        <option value="8">8</option><option value="16" selected>16</option><option value="32">32</option><option value="64">64</option>
       </select>
     </div>
     <div class="sl-ctrl">
@@ -466,7 +472,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
     <button class="sl-btn" id="slicerPlayBtn" onclick="toggleSlicerPlay()">▶ PLAY ALL</button>
     <button class="sl-btn" onclick="shuffleAllChannels()">⟳ SHUFFLE</button>
     <button class="sl-btn" onclick="randomizeAllChannels()">★ RANDOM</button>
+    <button class="sl-btn" onclick="randomizeSliceNumbers()"># RND#</button>
     <button class="sl-btn" onclick="clearAllChannels()">⌫ CLEAR</button>
+    <button class="sl-btn" onclick="manualFitAllChannels()" style="color:var(--c-cyan);border-color:var(--c-cyan)44;">⊞ AUTO FIT</button>
     <div class="sl-ctrl">
       <span class="sl-ctrl-lbl">MODE</span>
       <select class="tb-select" id="slicerPlayMode" style="color:var(--c-yellow);">
@@ -496,67 +504,79 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
       <div class="add-channel-btn" onclick="addSlicerChannel()">
         <i class="fas fa-plus"></i> ADD CHANNEL
       </div>
-    </div>
-
-    <!-- RIGHT: PARAMS + METERS + REC/EXPORT -->
-    <div class="slicer-right">
-      <div class="section-title" style="margin:0 -8px 4px;font-size:0.38rem;">GLOBAL PARAMS</div>
-      <div class="sl-param-row">
-        <span class="sl-param-lbl">PITCH</span>
-        <input type="range" class="sl-param-slider" id="slPitch" min="-24" max="24" step="1" value="0" oninput="slPitchVal.textContent=this.value+'st'">
-        <span class="sl-param-val" id="slPitchVal">0st</span>
-      </div>
-      <div class="sl-param-row">
-        <span class="sl-param-lbl">SPEED</span>
-        <input type="range" class="sl-param-slider" id="slSpeed" min="0.25" max="4" step="0.01" value="1" oninput="slSpeedVal.textContent=parseFloat(this.value).toFixed(2)+'×'">
-        <span class="sl-param-val" id="slSpeedVal">1.00×</span>
-      </div>
-      <div class="sl-param-row">
-        <span class="sl-param-lbl">REV%</span>
-        <input type="range" class="sl-param-slider" id="slReverse" min="0" max="1" step="0.01" value="0" oninput="slReverseVal.textContent=Math.round(this.value*100)+'%'">
-        <span class="sl-param-val" id="slReverseVal">0%</span>
-      </div>
-      <div class="sl-param-row">
-        <span class="sl-param-lbl">VOL</span>
-        <input type="range" class="sl-param-slider" id="slVolume" min="0" max="1" step="0.01" value="0.9" oninput="slVolumeVal.textContent=Math.round(this.value*100)+'%';updateSlicerMasterVol(this.value)">
-        <span class="sl-param-val" id="slVolumeVal">90%</span>
-      </div>
-      <div class="sl-param-row">
-        <span class="sl-param-lbl">FADE IN</span>
-        <input type="range" class="sl-param-slider" id="slFadeIn" min="0" max="0.1" step="0.001" value="0.003" oninput="slFadeInVal.textContent=Math.round(this.value*1000)+'ms'">
-        <span class="sl-param-val" id="slFadeInVal">3ms</span>
-      </div>
-      <div class="sl-param-row">
-        <span class="sl-param-lbl">FADE OUT</span>
-        <input type="range" class="sl-param-slider" id="slFadeOut" min="0" max="0.1" step="0.001" value="0.003" oninput="slFadeOutVal.textContent=Math.round(this.value*1000)+'ms'">
-        <span class="sl-param-val" id="slFadeOutVal">3ms</span>
-      </div>
-
-      <div class="section-title" style="margin:6px -8px 4px;font-size:0.38rem;">CHANNEL LEVELS</div>
-      <div id="slicerMetersDiv"></div>
-
-      <div class="section-title" style="margin:6px -8px 4px;font-size:0.38rem;">REC / EXPORT</div>
-      <div class="slicer-rec-section">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0;" id="slicerRecDot"></div>
-          <span style="font-size:0.44rem;color:var(--text-dim);letter-spacing:1px;" id="slicerRecStatus">IDLE</span>
+      <!-- BOTTOM CONTROLS BAR -->
+      <div class="slicer-bottom-bar">
+        <!-- PARAMS -->
+        <div class="sbb-group">
+          <span class="sbb-title">PARAMS</span>
+          <div class="sbb-row">
+            <span class="sbb-lbl">PITCH</span>
+            <input type="range" class="sbb-slider" id="slPitch" min="-24" max="24" step="1" value="0" oninput="slPitchVal.textContent=this.value+'st'">
+            <span class="sbb-val" id="slPitchVal">0st</span>
+          </div>
+          <div class="sbb-row">
+            <span class="sbb-lbl">SPEED</span>
+            <input type="range" class="sbb-slider" id="slSpeed" min="0.25" max="4" step="0.01" value="1" oninput="slSpeedVal.textContent=parseFloat(this.value).toFixed(2)+'×'">
+            <span class="sbb-val" id="slSpeedVal">1.00×</span>
+          </div>
+          <div class="sbb-row">
+            <span class="sbb-lbl">REV%</span>
+            <input type="range" class="sbb-slider" id="slReverse" min="0" max="1" step="0.01" value="0" oninput="slReverseVal.textContent=Math.round(this.value*100)+'%'">
+            <span class="sbb-val" id="slReverseVal">0%</span>
+          </div>
         </div>
-        <div style="background:var(--bg0);border:1px solid var(--border);border-radius:2px;height:4px;overflow:hidden;margin-bottom:5px;">
-          <div id="slicerRecMeter" style="height:100%;width:0%;background:linear-gradient(90deg,var(--c-green),var(--c-yellow),var(--c-red));transition:width 0.05s;"></div>
+        <div class="sbb-divider"></div>
+        <!-- ENVELOPE -->
+        <div class="sbb-group">
+          <span class="sbb-title">ENVELOPE</span>
+          <div class="sbb-row">
+            <span class="sbb-lbl">VOL</span>
+            <input type="range" class="sbb-slider" id="slVolume" min="0" max="1" step="0.01" value="0.9" oninput="slVolumeVal.textContent=Math.round(this.value*100)+'%';updateSlicerMasterVol(this.value)">
+            <span class="sbb-val" id="slVolumeVal">90%</span>
+          </div>
+          <div class="sbb-row">
+            <span class="sbb-lbl">FADE IN</span>
+            <input type="range" class="sbb-slider" id="slFadeIn" min="0" max="0.1" step="0.001" value="0.003" oninput="slFadeInVal.textContent=Math.round(this.value*1000)+'ms'">
+            <span class="sbb-val" id="slFadeInVal">3ms</span>
+          </div>
+          <div class="sbb-row">
+            <span class="sbb-lbl">FADE OUT</span>
+            <input type="range" class="sbb-slider" id="slFadeOut" min="0" max="0.1" step="0.001" value="0.003" oninput="slFadeOutVal.textContent=Math.round(this.value*1000)+'ms'">
+            <span class="sbb-val" id="slFadeOutVal">3ms</span>
+          </div>
         </div>
-        <div class="slicer-export-grid">
-          <button class="sl-btn" id="slicerRecBtn2" onclick="toggleSlicerRec()" style="font-size:0.42rem;">⏺ REC</button>
-          <button class="sl-btn green" onclick="exportSlicerWav()" style="font-size:0.42rem;">⬇ WAV</button>
+        <div class="sbb-divider"></div>
+        <!-- BPM -->
+        <div class="sbb-group" style="min-width:110px;">
+          <span class="sbb-title">TRANSPORT</span>
+          <div class="sbb-row">
+            <span class="sbb-lbl">BPM</span>
+            <input type="range" class="sbb-slider" min="40" max="220" value="128" id="slicerBpmKnob" oninput="applyBpm(parseInt(this.value))">
+            <span class="sbb-val" id="slicerBpmDisp">128</span>
+          </div>
         </div>
-      </div>
-
-      <div class="section-title" style="margin:6px -8px 4px;font-size:0.38rem;">TRANSPORT</div>
-      <div style="display:flex;flex-direction:column;gap:3px;">
-        <div style="display:flex;align-items:center;gap:5px;">
-          <span style="font-size:0.4rem;color:var(--text-dim);letter-spacing:1px;">BPM</span>
-          <span class="sl-num" id="slicerBpmDisp" style="font-size:0.7rem;">128</span>
+        <div class="sbb-divider"></div>
+        <!-- LEVELS -->
+        <div class="sbb-group" style="min-width:120px;">
+          <span class="sbb-title">LEVELS</span>
+          <div id="slicerMetersDiv" style="display:flex;flex-direction:column;gap:2px;"></div>
         </div>
-        <input type="range" min="40" max="220" value="128" style="width:100%;" id="slicerBpmKnob" oninput="slicerBpmDisp.textContent=this.value;Tone.Transport.bpm.value=parseInt(this.value);bpmDisplay.textContent=this.value;bpmKnob.value=this.value;">
+        <div class="sbb-divider"></div>
+        <!-- REC / EXPORT -->
+        <div class="sbb-group" style="min-width:130px;">
+          <span class="sbb-title">REC / EXPORT</span>
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+            <div style="width:7px;height:7px;border-radius:50%;background:var(--text-dim);flex-shrink:0;" id="slicerRecDot"></div>
+            <span style="font-size:0.42rem;color:var(--text-dim);letter-spacing:1px;" id="slicerRecStatus">IDLE</span>
+            <div style="flex:1;height:4px;background:var(--bg0);border:1px solid var(--border);border-radius:2px;overflow:hidden;">
+              <div id="slicerRecMeter" style="height:100%;width:0%;background:linear-gradient(90deg,var(--c-green),var(--c-yellow),var(--c-red));transition:width 0.05s;"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <button class="sl-btn" id="slicerRecBtn2" onclick="toggleSlicerRec()" style="font-size:0.42rem;flex:1;">⏺ REC</button>
+            <button class="sl-btn green" onclick="exportSlicerWav()" style="font-size:0.42rem;flex:1;">⬇ WAV</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1158,11 +1178,66 @@ Tone.Transport.scheduleRepeat((time)=>{
 //  DRUM TRANSPORT CONTROLS
 // ══════════════════════════════════════════════════════
 document.getElementById('bpmKnob').oninput=e=>{
-  Tone.Transport.bpm.value=e.target.value;
-  document.getElementById('bpmDisplay').textContent=e.target.value;
-  document.getElementById('slicerBpmDisp').textContent=e.target.value;
-  document.getElementById('slicerBpmKnob').value=e.target.value;
+  applyBpm(parseInt(e.target.value));
 };
+
+// ─── BPM: sincroniza todos los controles y el motor ──────────────
+function applyBpm(val){
+  val=Math.min(220, Math.max(40, val||40));
+  Tone.Transport.bpm.value=val;
+  document.getElementById('bpmDisplay').textContent=val;
+  document.getElementById('bpmKnob').value=val;
+  document.getElementById('slicerBpmDisp').textContent=val;
+  document.getElementById('slicerBpmKnob').value=val;
+  autoFitAllChannels(); // refresca visuales de cola sin mover steps
+}
+
+// ─── Edición de BPM por teclado ──────────────────────────────────
+// Funciona en ambos displays: el de la drum machine y el del slicer.
+// Click/doble-click → aparece input inline → Enter/Tab/blur confirma.
+function makeBpmEditable(displayEl){
+  displayEl.title='Click para editar BPM';
+  displayEl.style.cursor='text';
+  displayEl.addEventListener('click', ()=> startBpmEdit(displayEl));
+}
+
+function startBpmEdit(displayEl){
+  if(displayEl.dataset.editing==='1') return;
+  displayEl.dataset.editing='1';
+  const currentVal=displayEl.textContent.trim();
+  const input=document.createElement('input');
+  input.type='text'; input.inputMode='numeric'; input.pattern='[0-9]*';
+  input.className='bpm-edit-input';
+  input.value=currentVal;
+  displayEl.textContent='';
+  displayEl.appendChild(input);
+  input.focus(); input.select();
+
+  function commit(){
+    const raw=parseInt(input.value)||0;
+    const val=Math.min(220,Math.max(40,raw||parseInt(currentVal)));
+    displayEl.dataset.editing='';
+    displayEl.textContent=val;
+    applyBpm(val);
+  }
+  function cancel(){
+    displayEl.dataset.editing='';
+    displayEl.textContent=currentVal;
+  }
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();commit();}
+    else if(e.key==='Escape'){e.preventDefault();cancel();}
+    else if(e.key==='ArrowUp'){e.preventDefault();input.value=Math.min(220,(parseInt(input.value)||128)+1);}
+    else if(e.key==='ArrowDown'){e.preventDefault();input.value=Math.max(40,(parseInt(input.value)||128)-1);}
+    // solo permitir dígitos, backspace, delete, flechas
+    else if(!/[0-9]/.test(e.key)&&!['Backspace','Delete','ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();}
+  });
+  input.addEventListener('blur',()=>{ if(displayEl.dataset.editing==='1') commit(); });
+}
+
+// Activar en ambos displays al cargar
+makeBpmEditable(document.getElementById('bpmDisplay'));
+
 document.getElementById('stepsSelect').onchange=e=>{steps=parseInt(e.target.value);currentStep=0;buildSeqRows();};
 document.getElementById('swingKnob').oninput=e=>{document.getElementById('swingVal').textContent=e.target.value;};
 document.getElementById('masterVol').oninput=e=>{masterVol_.volume.value=Tone.gainToDb(parseFloat(e.target.value));};
@@ -1308,7 +1383,10 @@ function createSlicerChannel(name, color){
     buffer:null, slices:[], players:[],
     seqPattern: new Array(32).fill(-1),
     muted:false, soloed:false, vol:0.9,
-    volNode, gainNode, analyserNode
+    volNode, gainNode, analyserNode,
+    busyUntilStep: -1,   // step global hasta el que está ocupado este canal
+    lastSliceIdx: -1,    // índice de la última slice disparada
+    lastTriggerStep: -1  // step global en que se disparó
   };
   slicerChannels.push(ch);
   renderChannelLane(ch);
@@ -1376,8 +1454,18 @@ function buildChannelSeqSteps(ch, container){
   if(!container) return;
   container.innerHTML='';
   slicerSteps=parseInt(document.getElementById('slicerStepsSel').value)||16;
+  container.style.gridTemplateColumns=`repeat(${slicerSteps}, 1fr)`;
+  // pre-calc sizes
+  const fs = slicerSteps<=16 ? '0.38rem' : slicerSteps<=32 ? '0.30rem' : '0.22rem';
+  const br = slicerSteps<=32 ? '2px' : '1px';
+  const bw = slicerSteps>=64 ? '0.5px' : '1px';
+  const h  = slicerSteps<=32 ? '22px' : '18px';
+  const gap= slicerSteps<=16 ? '2px' : '1px';
+  container.style.gap=gap;
+  container.style.padding= slicerSteps<=32 ? '3px 4px' : '2px 3px';
   for(let i=0;i<slicerSteps;i++){
     const s=document.createElement('div'); s.className='ch-step'; s.id='chstep_'+ch.id+'_'+i;
+    s.style.fontSize=fs; s.style.borderRadius=br; s.style.borderWidth=bw; s.style.height=h;
     const v=ch.seqPattern[i];
     if(v>=0){
       s.classList.add('on'); s.textContent=v+1;
@@ -1387,19 +1475,73 @@ function buildChannelSeqSteps(ch, container){
       if(!ch.slices.length)return;
       ch.seqPattern[i]=(ch.seqPattern[i]+2)%(ch.slices.length+1)-1;
       const vv=ch.seqPattern[i];
-      if(vv>=0){s.classList.add('on');s.textContent=vv+1;s.style.background=ch.color+'33';s.style.borderColor=ch.color;s.style.color=ch.color;}
-      else{s.classList.remove('on');s.textContent='·';s.style.background='';s.style.borderColor='';s.style.color='';}
+      if(vv>=0){
+        s.classList.add('on');s.textContent=vv+1;s.style.background=ch.color+'33';s.style.borderColor=ch.color;s.style.color=ch.color;
+        // ── Limpiar los steps que caen dentro de la duración de esta slice ──
+        const span=getSliceStepSpan(ch.slices[vv]?.dur||0, ch.slices[vv]);
+        const stepsNow=slicerSteps||parseInt(document.getElementById('slicerStepsSel').value)||16;
+        for(let k=i+1;k<Math.min(i+span,stepsNow);k++){
+          ch.seqPattern[k]=-1;
+          const bloqueado=document.getElementById('chstep_'+ch.id+'_'+k);
+          if(bloqueado){
+            bloqueado.classList.remove('on');
+            bloqueado.textContent='·';
+            bloqueado.style.background='';
+            bloqueado.style.borderColor='';
+            bloqueado.style.color='';
+          }
+        }
+        // ── También verificar que ningún step previo se solapa con este ──
+        for(let k=i-1;k>=0;k--){
+          const pv=ch.seqPattern[k]; if(pv<0) continue;
+          const pspan=getSliceStepSpan(ch.slices[pv]?.dur||0, ch.slices[pv]);
+          if(k+pspan>i){
+            // el step anterior solapaba — recortarlo a 1 step de span
+            // simplemente borramos ese step ya que el usuario ha decidido poner uno aquí
+            ch.seqPattern[k]=-1;
+            const prev=document.getElementById('chstep_'+ch.id+'_'+k);
+            if(prev){prev.classList.remove('on');prev.textContent='·';prev.style.background='';prev.style.borderColor='';prev.style.color='';}
+          }
+          break; // solo revisamos el más cercano anterior
+        }
+      } else {
+        s.classList.remove('on');s.textContent='·';s.style.background='';s.style.borderColor='';s.style.color='';
+      }
     };
     s.addEventListener('mouseenter',()=>{ window._hoveredStep={ch,i,el:s}; });
     s.addEventListener('mouseleave',()=>{ if(window._hoveredStep?.el===s) window._hoveredStep=null; });
     container.appendChild(s);
+  }
+  // ── Marcar visualmente los steps "bloqueados" por spans largos ──
+  if(ch.slices.length){
+    const stepsNow=slicerSteps||parseInt(document.getElementById('slicerStepsSel').value)||16;
+    for(let i=0;i<stepsNow;i++){
+      const v=ch.seqPattern[i]; if(v<0) continue;
+      const span=getSliceStepSpan(ch.slices[v]?.dur||0, ch.slices[v]);
+      if(span<=1) continue;
+      // Colorear los steps siguientes como "tail" de esa slice
+      for(let k=i+1;k<Math.min(i+span,stepsNow);k++){
+        const tail=document.getElementById('chstep_'+ch.id+'_'+k);
+        if(tail&&!tail.classList.contains('on')){
+          tail.style.background=ch.color+'0d';
+          tail.style.borderColor=ch.color+'44';
+          tail.style.borderStyle='dashed';
+          tail.textContent='─';
+          tail.style.color=ch.color+'66';
+        }
+      }
+    }
   }
 }
 
 function removeSlicerChannel(id){
   const idx=slicerChannels.findIndex(c=>c.id===id); if(idx<0)return;
   const ch=slicerChannels[idx];
-  ch.players.forEach(p=>{try{p.dispose();}catch(e){}});
+  ch.players.forEach(p=>{
+    try{p.stop();}catch(e){}
+    try{if(p._envGain)p._envGain.dispose();}catch(e){}
+    try{p.dispose();}catch(e){}
+  });
   try{ch.volNode.dispose();}catch(e){}
   try{ch.gainNode.dispose();}catch(e){}
   document.getElementById('clane_'+id)?.remove();
@@ -1432,46 +1574,377 @@ function loadChannelFile(file, chId){
 }
 
 // ─── SLICE A SINGLE CHANNEL ──────────────────────────
+// Zero-crossing snap: find nearest ZC within ±windowSamples from pos
+function snapToZC(data, pos, windowSamples){
+  const lo=Math.max(0, pos-windowSamples);
+  const hi=Math.min(data.length-2, pos+windowSamples);
+  let best=pos, bestDist=windowSamples+1;
+  for(let i=lo;i<hi;i++){
+    if((data[i]<=0&&data[i+1]>0)||(data[i]>=0&&data[i+1]<0)){
+      const d=Math.abs(i-pos);
+      if(d<bestDist){bestDist=d;best=i;}
+    }
+  }
+  return best;
+}
+
 function sliceChannel(ch){
   if(!ch.buffer)return;
   const n=parseInt(document.getElementById('sliceCountSel').value)||8;
   const mode=document.getElementById('sliceModeSelect').value;
+  const raw=ch.buffer.getChannelData(0);
+  const sr=ch.buffer.sampleRate;
+  const totalSamples=raw.length;
   const dur=ch.buffer.duration;
+  const zcWin=Math.floor(sr*0.003); // 3ms window for zero-crossing snap
   ch.slices=[];
+
   if(mode==='equal'){
-    const sd=dur/n;
-    for(let i=0;i<n;i++) ch.slices.push({start:i*sd,end:(i+1)*sd,dur:sd});
-  } else {
-    const raw=ch.buffer.getChannelData(0), sr=ch.buffer.sampleRate;
-    const ws=Math.floor(sr*0.02), energies=[];
-    for(let i=0;i<raw.length-ws;i+=ws){
-      let e=0;for(let j=0;j<ws;j++)e+=raw[i+j]*raw[i+j];
-      energies.push({t:i/sr,e:e/ws});
+    // Equal: divide by time then snap each boundary to nearest zero-crossing
+    const bpmNow   = Tone.Transport.bpm.value||128;
+    const step16eq = (60/bpmNow)/4;
+    const sdSamples=Math.floor(totalSamples/n);
+    const pts=[0];
+    for(let i=1;i<n;i++){
+      const raw_pos=i*sdSamples;
+      pts.push(snapToZC(raw, raw_pos, zcWin));
     }
-    const maxE=Math.max(...energies.map(e=>e.e))||1, thresh=maxE*0.12;
-    const pts=[0]; let last=0;
-    for(let i=1;i<energies.length&&pts.length<n;i++){
-      if(energies[i].e>thresh&&energies[i].e>energies[i-1].e*1.4&&energies[i].t-last>0.08){
-        pts.push(energies[i].t); last=energies[i].t;
+    pts.push(totalSamples);
+    for(let i=0;i<n;i++){
+      const s0=pts[i]/sr, s1=Math.min(pts[i+1]/sr, dur);
+      if(s1-s0>0.001){
+        const gs=Math.max(1,Math.round((s1-s0)/step16eq));
+        ch.slices.push({start:s0, end:s1, dur:s1-s0, gridSteps:gs});
       }
     }
-    pts.push(dur);
-    while(pts.length<=n){const g=(dur-pts[pts.length-1])/(n-pts.length+2);pts.splice(pts.length-1,0,pts[pts.length-1]+g);}
-    for(let i=0;i<n;i++) ch.slices.push({start:pts[i],end:Math.min(pts[i+1],dur),dur:Math.min(pts[i+1],dur)-pts[i]});
+
+  } else {
+    // ════════════════════════════════════════════════════════════════
+    // TRANSIENT v2 — onset detection + cuantización al grid musical
+    // ════════════════════════════════════════════════════════════════
+    const bpmNow  = Tone.Transport.bpm.value || 128;
+    const beatSec = 60 / bpmNow;           // duración de 1 beat en segundos
+    const step16  = beatSec / 4;           // 1/16 note
+    const step8   = beatSec / 2;           // 1/8  note
+    const step4   = beatSec;               // 1/4  note (1 beat)
+    const step2   = beatSec * 2;           // 1/2  note (2 beats)
+    const step1b  = beatSec * 4;           // 1 bar (4 beats)
+    // Grid de cuantización: de más fino a más grueso
+    const GRID = [step16, step8, step4, step2, step1b];
+
+    // ── Cuantiza un tiempo (segundos) al valor de grid más cercano ──
+    // Tolerancia: si el onset está dentro del 35% de un grid-slot, se cuantiza.
+    // Prioriza grids más gruesos (beats > subdivisiones) para slices largas.
+    function quantizeToGrid(timeSec, sliceLenHint){
+      // Para slices largas (>= 1 beat) preferir cuantización en beats/bars
+      const gridsToTry = sliceLenHint >= step4
+        ? [step1b, step2, step4, step8, step16]
+        : [step4, step8, step16, step2, step1b];
+      let bestTime = timeSec;
+      let bestErr  = Infinity;
+      for(const g of gridsToTry){
+        const nearest = Math.round(timeSec / g) * g;
+        const err = Math.abs(timeSec - nearest);
+        if(err < g * 0.38 && err < bestErr){
+          bestErr  = err;
+          bestTime = nearest;
+        }
+      }
+      return Math.max(0, bestTime);
+    }
+
+    // ── 1. RMS envelope de 5ms ──
+    const fineWin = Math.max(1, Math.floor(sr * 0.005));
+    const fineRMS = [];
+    for(let i=0; i<totalSamples-fineWin; i+=fineWin){
+      let e=0; for(let j=0;j<fineWin;j++){const v=raw[i+j];e+=v*v;}
+      fineRMS.push({s:i, rms:Math.sqrt(e/fineWin)});
+    }
+    let globalPeak=0;
+    for(let i=0;i<fineRMS.length;i++) if(fineRMS[i].rms>globalPeak) globalPeak=fineRMS[i].rms;
+    if(globalPeak<0.001) globalPeak=0.001;
+
+    // ── 2. Spectral flux (HF proxy) ──
+    const flux=[];
+    for(let i=0;i<fineRMS.length;i++){
+      const s0=fineRMS[i].s;
+      let hiE=0, totE=0;
+      for(let j=0;j<fineWin&&s0+j<totalSamples;j++){
+        const v=raw[s0+j]; const v2=v*v; totE+=v2;
+        if(j>0){const d=raw[s0+j]-raw[s0+j-1]; hiE+=d*d;}
+      }
+      flux.push(totE>0 ? hiE/totE : 0);
+    }
+
+    // ── 3. Función de onset: RMS rise + flux rise ponderados ──
+    const rises=[];
+    for(let i=1;i<fineRMS.length;i++){
+      const rmsRise = Math.max(0, fineRMS[i].rms-fineRMS[i-1].rms) / globalPeak;
+      const fluxRise= Math.max(0, flux[i]-flux[i-1]);
+      rises.push(rmsRise*0.6 + fluxRise*0.4);
+    }
+    const sorted=[...rises].sort((a,b)=>a-b);
+    const med = sorted[Math.floor(sorted.length*0.6)]||0;
+    const mad = sorted[Math.floor(sorted.length*0.85)]||0;
+    const thresh = Math.max(0.015, med + mad*1.2);
+    const minGapSec    = Math.max(0.03, dur/(n*3));
+    const minGapFrames = Math.ceil(minGapSec/(fineWin/sr));
+
+    // ── 4. Peak-pick de onsets crudos ──
+    const rawOnsets=[0];
+    let lastPick=0;
+    for(let i=2;i<rises.length-1;i++){
+      if(rises[i]>thresh && rises[i]>rises[i-1] && rises[i]>=rises[i+1]){
+        if(i-lastPick>=minGapFrames){
+          rawOnsets.push(fineRMS[i].s);
+          lastPick=i;
+        }
+      }
+    }
+    rawOnsets.push(totalSamples);
+
+    // ── 5. Cuantizar cada onset al grid musical ──
+    // El hint de longitud es la distancia al siguiente onset sin cuantizar.
+    const qOnsets=[0]; // el primero siempre en 0
+    for(let i=1;i<rawOnsets.length-1;i++){
+      const rawSec  = rawOnsets[i] / sr;
+      const prevSec = rawOnsets[i-1] / sr;
+      const nextSec = rawOnsets[i+1] / sr;
+      const lenHint = nextSec - rawSec; // duración aproximada de esta slice
+      const qSec    = quantizeToGrid(rawSec, lenHint);
+      const qSamp   = snapToZC(raw, Math.round(qSec*sr), zcWin);
+      // Solo añadir si no duplica el anterior (puede pasar con cuantización agresiva)
+      if(qSamp > qOnsets[qOnsets.length-1] + Math.floor(sr*0.02)){
+        qOnsets.push(qSamp);
+      }
+    }
+    qOnsets.push(totalSamples);
+
+    // ── 6. Si hay pocos onsets, subdividir los gaps más grandes
+    //       en subdivisiones del grid (no al azar) ──
+    while(qOnsets.length-1 < n){
+      let bigIdx=0, bigGap=0;
+      for(let i=0;i<qOnsets.length-1;i++){
+        const g=qOnsets[i+1]-qOnsets[i]; if(g>bigGap){bigGap=g;bigIdx=i;}
+      }
+      const gapSec = bigGap/sr;
+      // Dividir el gap en la subdivision de grid más cercana a la mitad
+      const halfSec = (qOnsets[bigIdx]/sr) + gapSec/2;
+      const qHalf   = quantizeToGrid(halfSec, gapSec/2);
+      const qSamp   = snapToZC(raw, Math.round(qHalf*sr), zcWin);
+      const mid     = Math.floor((qOnsets[bigIdx]+qOnsets[bigIdx+1])/2);
+      // Usar el cuantizado si no genera un gap demasiado pequeño, si no usar el mid exacto
+      const candidate = Math.abs(qSamp - qOnsets[bigIdx]) > Math.floor(sr*0.02) ? qSamp : snapToZC(raw,mid,zcWin);
+      qOnsets.splice(bigIdx+1, 0, candidate);
+    }
+
+    // ── 7. Si hay demasiados onsets, eliminar los más débiles ──
+    while(qOnsets.length-1 > n){
+      let weakIdx=1, weakVal=Infinity;
+      for(let i=1;i<qOnsets.length-1;i++){
+        const fi=Math.floor(qOnsets[i]/fineWin);
+        const val=fi<fineRMS.length ? fineRMS[fi].rms : 0;
+        if(val<weakVal){weakVal=val; weakIdx=i;}
+      }
+      qOnsets.splice(weakIdx,1);
+    }
+
+    // ── 8. Construir slices desde onsets cuantizados ──
+    // Cada slice queda con duración alineada al grid → múltiplo exacto de 1/16
+    for(let i=0;i<n&&i<qOnsets.length-1;i++){
+      const s0raw = qOnsets[i]/sr;
+      const s1raw = Math.min(qOnsets[i+1]/sr, dur);
+      const rawLen= s1raw - s0raw;
+      // Cuantizar la DURACIÓN de cada slice al múltiplo de 1/16 más cercano
+      const stepsF  = rawLen / step16;
+      const stepsR  = Math.max(1, Math.round(stepsF));
+      const qLen    = stepsR * step16;
+      const s1q     = Math.min(s0raw + qLen, dur);
+      if(s1q - s0raw > 0.001){
+        ch.slices.push({
+          start:  s0raw,
+          end:    s1q,
+          dur:    s1q - s0raw,
+          // guardar el número exacto de steps de 1/16 para que autoFit lo use directo
+          gridSteps: stepsR
+        });
+      }
+    }
   }
-  // Rebuild players for this channel
-  ch.players.forEach(p=>{try{p.dispose();}catch(e){}});
+
+  // Fallback: if we ended up with 0 slices, equal divide
+  if(ch.slices.length===0){
+    const sd=dur/n;
+    for(let i=0;i<n;i++) ch.slices.push({start:i*sd,end:(i+1)*sd,dur:sd});
+  }
+
+  // ── Rebuild players — one dedicated Player per slice ──
+  ch.players.forEach(p=>{try{p.stop();p.dispose();}catch(e){}});
   ch.players=[];
-  ch.slices.forEach(()=>{
-    const p=new Tone.Player(); p.buffer=ch.buffer; p.connect(ch.gainNode);
+  ch.slices.forEach(sl=>{
+    // Each player has its own gain node for fade envelope
+    const envGain=new Tone.Gain(1).connect(ch.gainNode);
+    const p=new Tone.Player();
+    p.buffer=ch.buffer;
+    p.connect(envGain);
+    p._envGain=envGain; // store ref for fade
     ch.players.push(p);
   });
-  // Build default seq: sequential slices
-  for(let i=0;i<slicerSteps;i++){
-    ch.seqPattern[i]=i<ch.slices.length?i:-1;
-  }
+
+  // Build default seq: auto-fit based on slice durations
+  autoFitChannel(ch);
   buildChannelSeqSteps(ch);
   slicerDrawOverview();
+}
+
+// ─── HELPER: cuántos steps ocupa una slice al BPM actual ─────────
+// Si la slice tiene gridSteps (calculado por el transient cuantizado), lo usa directo.
+// Si no, calcula por duración. Máximo = steps totales del grid.
+function getSliceStepSpan(sliceDurSec, slice){
+  const maxSteps=parseInt(document.getElementById('slicerStepsSel')?.value)||16;
+  if(slice && slice.gridSteps) return Math.min(maxSteps, slice.gridSteps);
+  const bpm=Tone.Transport.bpm.value||128;
+  const stepDurSec=(60/bpm)/4;
+  return Math.min(maxSteps, Math.max(1, Math.round(sliceDurSec/stepDurSec)));
+}
+
+// Aplica la regla "no amontonamiento" a un canal completo:
+// Si un step tiene asignada una slice larga, borra los steps siguientes
+// que caen dentro de la duración de esa slice.
+function enforceSliceSpacing(ch){
+  if(!ch.slices.length) return;
+  const n=slicerSteps||parseInt(document.getElementById('slicerStepsSel').value)||16;
+  for(let i=0;i<n;i++){
+    const v=ch.seqPattern[i];
+    if(v<0) continue;
+    const span=getSliceStepSpan(ch.slices[v]?.dur||0, ch.slices[v]);
+    if(span<=1) continue;
+    // Borrar los steps dentro del rango de esta slice
+    for(let k=i+1;k<Math.min(i+span,n);k++){
+      ch.seqPattern[k]=-1;
+    }
+    i+=span-1; // saltar al siguiente step libre
+  }
+}
+
+// ─── AUTO FIT: distribuye slices en el mapa con separación real ──
+// Respeta SIEMPRE el grid actual (nunca lo expande).
+// Calcula los spans reales al BPM; si no caben todos en los steps disponibles,
+// los comprime proporcionalmente para que quepan sin mover el grid.
+function autoFitChannel(ch){
+  if(!ch.slices.length) return;
+
+  const bpm=Tone.Transport.bpm.value||128;
+  const stepDurSec=(60/bpm)/4; // duración de un 1/16 en segundos
+
+  // Leer steps actuales — NUNCA se modifica aquí
+  const currentSteps=parseInt(document.getElementById('slicerStepsSel').value)||16;
+  slicerSteps=currentSteps;
+
+  // Calcular spans — usar gridSteps si está disponible (transient cuantizado)
+  const rawSpans=ch.slices.map(sl=>
+    sl.gridSteps
+      ? Math.max(1, sl.gridSteps)
+      : Math.max(1, Math.round(sl.dur/stepDurSec))
+  );
+  const totalNeeded=rawSpans.reduce((a,b)=>a+b,0);
+
+  // Si no caben: comprimir proporcionalmente para que el total = currentSteps
+  // (mantiene las proporciones relativas entre slices largas y cortas)
+  let stepSpans;
+  if(totalNeeded > currentSteps){
+    const scale=currentSteps/totalNeeded;
+    // Primera pasada: floor con mín 1
+    stepSpans=rawSpans.map(s=>Math.max(1,Math.floor(s*scale)));
+    // Segunda pasada: si sobran steps, repartirlos entre las slices más largas
+    let used=stepSpans.reduce((a,b)=>a+b,0);
+    let extra=currentSteps-used;
+    // dar extra steps a las slices con mayor span real (mayor prioridad)
+    const order=[...rawSpans.keys()].sort((a,b)=>rawSpans[b]-rawSpans[a]);
+    for(let k=0;k<order.length&&extra>0;k++){
+      stepSpans[order[k]]++;
+      extra--;
+    }
+  } else {
+    stepSpans=rawSpans;
+  }
+
+  // Limpiar patrón y estado de ocupación
+  for(let i=0;i<currentSteps;i++) ch.seqPattern[i]=-1;
+  ch.busyUntilStep=-1; ch.lastSliceIdx=-1; ch.lastTriggerStep=-1;
+
+  // Colocar cada slice en la posición correcta con su separación
+  let cursor=0;
+  for(let si=0;si<ch.slices.length&&cursor<currentSteps;si++){
+    ch.seqPattern[cursor]=si;
+    cursor+=stepSpans[si];
+  }
+}
+
+// Al cambiar BPM: SOLO refresca los indicadores de cola visuales.
+// NO mueve ni borra ningún step que el usuario haya colocado.
+function autoFitAllChannels(){
+  slicerChannels.forEach(ch=>{
+    if(ch.slices.length) buildChannelSeqSteps(ch); // redibuja las colas con nuevos spans
+  });
+}
+
+// Botón ⊞ AUTO FIT: recalcula Y recoloca todos los steps según BPM actual.
+// Escalona los canales para que no todos empiecen en el step 0.
+function manualFitAllChannels(){
+  const totalSteps = parseInt(document.getElementById('slicerStepsSel').value)||16;
+
+  // Primera pasada: calcular spans de todos los canales
+  slicerChannels.forEach(ch=>{ if(ch.slices.length) autoFitChannel(ch); });
+
+  // Segunda pasada: escalonar canales con slices largas para que jueguen juntos
+  // Regla: si dos canales tienen spans >= 4 steps, separar sus triggers
+  // encontrando el "hueco" más limpio para el segundo canal.
+  const longChannels = slicerChannels.filter(ch=>{
+    if(!ch.slices.length) return false;
+    // tiene al menos una slice larga (>= 4 steps)
+    return ch.slices.some(sl=>(sl.gridSteps||getSliceStepSpan(sl.dur,sl))>=4);
+  });
+
+  if(longChannels.length >= 2){
+    // Canal 0: queda como está (autoFit ya lo colocó)
+    // Canales 1+: buscar el primer step libre que no colisione con el canal anterior
+    for(let ci=1; ci<longChannels.length; ci++){
+      const ch  = longChannels[ci];
+      const prev= longChannels[ci-1];
+
+      // Mapa de steps ocupados por el canal anterior
+      const prevOccupied = new Set();
+      for(let i=0;i<totalSteps;i++){
+        const v=prev.seqPattern[i]; if(v<0) continue;
+        const span=prev.slices[v]?.gridSteps || getSliceStepSpan(prev.slices[v]?.dur||0, prev.slices[v]);
+        for(let k=i;k<Math.min(i+span,totalSteps);k++) prevOccupied.add(k);
+      }
+
+      // Encontrar el primer step libre (no en prevOccupied) para el primer trigger del canal
+      const firstTrigger = ch.seqPattern.findIndex(v=>v>=0);
+      if(firstTrigger < 0) continue;
+
+      // Encontrar el mejor offset: primer step libre
+      let offset = 0;
+      for(let s=0; s<totalSteps; s++){
+        if(!prevOccupied.has(s)){ offset=s; break; }
+      }
+
+      if(offset === 0) continue; // sin hueco disponible, no mover
+
+      // Reubicar el patrón con el offset
+      const newPattern = new Array(totalSteps).fill(-1);
+      for(let i=0; i<totalSteps; i++){
+        const v=ch.seqPattern[i]; if(v<0) continue;
+        const newPos = (i + offset) % totalSteps;
+        if(newPattern[newPos] < 0) newPattern[newPos]=v;
+      }
+      ch.seqPattern = newPattern;
+    }
+  }
+
+  slicerChannels.forEach(ch=>buildChannelSeqSteps(ch));
 }
 
 function doSlice(){
@@ -1479,15 +1952,84 @@ function doSlice(){
 }
 
 // ─── PLAY SLICE ──────────────────────────────────────
-function playChannelSlice(ch, idx, time){
+// stopChannelNow: corta el audio activo de un canal con micro-fade
+// para evitar el click al interrumpir. Se llama antes de disparar
+// una nueva slice si el canal estaba ocupado.
+function stopChannelNow(ch, time){
+  const p = ch.players[ch.lastSliceIdx];
+  if(!p) return;
+  const env = p._envGain;
+  if(env){
+    const t = time || Tone.now();
+    const fadeOff = 0.012; // 12ms de fade-out de emergencia — inaudible pero limpio
+    try{
+      env.gain.cancelScheduledValues(t);
+      env.gain.setValueAtTime(env.gain.value, t);
+      env.gain.linearRampToValueAtTime(0.0001, t + fadeOff);
+    }catch(e){}
+    try{ p.stop(t + fadeOff + 0.001); }catch(e){}
+  } else {
+    try{ p.stop(time || Tone.now()); }catch(e){}
+  }
+}
+
+function playChannelSlice(ch, idx, time, currentGlobalStep){
   if(idx<0||idx>=ch.players.length||!ch.buffer)return;
-  const p=ch.players[idx], sl=ch.slices[idx];
+  const p=ch.players[idx];
+  const sl=ch.slices[idx];
+  if(!sl)return;
+
   const rev=Math.random()<parseFloat(document.getElementById('slReverse').value);
-  const spd=parseFloat(document.getElementById('slSpeed').value);
-  const pit=parseFloat(document.getElementById('slPitch').value);
+  const spd=parseFloat(document.getElementById('slSpeed').value)||1;
+  const pit=parseFloat(document.getElementById('slPitch').value)||0;
+  const fadeIn=parseFloat(document.getElementById('slFadeIn').value)||0.003;
+  const fadeOut=parseFloat(document.getElementById('slFadeOut').value)||0.003;
+
   p.reverse=rev;
-  p.playbackRate=spd*Math.pow(2,pit/12);
-  try{ const t=time||Tone.now(); p.start(t,sl.start,Math.max(0.01,sl.dur)); }catch(e){}
+  p.playbackRate=Math.max(0.01, spd*Math.pow(2,pit/12));
+
+  // Duración real de la slice ajustada al playbackRate
+  const slDur=Math.max(0.005, sl.dur/Math.abs(p.playbackRate));
+  const t=time||Tone.now();
+
+  // ── Si el canal tenía una slice activa de otro player, cortarla limpio ──
+  if(ch.lastSliceIdx >= 0 && ch.lastSliceIdx !== idx){
+    stopChannelNow(ch, t);
+  }
+
+  // Calcular cuántos steps dura esta slice al BPM actual
+  const bpm = Tone.Transport.bpm.value||128;
+  const stepDurSec = (60/bpm)/4;
+  const spanSteps = getSliceStepSpan(sl.dur, sl);
+
+  // ── Registrar ocupación del canal ──
+  if(currentGlobalStep !== undefined){
+    ch.lastTriggerStep  = currentGlobalStep;
+    ch.lastSliceIdx     = idx;
+    ch.busyUntilStep    = currentGlobalStep + spanSteps;
+  }
+
+  // ── Envelope: fade-in normal, fade-out que termine justo al final del span ──
+  const env=p._envGain;
+  if(env){
+    const fi=Math.min(fadeIn, slDur*0.1);
+    // fade-out: empieza en 85% de la duración para que termine al final sin corte
+    const foStart=slDur*0.85;
+    const fo=Math.min(fadeOut, slDur*0.14);
+    try{
+      env.gain.cancelScheduledValues(t);
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.linearRampToValueAtTime(1, t+fi);
+      env.gain.setValueAtTime(1, t+foStart);
+      env.gain.linearRampToValueAtTime(0.0001, t+slDur);
+    }catch(e){}
+  }
+
+  try{
+    try{ p.stop(t); }catch(e){}
+    const offset=rev ? Math.max(0,sl.end-0.0001) : sl.start;
+    p.start(t, offset, slDur);
+  }catch(e){}
 }
 
 // ─── SLICER SEQUENCER LOOP ──────────────────────────
@@ -1502,20 +2044,23 @@ function toggleSlicerPlay(){
     btn.textContent='▶ PLAY ALL'; btn.classList.remove('active');
     document.querySelectorAll('.ch-step').forEach(s=>s.classList.remove('playing-step'));
     document.getElementById('slicerPlayhead').style.left='0%';
-    slicerChannels.forEach(ch=>document.getElementById('clane_'+ch.id)?.classList.remove('playing-lane'));
+    slicerChannels.forEach(ch=>{
+      document.getElementById('clane_'+ch.id)?.classList.remove('playing-lane');
+      ch.busyUntilStep=-1; ch.lastSliceIdx=-1; ch.lastTriggerStep=-1;
+    });
   } else {
     slicerIsPlaying=true; rrIndex=0;
     btn.textContent='■ STOP'; btn.classList.add('active');
     slicerLoopId=Tone.Transport.scheduleRepeat((time)=>{
       slicerSteps=parseInt(document.getElementById('slicerStepsSel').value)||16;
       const step=slicerCurrentStep%slicerSteps;
+      const globalStep=slicerCurrentStep; // nunca se wrappea — sirve para busyUntilStep
       const stutter=parseInt(document.getElementById('slicerStutterSel').value)||1;
       const interval=Tone.Time('16n').toSeconds()/stutter;
       const playMode=document.getElementById('slicerPlayMode').value;
       const soloActive=slicerChannels.some(c=>c.soloed);
 
-      // Build list of "eligible" channels for this step
-      // (not muted, not filtered by solo, and has a slice assigned at this step)
+      // ── Canales elegibles en este step (tienen slice asignada, no muted/solo) ──
       const eligible=slicerChannels.filter(ch=>{
         if(ch.muted) return false;
         if(soloActive&&!ch.soloed) return false;
@@ -1523,32 +2068,51 @@ function toggleSlicerPlay(){
         return true;
       });
 
-      let toPlay=[]; // channels that will actually fire this step
+      // ── Canales "libres": no están ocupados por una slice larga previa ──
+      // Un canal está ocupado si busyUntilStep > globalStep
+      const free=eligible.filter(ch=> ch.busyUntilStep <= globalStep);
+
+      // ── Canales que tienen una slice NUEVA en este step (diferente a la activa) ──
+      // Estos tienen prioridad absoluta: siempre disparan aunque el canal esté "ocupado"
+      // porque el usuario los colocó explícitamente aquí.
+      const triggered=eligible.filter(ch=> ch.seqPattern[step] >= 0);
+
+      let toPlay=[];
 
       if(playMode==='poly'){
-        // All eligible channels play simultaneously (original behavior)
-        toPlay=eligible;
+        // POLY: todos los canales con trigger en este step disparan.
+        // Si el canal está ocupado (slice larga activa), se corta y empieza la nueva.
+        toPlay=triggered;
 
       } else if(playMode==='interlock'){
-        // Only the FIRST eligible channel with a slice assigned plays.
-        // Priority follows channel order — first channel wins each step.
-        // If no channel has a slice on this step, silence.
-        if(eligible.length>0) toPlay=[eligible[0]];
+        // INTERLOCK inteligente:
+        // - Si hay canales libres con trigger → el primero libre gana
+        // - Si todos están ocupados pero hay triggers → el canal con la slice
+        //   más avanzada (que termina antes) cede y dispara el nuevo
+        if(free.length>0){
+          toPlay=[free[0]];
+        } else if(triggered.length>0){
+          // encontrar el canal que termina antes (menor busyUntilStep)
+          const soonest=triggered.reduce((a,b)=>a.busyUntilStep<b.busyUntilStep?a:b);
+          toPlay=[soonest];
+        }
 
       } else if(playMode==='roundrobin'){
-        // Cycle through eligible channels one at a time, step by step.
-        // Each time a step fires, advance the RR pointer among eligible channels.
-        if(eligible.length>0){
-          rrIndex = rrIndex % eligible.length;
-          toPlay=[eligible[rrIndex]];
-          rrIndex=(rrIndex+1)%eligible.length;
+        // ROUND-ROBIN inteligente:
+        // Avanza el puntero solo entre canales libres para no interrumpir sonidos largos.
+        // Si no hay canales libres, espera (silencio en este step).
+        if(free.length>0){
+          rrIndex = rrIndex % free.length;
+          toPlay=[free[rrIndex]];
+          rrIndex=(rrIndex+1)%free.length;
         }
+        // Si todos ocupados: silencio → no se interrumpe nada
       }
 
-      // Fire the chosen channels
+      // ── Disparar los canales elegidos ──
       toPlay.forEach(ch=>{
         const idx=ch.seqPattern[step];
-        for(let si=0;si<stutter;si++) playChannelSlice(ch,idx,time+si*interval);
+        for(let si=0;si<stutter;si++) playChannelSlice(ch, idx, time+si*interval, globalStep);
         Tone.Draw.schedule(()=>{
           const vu=document.getElementById('chvu_'+ch.id);
           if(vu){vu.style.width=(30+Math.random()*70)+'%';setTimeout(()=>{vu.style.width='5%';},80);}
@@ -1558,17 +2122,14 @@ function toggleSlicerPlay(){
       const sn=step;
       const toPlayIds=new Set(toPlay.map(c=>c.id));
       Tone.Draw.schedule(()=>{
-        // Clear all step highlights first
         document.querySelectorAll('.ch-step').forEach(s=>s.classList.remove('playing-step'));
         slicerChannels.forEach(ch=>{
-          // Highlight step cell — dim for eligible-but-silenced, bright for actually playing
           const stepEl=document.getElementById('chstep_'+ch.id+'_'+sn);
           if(stepEl){
             stepEl.classList.remove('playing-step','eligible-step');
             if(toPlayIds.has(ch.id)) stepEl.classList.add('playing-step');
             else if(eligible.find(c=>c.id===ch.id)) stepEl.classList.add('eligible-step');
           }
-          // Lane highlight only for channels actually playing
           document.getElementById('clane_'+ch.id)?.classList.toggle('playing-lane', toPlayIds.has(ch.id));
         });
         document.getElementById('slicerPlayhead').style.left=((sn/slicerSteps)*100).toFixed(1)+'%';
@@ -1585,7 +2146,31 @@ function toggleSlicerPlay(){
 function randomizeAllChannels(){
   slicerChannels.forEach(ch=>{
     if(!ch.slices.length)return;
-    for(let i=0;i<slicerSteps;i++) ch.seqPattern[i]=Math.random()<0.75?Math.floor(Math.random()*ch.slices.length):-1;
+    // Llenar pattern respetando el span de cada slice asignada
+    for(let i=0;i<slicerSteps;i++) ch.seqPattern[i]=-1;
+    let cursor=0;
+    while(cursor<slicerSteps){
+      if(Math.random()<0.75){
+        const sliceIdx=Math.floor(Math.random()*ch.slices.length);
+        ch.seqPattern[cursor]=sliceIdx;
+        const span=getSliceStepSpan(ch.slices[sliceIdx]?.dur||0, ch.slices[sliceIdx]);
+        cursor+=span; // saltar los steps que ocupa esta slice
+      } else {
+        cursor++; // step vacío, avanzar uno
+      }
+    }
+    buildChannelSeqSteps(ch);
+  });
+}
+
+// Solo cambia el número de slice en steps que ya tienen uno asignado — no mueve ni borra ningún step
+function randomizeSliceNumbers(){
+  slicerChannels.forEach(ch=>{
+    if(!ch.slices.length)return;
+    for(let i=0;i<slicerSteps;i++){
+      if(ch.seqPattern[i]>=0)
+        ch.seqPattern[i]=Math.floor(Math.random()*ch.slices.length);
+    }
     buildChannelSeqSteps(ch);
   });
 }
@@ -1600,14 +2185,42 @@ function shuffleAllChannels(){
     const a=ch.seqPattern.slice(0,slicerSteps).map((v,i)=>({v,i})).filter(x=>x.v>=0);
     for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i].v,a[j].v]=[a[j].v,a[i].v];}
     a.forEach(x=>{ch.seqPattern[x.i]=x.v;});
+    // Aplicar regla de no amontonamiento después del shuffle
+    enforceSliceSpacing(ch);
     buildChannelSeqSteps(ch);
   });
 }
 
 // ─── STEPS CHANGE ────────────────────────────────────
+// ─── STEP SIZE: adapta tamaño y fuente según cantidad de steps ──
+function updateStepSizes(){
+  const n=parseInt(document.getElementById('slicerStepsSel').value)||16;
+  const fs = n<=16 ? '0.38rem' : n<=32 ? '0.30rem' : '0.22rem';
+  const gap = n<=16 ? '2px' : n<=32 ? '1px' : '1px';
+  const br  = n<=32 ? '2px' : '1px';
+  const bw  = n>=64 ? '0.5px' : '1px';
+  const h   = n<=32 ? '22px' : '18px';
+  document.querySelectorAll('.ch-seq').forEach(seq=>{
+    seq.style.gap=gap;
+    seq.style.padding= n<=32 ? '3px 4px' : '2px 3px';
+  });
+  document.querySelectorAll('.ch-step').forEach(s=>{
+    s.style.fontSize=fs;
+    s.style.borderRadius=br;
+    s.style.borderWidth=bw;
+    s.style.height=h;
+  });
+}
+
 document.getElementById('slicerStepsSel').onchange=()=>{
   slicerSteps=parseInt(document.getElementById('slicerStepsSel').value)||16;
-  slicerChannels.forEach(ch=>buildChannelSeqSteps(ch));
+  // Extender o recortar patrones si cambia el tamaño del grid
+  slicerChannels.forEach(ch=>{
+    // Si el nuevo grid es más grande, llenar con -1 los nuevos slots
+    for(let i=ch.seqPattern.length;i<slicerSteps;i++) ch.seqPattern[i]=-1;
+    buildChannelSeqSteps(ch);
+  });
+  updateStepSizes();
 };
 document.getElementById('sliceCountSel').onchange=()=>doSlice();
 
@@ -1724,6 +2337,14 @@ CH_DEFAULTS.forEach(d=>createSlicerChannel(d.name, d.color));
 // Sync BPM
 document.getElementById('slicerBpmKnob').value=128;
 document.getElementById('slicerBpmDisp').textContent='128';
+document.getElementById('slicerBpmKnob').addEventListener('change', ()=>{
+  autoFitAllChannels();
+});
+// Edición por teclado en el display del slicer
+makeBpmEditable(document.getElementById('slicerBpmDisp'));
+
+// Init step sizes
+updateStepSizes();
 
 // ─── BORRAR STEP CON TECLA "." ───────────────────────
 window._hoveredStep=null;
