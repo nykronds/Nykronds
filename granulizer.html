@@ -1390,6 +1390,11 @@ function buildChannelSeqSteps(ch, container){
       if(vv>=0){s.classList.add('on');s.textContent=vv+1;s.style.background=ch.color+'33';s.style.borderColor=ch.color;s.style.color=ch.color;}
       else{s.classList.remove('on');s.textContent='·';s.style.background='';s.style.borderColor='';s.style.color='';}
     };
+    s.ondblclick=e=>{
+      e.stopPropagation();
+      ch.seqPattern[i]=-1;
+      s.classList.remove('on');s.textContent='·';s.style.background='';s.style.borderColor='';s.style.color='';
+    };
     container.appendChild(s);
   }
 }
