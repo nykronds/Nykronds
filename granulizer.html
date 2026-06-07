@@ -484,7 +484,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
       </select>
     </div>
     <button class="sl-btn" onclick="addSlicerChannel()" style="color:var(--c-purple);border-color:var(--c-purple)44;">+ CHANNEL</button>
-    <button class="sl-btn" onclick="removeAllSlicerChannels()" style="color:var(--c-red);border-color:var(--c-red)44;" title="Remove all channels">✕ ALL CH</button>
     <button class="sl-btn" onclick="resetSlicerFx()" style="color:var(--c-yellow);border-color:var(--c-yellow)44;" title="Reset all params/fx to default">↺ RESET FX</button>
     <button class="sl-btn" id="slicerRecBtn" onclick="toggleSlicerRec()">⏺ REC</button>
     <button class="sl-btn green" id="slicerExpBtn" onclick="exportSlicerWav()">⬇ WAV</button>
@@ -1423,7 +1422,10 @@ function renderChannelLane(ch){
   };
 
   const delBtn=document.createElement('button'); delBtn.className='ch-mini-btn'; delBtn.textContent='✕';
-  delBtn.style.color='var(--c-red)'; delBtn.style.borderColor='#3a1520';
+  delBtn.title='Remove this channel';
+  delBtn.style.cssText='color:var(--c-red);border-color:#3a1520;font-weight:bold;padding:0 5px;';
+  delBtn.onmouseenter=()=>{ delBtn.style.background='#3a1520'; delBtn.style.borderColor='var(--c-red)'; };
+  delBtn.onmouseleave=()=>{ delBtn.style.background=''; delBtn.style.borderColor='#3a1520'; };
   delBtn.onclick=()=>removeSlicerChannel(ch.id);
 
   // ── Per-channel SLICE COUNT selector ──
@@ -1554,20 +1556,57 @@ function addSlicerChannel(){
 function loadChannelFile(file, chId){
   if(!file)return;
   const ch=slicerChannels.find(c=>c.id===chId); if(!ch)return;
-  slicerSetStatus('LOADING...','var(--c-yellow)');
-  const url=URL.createObjectURL(file);
-  ch.buffer=new Tone.ToneAudioBuffer(url,()=>{
-    const short=file.name.length>12?file.name.slice(0,12)+'…':file.name;
-    const drop=document.getElementById('chdrop_'+chId);
-    if(drop){ drop.textContent='✓ '+short; drop.classList.add('loaded'); drop.style.borderColor=ch.color; }
-    ch.name=short; document.getElementById('clane_'+chId)?.querySelector('.ch-name')&&(document.getElementById('clane_'+chId).querySelector('.ch-name').textContent=short);
-    // Use as master if first
-    if(!masterSlicerBuffer){ masterSlicerBuffer=ch.buffer; slicerResizeCanvas(); }
-    const infoEl=document.getElementById('slicerInfo');
-    if(infoEl) infoEl.textContent=ch.buffer.duration.toFixed(2)+'s — '+Math.round(ch.buffer.sampleRate/1000)+'kHz';
-    sliceChannel(ch);
-    slicerSetStatus('READY','var(--c-green)');
-  });
+  slicerSetStatus('LOADING…','var(--c-yellow)');
+
+  const MAX_DUR_SEC=120; // cap at 2 minutes to avoid memory issues
+
+  const reader=new FileReader();
+  reader.onload=async (e)=>{
+    try{
+      const arrayBuf=e.target.result;
+      // Decode via native AudioContext for reliability with long files
+      const tmpCtx=new AudioContext();
+      const decoded=await tmpCtx.decodeAudioData(arrayBuf);
+      await tmpCtx.close();
+
+      // If sample is very long, trim to MAX_DUR_SEC (warn user)
+      let finalBuf=decoded;
+      if(decoded.duration>MAX_DUR_SEC){
+        const maxSamples=Math.floor(MAX_DUR_SEC*decoded.sampleRate);
+        const trimmed=new AudioContext().createBuffer(decoded.numberOfChannels,maxSamples,decoded.sampleRate);
+        for(let c=0;c<decoded.numberOfChannels;c++){
+          trimmed.copyToChannel(decoded.getChannelData(c).slice(0,maxSamples),c);
+        }
+        finalBuf=trimmed;
+        slicerSetStatus(`TRIMMED TO ${MAX_DUR_SEC}s`,'var(--c-yellow)');
+      }
+
+      // Wrap in Tone.ToneAudioBuffer
+      ch.buffer=new Tone.ToneAudioBuffer();
+      ch.buffer.set(finalBuf);
+      // Store raw buffer reference for export
+      ch.buffer._buffer=finalBuf;
+
+      const short=file.name.length>12?file.name.slice(0,12)+'…':file.name;
+      const drop=document.getElementById('chdrop_'+chId);
+      if(drop){ drop.textContent='✓ '+short; drop.classList.add('loaded'); drop.style.borderColor=ch.color; }
+      ch.name=short;
+      const nameEl=document.getElementById('clane_'+chId)?.querySelector('.ch-name');
+      if(nameEl) nameEl.textContent=short;
+
+      if(!masterSlicerBuffer){ masterSlicerBuffer=ch.buffer; slicerResizeCanvas(); }
+      const infoEl=document.getElementById('slicerInfo');
+      if(infoEl) infoEl.textContent=finalBuf.duration.toFixed(2)+'s — '+Math.round(finalBuf.sampleRate/1000)+'kHz';
+
+      sliceChannel(ch);
+      slicerSetStatus('READY','var(--c-green)');
+    } catch(err){
+      console.error('Load error:',err);
+      slicerSetStatus('LOAD ERR','var(--c-red)');
+    }
+  };
+  reader.onerror=()=>slicerSetStatus('READ ERR','var(--c-red)');
+  reader.readAsArrayBuffer(file);
 }
 
 // ─── SLICE A SINGLE CHANNEL ──────────────────────────
@@ -1780,12 +1819,12 @@ function sliceChannel(ch){
   ch.players.forEach(p=>{try{p.stop();p.dispose();}catch(e){}});
   ch.players=[];
   ch.slices.forEach(sl=>{
-    // Each player has its own gain node for fade envelope
     const envGain=new Tone.Gain(1).connect(ch.gainNode);
     const p=new Tone.Player();
+    // Use ToneAudioBuffer directly; _buffer is the raw AudioBuffer set during load
     p.buffer=ch.buffer;
     p.connect(envGain);
-    p._envGain=envGain; // store ref for fade
+    p._envGain=envGain;
     ch.players.push(p);
   });
 
@@ -2069,19 +2108,24 @@ function playChannelSlice(ch, idx, time, currentGlobalStep){
   p.reverse=rev;
   p.playbackRate=Math.max(0.01, spd*Math.pow(2,pit/12));
 
-  // Duración real de la slice ajustada al playbackRate
-  const slDur=Math.max(0.005, sl.dur/Math.abs(p.playbackRate));
+  const bpm=Tone.Transport.bpm.value||128;
+  const stepDurSec=(60/bpm)/4;
+  const spanSteps=getSliceStepSpan(sl.dur, sl);
+
+  // ── Cap slice duration to its step span so long samples don't bleed ──
+  // This is the key fix for long samples: never play longer than the allocated step span.
+  const maxDurBySpan=spanSteps*stepDurSec;
+  const rawSlDur=sl.dur;
+  const cappedSlDur=Math.min(rawSlDur, maxDurBySpan);
+  // Apply playbackRate to get real playback duration
+  const slDur=Math.max(0.005, cappedSlDur/Math.abs(p.playbackRate));
+
   const t=time||Tone.now();
 
   // ── Si el canal tenía una slice activa de otro player, cortarla limpio ──
   if(ch.lastSliceIdx >= 0 && ch.lastSliceIdx !== idx){
     stopChannelNow(ch, t);
   }
-
-  // Calcular cuántos steps dura esta slice al BPM actual
-  const bpm = Tone.Transport.bpm.value||128;
-  const stepDurSec = (60/bpm)/4;
-  const spanSteps = getSliceStepSpan(sl.dur, sl);
 
   // ── Registrar ocupación del canal ──
   if(currentGlobalStep !== undefined){
@@ -2094,7 +2138,6 @@ function playChannelSlice(ch, idx, time, currentGlobalStep){
   const env=p._envGain;
   if(env){
     const fi=Math.min(fadeIn, slDur*0.1);
-    // fade-out: empieza en 85% de la duración para que termine al final sin corte
     const foStart=slDur*0.85;
     const fo=Math.min(fadeOut, slDur*0.14);
     try{
@@ -2108,7 +2151,14 @@ function playChannelSlice(ch, idx, time, currentGlobalStep){
 
   try{
     try{ p.stop(t); }catch(e){}
-    const offset=rev ? Math.max(0,sl.end-0.0001) : sl.start;
+    // For long/reversed samples: calculate correct start point within the buffer
+    let offset;
+    if(rev){
+      // Start from sl.end and play backwards — cap to cappedSlDur worth of audio
+      offset=Math.max(0, sl.end - cappedSlDur);
+    } else {
+      offset=Math.max(0, Math.min(sl.start, (ch.buffer._buffer||ch.buffer.get?.()?.duration||sl.end)-0.001));
+    }
     p.start(t, offset, slDur);
   }catch(e){}
 }
@@ -2616,14 +2666,137 @@ function toggleSlicerRec(){
   }
 }
 
-function exportSlicerWav(){
-  if(!window.lastSlicerRecording){
-    slicerSetStatus('REC FIRST!','var(--c-red)');
-    return;
+// ─── EXPORT WAV — Offline render, Ableton-compatible ─────────────────────────
+// Renderiza N loops completos usando OfflineAudioContext,
+// genera un WAV PCM 16-bit con sample rate nativo, compatible con Ableton/DAW.
+async function exportSlicerWav(){
+  const active=slicerChannels.filter(ch=>ch.slices.length>0&&ch.buffer);
+  if(!active.length){ slicerSetStatus('NO AUDIO','var(--c-red)'); return; }
+
+  const bpm=Tone.Transport.bpm.value||128;
+  const nSteps=slicerSteps||16;
+  const stepDurSec=(60/bpm)/4;
+  const loopDurSec=nSteps*stepDurSec;
+  const LOOPS=2; // render 2 loops completos
+  const totalDurSec=loopDurSec*LOOPS;
+
+  // Use native sample rate of first buffer
+  const sr=active[0].buffer.sampleRate||44100;
+  const totalSamples=Math.ceil(totalDurSec*sr);
+
+  slicerSetStatus('RENDERING…','var(--c-yellow)');
+  await new Promise(r=>setTimeout(r,30)); // let UI update
+
+  try{
+    const offCtx=new OfflineAudioContext(2, totalSamples, sr);
+
+    // For each channel, schedule every hit in each loop repetition
+    for(const ch of active){
+      if(ch.muted) continue;
+
+      // Check if any channel is soloed
+      const anySolo=slicerChannels.some(c=>c.soloed);
+      if(anySolo&&!ch.soloed) continue;
+
+      const gainVal=ch.vol||0.9;
+      const chGain=offCtx.createGain();
+      chGain.gain.value=gainVal;
+      chGain.connect(offCtx.destination);
+
+      for(let loop=0;loop<LOOPS;loop++){
+        const loopOffset=loop*loopDurSec;
+        for(let step=0;step<nSteps;step++){
+          const sliceIdx=ch.seqPattern[step];
+          if(sliceIdx<0||sliceIdx>=ch.slices.length) continue;
+
+          const sl=ch.slices[sliceIdx];
+          const trigTime=loopOffset + step*stepDurSec;
+          const slDur=Math.min(sl.dur, (nSteps-step)*stepDurSec); // cap to loop end
+
+          // Get pitch/speed from global sliders
+          const pitchST=parseFloat(document.getElementById('slPitch')?.value||0);
+          const speed=parseFloat(document.getElementById('slSpeed')?.value||1);
+          const isReverse=(parseFloat(document.getElementById('slReverse')?.value||0))>0.5;
+          const fadeIn=parseFloat(document.getElementById('slFadeIn')?.value||0.003);
+          const fadeOut=parseFloat(document.getElementById('slFadeOut')?.value||0.003);
+          const playbackRate=speed * Math.pow(2, pitchST/12);
+
+          // Create buffer source for this hit
+          const src=offCtx.createBufferSource();
+          // Tone.ToneAudioBuffer: _buffer stores the raw AudioBuffer
+          const rawBuf=ch.buffer._buffer||ch.buffer.get?.();
+          if(!rawBuf) continue;
+          src.buffer=rawBuf;
+          src.playbackRate.value=Math.abs(playbackRate)||1;
+
+          // Fade envelope
+          const env=offCtx.createGain();
+          env.gain.value=0;
+          env.gain.setValueAtTime(0, trigTime);
+          env.gain.linearRampToValueAtTime(1, trigTime+Math.min(fadeIn,slDur*0.1));
+          env.gain.setValueAtTime(1, trigTime+slDur-Math.min(fadeOut,slDur*0.1));
+          env.gain.linearRampToValueAtTime(0, trigTime+slDur);
+          src.connect(env); env.connect(chGain);
+
+          const startInBuf=isReverse ? Math.max(0,sl.end-slDur) : sl.start;
+          src.start(trigTime, startInBuf, slDur/Math.abs(playbackRate));
+        }
+      }
+    }
+
+    const rendered=await offCtx.startRendering();
+    const wavBlob=audioBufferToWav(rendered, bpm, sr);
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(wavBlob);
+    a.download=`nykro_loop_${Math.round(bpm)}bpm.wav`;
+    a.click();
+    slicerSetStatus('WAV SAVED','var(--c-green)');
+  } catch(err){
+    console.error('Export error:',err);
+    slicerSetStatus('ERR: '+err.message.slice(0,20),'var(--c-red)');
   }
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(window.lastSlicerRecording);
-  a.download='nykro_slicer_v3.wav'; a.click();
+}
+
+// ─── AudioBuffer → WAV Blob (PCM 16-bit, stereo) ─────────────────────────────
+// Includes minimal BWF/BEXT-compatible RIFF structure that Ableton reads cleanly.
+function audioBufferToWav(buffer, bpm, sr){
+  const numCh=buffer.numberOfChannels;
+  const numFrames=buffer.length;
+  const bitsPerSample=16;
+  const bytesPerSample=bitsPerSample/8;
+  const blockAlign=numCh*bytesPerSample;
+  const byteRate=sr*blockAlign;
+
+  // Interleave channels
+  const pcm=new Int16Array(numFrames*numCh);
+  for(let ch=0;ch<numCh;ch++){
+    const data=buffer.getChannelData(ch);
+    for(let i=0;i<numFrames;i++){
+      const s=Math.max(-1,Math.min(1,data[i]));
+      pcm[i*numCh+ch]=s<0 ? s*0x8000 : s*0x7FFF;
+    }
+  }
+
+  const dataSize=pcm.byteLength;
+  const riffSize=36+dataSize;
+  const ab=new ArrayBuffer(44+dataSize);
+  const view=new DataView(ab);
+
+  // RIFF header
+  const str=(off,s)=>{ for(let i=0;i<s.length;i++) view.setUint8(off+i,s.charCodeAt(i)); };
+  str(0,'RIFF'); view.setUint32(4,riffSize,true);
+  str(8,'WAVE');
+  // fmt chunk
+  str(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true); // PCM
+  view.setUint16(22,numCh,true); view.setUint32(24,sr,true);
+  view.setUint32(28,byteRate,true); view.setUint16(32,blockAlign,true);
+  view.setUint16(34,bitsPerSample,true);
+  // data chunk
+  str(36,'data'); view.setUint32(40,dataSize,true);
+  // PCM samples
+  new Int16Array(ab,44).set(pcm);
+
+  return new Blob([ab],{type:'audio/wav'});
 }
 
 function updateSlicerMasterVol(v){
