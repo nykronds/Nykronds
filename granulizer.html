@@ -572,11 +572,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;heigh
           <span class="sbb-title">REC / EXPORT</span>
           <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
             <div style="width:7px;height:7px;border-radius:50%;background:var(--text-dim);flex-shrink:0;" id="slicerRecDot"></div>
-            <span style="font-size:0.42rem;color:var(--text-dim);letter-spacing:1px;" id="slicerRecStatus">IDLE</span>
+            <span style="font-size:0.42rem;color:var(--text-dim);letter-spacing:1px;font-family:var(--font-mono);" id="slicerRecStatus">IDLE</span>
             <div style="flex:1;height:4px;background:var(--bg0);border:1px solid var(--border);border-radius:2px;overflow:hidden;">
-              <div id="slicerRecMeter" style="height:100%;width:0%;background:linear-gradient(90deg,var(--c-green),var(--c-yellow),var(--c-red));transition:width 0.05s;"></div>
+              <div id="slicerRecMeter" style="height:100%;width:0%;background:linear-gradient(90deg,var(--c-green),var(--c-yellow),var(--c-red));transition:width 0.1s;"></div>
             </div>
           </div>
+          <div style="font-size:0.36rem;color:var(--text-dim);margin-bottom:3px;">⏺ REC → play as long as you want → ⏹ STOP → ⬇ WAV</div>
           <div style="display:flex;gap:4px;">
             <button class="sl-btn" id="slicerRecBtn2" onclick="toggleSlicerRec()" style="font-size:0.42rem;flex:1;">⏺ REC</button>
             <button class="sl-btn green" onclick="exportSlicerWav()" style="font-size:0.42rem;flex:1;">⬇ WAV</button>
@@ -659,10 +660,13 @@ const specAnalyser    = new Tone.Analyser('fft', 256);
 masterLimiter.connect(analyser);
 masterLimiter.connect(specAnalyser);
 
-// Slicer dedicated recorder & output
-const slicerRecorder = new Tone.Recorder();
+// Slicer dedicated output
 const slicerMasterVol = new Tone.Volume(-3).connect(masterLimiter);
-slicerMasterVol.connect(slicerRecorder);
+
+// REC state — tracks how long the user has been recording
+let slicerRecStartTime = null;
+let slicerRecTimerInterval = null;
+let slicerRecordedLoops = 0;
 
 const channels = {};
 TRACKS.forEach(t => {
@@ -1388,12 +1392,14 @@ function createSlicerChannel(name, color){
     buffer:null, slices:[], players:[],
     seqPattern: new Array(32).fill(-1),
     muted:false, soloed:false, vol:0.9,
-    sliceMode: 'equal',   // per-channel: 'equal' | 'transient'
-    sliceCount: 8,        // per-channel slice count
+    sliceMode: 'equal',
+    sliceCount: 8,
+    sampleOffset: 0,      // 0.0–1.0: start point within the buffer
+    windowSize: 1.0,      // 0.0–1.0: fraction of buffer to slice (auto-shrinks for long samples)
     volNode, gainNode, analyserNode,
-    busyUntilStep: -1,   // step global hasta el que está ocupado este canal
-    lastSliceIdx: -1,    // índice de la última slice disparada
-    lastTriggerStep: -1  // step global en que se disparó
+    busyUntilStep: -1,
+    lastSliceIdx: -1,
+    lastTriggerStep: -1
   };
   slicerChannels.push(ch);
   renderChannelLane(ch);
@@ -1462,6 +1468,63 @@ function renderChannelLane(ch){
   ctrls.appendChild(scSel); ctrls.appendChild(smSel);
   hdr.appendChild(nm); hdr.appendChild(ctrls); hdr.appendChild(dropZone); hdr.appendChild(volWrap);
 
+  // ── SAMPLE OFFSET SCRUBBER ──
+  // Shown below the header; lets user slide the slice window through the full buffer.
+  const scrubRow=document.createElement('div');
+  scrubRow.id='chscrub_'+ch.id;
+  scrubRow.style.cssText='display:none;align-items:center;gap:4px;padding:2px 6px 2px 4px;background:#0a0a12;border-bottom:1px solid #1a1a2e;';
+
+  const scrubLbl=document.createElement('span');
+  scrubLbl.style.cssText='font-size:0.33rem;color:var(--text-dim);letter-spacing:1px;white-space:nowrap;min-width:28px;';
+  scrubLbl.textContent='OFFSET';
+
+  const scrubVal=document.createElement('span');
+  scrubVal.id='chscrubval_'+ch.id;
+  scrubVal.style.cssText='font-size:0.33rem;min-width:32px;text-align:right;color:'+ch.color+';font-family:var(--font-mono);';
+  scrubVal.textContent='0.0s';
+
+  const scrubSlider=document.createElement('input');
+  scrubSlider.type='range'; scrubSlider.min=0; scrubSlider.max=1; scrubSlider.step=0.001;
+  scrubSlider.value=ch.sampleOffset;
+  scrubSlider.id='chscrubslider_'+ch.id;
+  scrubSlider.style.cssText='flex:1;height:6px;accent-color:'+ch.color+';cursor:pointer;';
+  scrubSlider.title='Drag to move the slice window through the sample';
+
+  const winLbl=document.createElement('span');
+  winLbl.style.cssText='font-size:0.33rem;color:var(--text-dim);letter-spacing:1px;white-space:nowrap;margin-left:6px;';
+  winLbl.textContent='WIN';
+
+  const winSlider=document.createElement('input');
+  winSlider.type='range'; winSlider.min=0.05; winSlider.max=1; winSlider.step=0.01;
+  winSlider.value=ch.windowSize;
+  winSlider.id='chwinslider_'+ch.id;
+  winSlider.style.cssText='width:48px;height:6px;accent-color:'+ch.color+'88;cursor:pointer;';
+  winSlider.title='Window size: fraction of buffer to slice';
+
+  const winVal=document.createElement('span');
+  winVal.id='chwinval_'+ch.id;
+  winVal.style.cssText='font-size:0.33rem;min-width:28px;color:'+ch.color+'88;font-family:var(--font-mono);';
+  winVal.textContent='100%';
+
+  function updateScrub(){
+    ch.sampleOffset=parseFloat(scrubSlider.value);
+    ch.windowSize=parseFloat(winSlider.value);
+    const dur=ch.buffer?ch.buffer.duration:0;
+    const offsetSec=ch.sampleOffset*(dur*(1-ch.windowSize));
+    scrubVal.textContent=offsetSec.toFixed(1)+'s';
+    winVal.textContent=Math.round(ch.windowSize*100)+'%';
+    if(ch.buffer){ sliceChannel(ch); slicerDrawOverview(); }
+  }
+  scrubSlider.oninput=updateScrub;
+  winSlider.oninput=updateScrub;
+
+  scrubRow.appendChild(scrubLbl);
+  scrubRow.appendChild(scrubSlider);
+  scrubRow.appendChild(scrubVal);
+  scrubRow.appendChild(winLbl);
+  scrubRow.appendChild(winSlider);
+  scrubRow.appendChild(winVal);
+
   // ─ Sequencer steps ─
   const seq=document.createElement('div'); seq.className='ch-seq'; seq.id='chseq_'+ch.id;
   buildChannelSeqSteps(ch, seq);
@@ -1471,7 +1534,7 @@ function renderChannelLane(ch){
   const vuFill=document.createElement('div'); vuFill.className='ch-vu-fill'; vuFill.id='chvu_'+ch.id;
   vu.appendChild(vuFill);
 
-  lane.appendChild(hdr); lane.appendChild(seq); lane.appendChild(vu);
+  lane.appendChild(hdr); lane.appendChild(scrubRow); lane.appendChild(seq); lane.appendChild(vu);
   area.appendChild(lane);
 }
 
@@ -1565,8 +1628,42 @@ function loadChannelFile(file, chId){
     ch.name=short; document.getElementById('clane_'+chId)?.querySelector('.ch-name')&&(document.getElementById('clane_'+chId).querySelector('.ch-name').textContent=short);
     if(!masterSlicerBuffer){ masterSlicerBuffer=ch.buffer; slicerResizeCanvas(); }
     const infoEl=document.getElementById('slicerInfo');
-    if(infoEl) infoEl.textContent=ch.buffer.duration.toFixed(2)+'s — '+Math.round(ch.buffer.sampleRate/1000)+'kHz';
-    // Store raw AudioBuffer reference for offline export
+    const dur=ch.buffer.duration;
+    if(infoEl) infoEl.textContent=dur.toFixed(2)+'s — '+Math.round(ch.buffer.sampleRate/1000)+'kHz';
+
+    // ── Auto windowSize: for long samples shrink window to ~4 bars worth ──
+    const bpm=Tone.Transport.bpm.value||128;
+    const fourBars=(60/bpm)*16; // 4 bars = 16 beats
+    if(dur > fourBars*2){
+      ch.windowSize=Math.min(1, Math.max(0.05, fourBars/dur));
+    } else {
+      ch.windowSize=1.0;
+    }
+
+    // ── Auto stagger offset: each channel starts at a different section ──
+    // Find how many other channels already have this same buffer loaded
+    const sameBufferChannels=slicerChannels.filter(c=>c.id!==ch.id&&c.buffer&&c.buffer.duration===dur);
+    const idx=sameBufferChannels.length;
+    if(idx>0 && dur>fourBars){
+      // Space offsets evenly so channels explore different parts
+      ch.sampleOffset=Math.min(0.99, idx*(ch.windowSize));
+    } else {
+      ch.sampleOffset=0;
+    }
+
+    // Update scrubber UI
+    const scrubRow=document.getElementById('chscrub_'+chId);
+    const scrubSlider=document.getElementById('chscrubslider_'+chId);
+    const winSlider=document.getElementById('chwinslider_'+chId);
+    const scrubVal=document.getElementById('chscrubval_'+chId);
+    const winVal=document.getElementById('chwinval_'+chId);
+    if(scrubRow) scrubRow.style.display='flex';
+    if(scrubSlider) scrubSlider.value=ch.sampleOffset;
+    if(winSlider) winSlider.value=ch.windowSize;
+    if(scrubVal){ const offsetSec=ch.sampleOffset*(dur*(1-ch.windowSize)); scrubVal.textContent=offsetSec.toFixed(1)+'s'; }
+    if(winVal) winVal.textContent=Math.round(ch.windowSize*100)+'%';
+
+    // Store raw buffer ref for export
     ch.buffer._buffer=ch.buffer.get();
     sliceChannel(ch);
     slicerSetStatus('READY','var(--c-green)');
@@ -1590,14 +1687,30 @@ function snapToZC(data, pos, windowSamples){
 
 function sliceChannel(ch){
   if(!ch.buffer)return;
-  // Use per-channel settings; fall back to global selectors for backwards compat
   const n=ch.sliceCount||parseInt(document.getElementById('sliceCountSel').value)||8;
   const mode=ch.sliceMode||document.getElementById('sliceModeSelect').value;
-  const raw=ch.buffer.getChannelData(0);
+  const fullRaw=ch.buffer.getChannelData(0);
   const sr=ch.buffer.sampleRate;
-  const totalSamples=raw.length;
-  const dur=ch.buffer.duration;
-  const zcWin=Math.floor(sr*0.003); // 3ms window for zero-crossing snap
+  const fullTotalSamples=fullRaw.length;
+  const fullDur=ch.buffer.duration;
+
+  // ── Compute window bounds from offset + windowSize ──
+  const winSize=ch.windowSize||1.0;
+  const offset=ch.sampleOffset||0;
+  // offsetSec: how far into the buffer the window starts
+  const maxOffsetSec=fullDur*(1-winSize);
+  const offsetSec=offset*maxOffsetSec;
+  const windowDurSec=fullDur*winSize;
+  const startSample=Math.floor(offsetSec*sr);
+  const endSample=Math.min(fullTotalSamples, startSample+Math.ceil(windowDurSec*sr));
+
+  // Work on the sub-window — slices are still expressed as absolute times into the full buffer
+  const totalSamples=endSample-startSample;
+  const dur=totalSamples/sr;
+  // Create a view of the raw data for onset detection
+  const raw=fullRaw.subarray(startSample, endSample);
+
+  const zcWin=Math.floor(sr*0.003);
   ch.slices=[];
 
   if(mode==='equal'){
@@ -1612,7 +1725,7 @@ function sliceChannel(ch){
     }
     pts.push(totalSamples);
     for(let i=0;i<n;i++){
-      const s0=pts[i]/sr, s1=Math.min(pts[i+1]/sr, dur);
+      const s0=pts[i]/sr+offsetSec, s1=Math.min(pts[i+1]/sr+offsetSec, offsetSec+dur);
       if(s1-s0>0.001){
         const gs=Math.max(1,Math.round((s1-s0)/step16eq));
         ch.slices.push({start:s0, end:s1, dur:s1-s0, gridSteps:gs});
@@ -1751,32 +1864,29 @@ function sliceChannel(ch){
     }
 
     // ── 8. Construir slices desde onsets cuantizados ──
-    // Cada slice queda con duración alineada al grid → múltiplo exacto de 1/16
     for(let i=0;i<n&&i<qOnsets.length-1;i++){
-      const s0raw = qOnsets[i]/sr;
-      const s1raw = Math.min(qOnsets[i+1]/sr, dur);
+      const s0raw = qOnsets[i]/sr + offsetSec;
+      const s1raw = Math.min(qOnsets[i+1]/sr + offsetSec, offsetSec+dur);
       const rawLen= s1raw - s0raw;
-      // Cuantizar la DURACIÓN de cada slice al múltiplo de 1/16 más cercano
       const stepsF  = rawLen / step16;
       const stepsR  = Math.max(1, Math.round(stepsF));
       const qLen    = stepsR * step16;
-      const s1q     = Math.min(s0raw + qLen, dur);
+      const s1q     = Math.min(s0raw + qLen, offsetSec+dur);
       if(s1q - s0raw > 0.001){
         ch.slices.push({
           start:  s0raw,
           end:    s1q,
           dur:    s1q - s0raw,
-          // guardar el número exacto de steps de 1/16 para que autoFit lo use directo
           gridSteps: stepsR
         });
       }
     }
   }
 
-  // Fallback: if we ended up with 0 slices, equal divide
+  // Fallback: if we ended up with 0 slices, equal divide within window
   if(ch.slices.length===0){
     const sd=dur/n;
-    for(let i=0;i<n;i++) ch.slices.push({start:i*sd,end:(i+1)*sd,dur:sd});
+    for(let i=0;i<n;i++) ch.slices.push({start:offsetSec+i*sd, end:offsetSec+(i+1)*sd, dur:sd});
   }
 
   // ── Rebuild players — one dedicated Player per slice ──
@@ -2598,24 +2708,44 @@ function toggleSlicerRec(){
   const btn2=document.getElementById('slicerRecBtn2');
   const dot=document.getElementById('slicerRecDot');
   const statusEl=document.getElementById('slicerRecStatus');
+
   if(!slicerIsRecording){
-    slicerRecorder.start(); slicerIsRecording=true;
+    // ── START REC ──
+    slicerRecStartTime=Date.now();
+    slicerIsRecording=true;
+    window.slicerRecordedSecs=0;
+
     [btn1,btn2].forEach(b=>{if(b){b.classList.add('rec-active');b.textContent='⏹ STOP';}});
     if(dot){dot.style.background='var(--c-red)';dot.style.boxShadow='0 0 6px var(--c-red)';}
-    if(statusEl){statusEl.textContent='● REC';statusEl.style.color='var(--c-red)';}
-    slicerSetStatus('● REC','var(--c-red)');
-    // auto-start playback if not playing
+
+    // Live timer display
+    slicerRecTimerInterval=setInterval(()=>{
+      const elapsed=(Date.now()-slicerRecStartTime)/1000;
+      const m=Math.floor(elapsed/60).toString().padStart(2,'0');
+      const s=Math.floor(elapsed%60).toString().padStart(2,'0');
+      const ms=Math.floor((elapsed%1)*10);
+      if(statusEl){statusEl.textContent=`● ${m}:${s}.${ms}`;statusEl.style.color='var(--c-red)';}
+      slicerSetStatus(`REC ${m}:${s}`,'var(--c-red)');
+      // Animate meter as pulse
+      const meter=document.getElementById('slicerRecMeter');
+      if(meter) meter.style.width=(50+50*Math.sin(elapsed*6))+'%';
+    },100);
+
     if(!slicerIsPlaying) toggleSlicerPlay();
+
   } else {
-    slicerRecorder.stop().then(blob=>{
-      window.lastSlicerRecording=blob;
-      slicerIsRecording=false;
-      [btn1,btn2].forEach(b=>{if(b){b.classList.remove('rec-active');b.textContent='⏺ REC';}});
-      if(dot){dot.style.background='var(--c-green)';dot.style.boxShadow='0 0 6px var(--c-green)';}
-      if(statusEl){statusEl.textContent='DONE';statusEl.style.color='var(--c-green)';}
-      slicerSetStatus('REC DONE','var(--c-cyan)');
-      document.getElementById('slicerRecMeter').style.width='0%';
-    });
+    // ── STOP REC ──
+    window.slicerRecordedSecs=(Date.now()-slicerRecStartTime)/1000;
+    clearInterval(slicerRecTimerInterval);
+    slicerIsRecording=false;
+
+    [btn1,btn2].forEach(b=>{if(b){b.classList.remove('rec-active');b.textContent='⏺ REC';}});
+    if(dot){dot.style.background='var(--c-green)';dot.style.boxShadow='0 0 6px var(--c-green)';}
+    if(statusEl){statusEl.textContent='READY';statusEl.style.color='var(--c-green)';}
+    document.getElementById('slicerRecMeter').style.width='0%';
+
+    const secs=window.slicerRecordedSecs.toFixed(1);
+    slicerSetStatus(`${secs}s READY → ⬇ WAV`,'var(--c-cyan)');
   }
 }
 
@@ -2623,14 +2753,22 @@ async function exportSlicerWav(){
   const active=slicerChannels.filter(ch=>ch.slices.length>0&&ch.buffer);
   if(!active.length){ slicerSetStatus('NO AUDIO','var(--c-red)'); return; }
 
+  // Use recorded duration if available, else render 2 full loops
   const bpm=Tone.Transport.bpm.value||128;
   const nSteps=slicerSteps||16;
   const stepDurSec=(60/bpm)/4;
   const loopDurSec=nSteps*stepDurSec;
-  const LOOPS=2;
-  const totalDurSec=loopDurSec*LOOPS;
+
+  let totalDurSec;
+  if(window.slicerRecordedSecs && window.slicerRecordedSecs>0){
+    totalDurSec=window.slicerRecordedSecs;
+  } else {
+    totalDurSec=loopDurSec*2;
+  }
+
   const sr=active[0].buffer.sampleRate||44100;
   const totalSamples=Math.ceil(totalDurSec*sr);
+  const totalLoops=Math.ceil(totalDurSec/loopDurSec);
 
   slicerSetStatus('RENDERING…','var(--c-yellow)');
   await new Promise(r=>setTimeout(r,40));
@@ -2653,18 +2791,21 @@ async function exportSlicerWav(){
       const fadeOut=parseFloat(document.getElementById('slFadeOut')?.value)||0.003;
       const playbackRate=Math.max(0.01, spd*Math.pow(2,pit/12));
 
-      // Get raw AudioBuffer from Tone.ToneAudioBuffer
       const rawBuf=ch.buffer._buffer||ch.buffer.get?.();
       if(!rawBuf) continue;
 
-      for(let loop=0;loop<LOOPS;loop++){
+      for(let loop=0;loop<totalLoops;loop++){
         const loopOffset=loop*loopDurSec;
+        if(loopOffset>=totalDurSec) break;
         for(let step=0;step<nSteps;step++){
           const sliceIdx=ch.seqPattern[step];
           if(sliceIdx<0||sliceIdx>=ch.slices.length) continue;
           const sl=ch.slices[sliceIdx];
           const trigTime=loopOffset+step*stepDurSec;
-          const slDur=Math.min(sl.dur, (nSteps-step)*stepDurSec)/playbackRate;
+          if(trigTime>=totalDurSec) break;
+          const maxDur=Math.min(totalDurSec-trigTime,(nSteps-step)*stepDurSec);
+          const slDur=Math.min(sl.dur,maxDur)/playbackRate;
+          if(slDur<=0) continue;
 
           const src=offCtx.createBufferSource();
           src.buffer=rawBuf;
@@ -2672,13 +2813,13 @@ async function exportSlicerWav(){
 
           const env=offCtx.createGain();
           const fi=Math.min(fadeIn,slDur*0.1);
-          const foStart=Math.max(trigTime+fi+0.001, trigTime+slDur*0.85);
+          const foStart=Math.max(trigTime+fi+0.001,trigTime+slDur*0.85);
           env.gain.setValueAtTime(0,trigTime);
           env.gain.linearRampToValueAtTime(1,trigTime+fi);
           env.gain.setValueAtTime(1,foStart);
           env.gain.linearRampToValueAtTime(0,trigTime+slDur);
           src.connect(env); env.connect(chGain);
-          src.start(trigTime, sl.start, slDur);
+          src.start(trigTime, Math.max(0,sl.start), slDur);
         }
       }
     }
@@ -2687,9 +2828,11 @@ async function exportSlicerWav(){
     const wavBlob=audioBufferToWav(rendered);
     const a=document.createElement('a');
     a.href=URL.createObjectURL(wavBlob);
-    a.download=`nykro_loop_${Math.round(bpm)}bpm.wav`;
+    const durLabel=totalDurSec.toFixed(1).replace('.','s');
+    a.download=`nykro_${Math.round(bpm)}bpm_${durLabel}.wav`;
     a.click();
-    slicerSetStatus('WAV SAVED ✓','var(--c-green)');
+    slicerSetStatus(`WAV ${totalDurSec.toFixed(1)}s ✓`,'var(--c-green)');
+    window.slicerRecordedSecs=0; // reset after export
   }catch(err){
     console.error('Export error:',err);
     slicerSetStatus('EXPORT ERR','var(--c-red)');
