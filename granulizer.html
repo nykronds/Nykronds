@@ -663,10 +663,34 @@ masterLimiter.connect(specAnalyser);
 // Slicer dedicated output
 const slicerMasterVol = new Tone.Volume(-3).connect(masterLimiter);
 
-// REC state — tracks how long the user has been recording
+// ── REAL-TIME RECORDER — captures everything from masterLimiter ──
+let slicerMediaDest   = null;
+let slicerMediaRec    = null;
+let slicerRecChunks   = [];
 let slicerRecStartTime = null;
 let slicerRecTimerInterval = null;
-let slicerRecordedLoops = 0;
+
+function ensureRecorderWired(){
+  if(slicerMediaDest) return;
+  try{
+    const rawCtx = Tone.getContext().rawContext;
+    slicerMediaDest = rawCtx.createMediaStreamDestination();
+    // Tap directly off the raw limiter node so ALL audio is captured
+    masterLimiter.connect(new Tone.Gain(1)); // keep existing chain intact
+    // Access the raw WebAudio node inside Tone.Limiter
+    const rawLimNode = masterLimiter._compressor || masterLimiter.output || masterLimiter._gainNode;
+    if(rawLimNode && rawLimNode.connect){
+      rawLimNode.connect(slicerMediaDest);
+    } else {
+      // Fallback: connect via destination node
+      Tone.getDestination().output.connect(slicerMediaDest);
+    }
+  } catch(e){
+    // Last resort: connect Tone destination
+    try{ Tone.getDestination().output.connect(slicerMediaDest); }catch(e2){}
+    console.warn('Recorder wire fallback:', e);
+  }
+}
 
 const channels = {};
 TRACKS.forEach(t => {
@@ -2233,6 +2257,12 @@ let rrIndex = 0;
 function toggleSlicerPlay(){
   const btn=document.getElementById('slicerPlayBtn');
   if(slicerIsPlaying){
+    // ── NEVER stop playback while recording ──
+    if(slicerIsRecording){
+      slicerSetStatus('STOP REC FIRST','var(--c-yellow)');
+      setTimeout(()=>slicerSetStatus('● REC','var(--c-red)'),1200);
+      return;
+    }
     if(slicerLoopId!==null) Tone.Transport.clear(slicerLoopId);
     slicerIsPlaying=false; slicerCurrentStep=0; rrIndex=0;
     btn.textContent='▶ PLAY ALL'; btn.classList.remove('active');
@@ -2708,25 +2738,34 @@ function toggleSlicerRec(){
   const btn2=document.getElementById('slicerRecBtn2');
   const dot=document.getElementById('slicerRecDot');
   const statusEl=document.getElementById('slicerRecStatus');
+  const playBtn=document.getElementById('slicerPlayBtn');
 
   if(!slicerIsRecording){
     // ── START REC ──
+    ensureRecorderWired();
+    slicerRecChunks=[];
+
+    // Pick best supported format
+    const mimeType=['audio/webm;codecs=pcm','audio/webm','audio/ogg'].find(m=>MediaRecorder.isTypeSupported(m))||'';
+    slicerMediaRec = new MediaRecorder(slicerMediaDest.stream, mimeType?{mimeType}:{});
+    slicerMediaRec.ondataavailable = e=>{ if(e.data && e.data.size>0) slicerRecChunks.push(e.data); };
+
+    slicerMediaRec.start(200); // collect chunks every 200ms
     slicerRecStartTime=Date.now();
     slicerIsRecording=true;
     window.slicerRecordedSecs=0;
 
     [btn1,btn2].forEach(b=>{if(b){b.classList.add('rec-active');b.textContent='⏹ STOP';}});
     if(dot){dot.style.background='var(--c-red)';dot.style.boxShadow='0 0 6px var(--c-red)';}
+    if(playBtn) playBtn.style.opacity='0.4';
 
-    // Live timer display
     slicerRecTimerInterval=setInterval(()=>{
       const elapsed=(Date.now()-slicerRecStartTime)/1000;
       const m=Math.floor(elapsed/60).toString().padStart(2,'0');
       const s=Math.floor(elapsed%60).toString().padStart(2,'0');
       const ms=Math.floor((elapsed%1)*10);
       if(statusEl){statusEl.textContent=`● ${m}:${s}.${ms}`;statusEl.style.color='var(--c-red)';}
-      slicerSetStatus(`REC ${m}:${s}`,'var(--c-red)');
-      // Animate meter as pulse
+      slicerSetStatus(`● REC ${m}:${s}`,'var(--c-red)');
       const meter=document.getElementById('slicerRecMeter');
       if(meter) meter.style.width=(50+50*Math.sin(elapsed*6))+'%';
     },100);
@@ -2739,36 +2778,57 @@ function toggleSlicerRec(){
     clearInterval(slicerRecTimerInterval);
     slicerIsRecording=false;
 
+    slicerMediaRec.stop(); // fires final ondataavailable then onstop
+
     [btn1,btn2].forEach(b=>{if(b){b.classList.remove('rec-active');b.textContent='⏺ REC';}});
     if(dot){dot.style.background='var(--c-green)';dot.style.boxShadow='0 0 6px var(--c-green)';}
     if(statusEl){statusEl.textContent='READY';statusEl.style.color='var(--c-green)';}
+    if(playBtn) playBtn.style.opacity='';
     document.getElementById('slicerRecMeter').style.width='0%';
 
     const secs=window.slicerRecordedSecs.toFixed(1);
-    slicerSetStatus(`${secs}s READY → ⬇ WAV`,'var(--c-cyan)');
+    slicerSetStatus(`${secs}s — ⬇ WAV to export`,'var(--c-cyan)');
   }
 }
 
 async function exportSlicerWav(){
+  // ── If we have a real recording, decode it to WAV ──
+  if(slicerRecChunks && slicerRecChunks.length>0){
+    slicerSetStatus('CONVERTING…','var(--c-yellow)');
+    await new Promise(r=>setTimeout(r,40));
+    try{
+      const blob=new Blob(slicerRecChunks, {type: slicerMediaRec?.mimeType||'audio/webm'});
+      const arrayBuf=await blob.arrayBuffer();
+      const rawCtx=new AudioContext();
+      const decoded=await rawCtx.decodeAudioData(arrayBuf);
+      await rawCtx.close();
+      const wavBlob=audioBufferToWav(decoded);
+      const bpm=Math.round(Tone.Transport.bpm.value||128);
+      const secs=decoded.duration.toFixed(1).replace('.','s');
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(wavBlob);
+      a.download=`nykro_${bpm}bpm_${secs}.wav`;
+      a.click();
+      slicerSetStatus(`WAV ${decoded.duration.toFixed(1)}s ✓`,'var(--c-green)');
+      return;
+    } catch(err){
+      console.error('Decode error:',err);
+      slicerSetStatus('DECODE ERR — trying render…','var(--c-yellow)');
+      await new Promise(r=>setTimeout(r,800));
+    }
+  }
+
+  // ── Fallback: offline render (no recording available) ──
   const active=slicerChannels.filter(ch=>ch.slices.length>0&&ch.buffer);
   if(!active.length){ slicerSetStatus('NO AUDIO','var(--c-red)'); return; }
 
-  // Use recorded duration if available, else render 2 full loops
   const bpm=Tone.Transport.bpm.value||128;
   const nSteps=slicerSteps||16;
   const stepDurSec=(60/bpm)/4;
   const loopDurSec=nSteps*stepDurSec;
-
-  let totalDurSec;
-  if(window.slicerRecordedSecs && window.slicerRecordedSecs>0){
-    totalDurSec=window.slicerRecordedSecs;
-  } else {
-    totalDurSec=loopDurSec*2;
-  }
-
+  const totalDurSec=loopDurSec*2;
   const sr=active[0].buffer.sampleRate||44100;
   const totalSamples=Math.ceil(totalDurSec*sr);
-  const totalLoops=Math.ceil(totalDurSec/loopDurSec);
 
   slicerSetStatus('RENDERING…','var(--c-yellow)');
   await new Promise(r=>setTimeout(r,40));
@@ -2776,66 +2836,40 @@ async function exportSlicerWav(){
   try{
     const offCtx=new OfflineAudioContext(2,totalSamples,sr);
     const anySolo=slicerChannels.some(c=>c.soloed);
-
     for(const ch of active){
-      if(ch.muted) continue;
-      if(anySolo&&!ch.soloed) continue;
-
-      const chGain=offCtx.createGain();
-      chGain.gain.value=ch.vol||0.9;
-      chGain.connect(offCtx.destination);
-
+      if(ch.muted||( anySolo&&!ch.soloed)) continue;
+      const chGain=offCtx.createGain(); chGain.gain.value=ch.vol||0.9; chGain.connect(offCtx.destination);
       const spd=parseFloat(document.getElementById('slSpeed')?.value)||1;
       const pit=parseFloat(document.getElementById('slPitch')?.value)||0;
       const fadeIn=parseFloat(document.getElementById('slFadeIn')?.value)||0.003;
-      const fadeOut=parseFloat(document.getElementById('slFadeOut')?.value)||0.003;
       const playbackRate=Math.max(0.01, spd*Math.pow(2,pit/12));
-
-      const rawBuf=ch.buffer._buffer||ch.buffer.get?.();
-      if(!rawBuf) continue;
-
-      for(let loop=0;loop<totalLoops;loop++){
+      const rawBuf=ch.buffer._buffer||ch.buffer.get?.(); if(!rawBuf) continue;
+      for(let loop=0;loop<2;loop++){
         const loopOffset=loop*loopDurSec;
-        if(loopOffset>=totalDurSec) break;
         for(let step=0;step<nSteps;step++){
-          const sliceIdx=ch.seqPattern[step];
-          if(sliceIdx<0||sliceIdx>=ch.slices.length) continue;
+          const sliceIdx=ch.seqPattern[step]; if(sliceIdx<0||sliceIdx>=ch.slices.length) continue;
           const sl=ch.slices[sliceIdx];
           const trigTime=loopOffset+step*stepDurSec;
-          if(trigTime>=totalDurSec) break;
-          const maxDur=Math.min(totalDurSec-trigTime,(nSteps-step)*stepDurSec);
-          const slDur=Math.min(sl.dur,maxDur)/playbackRate;
+          const slDur=Math.min(sl.dur,(nSteps-step)*stepDurSec)/playbackRate;
           if(slDur<=0) continue;
-
-          const src=offCtx.createBufferSource();
-          src.buffer=rawBuf;
-          src.playbackRate.value=playbackRate;
-
+          const src=offCtx.createBufferSource(); src.buffer=rawBuf; src.playbackRate.value=playbackRate;
           const env=offCtx.createGain();
           const fi=Math.min(fadeIn,slDur*0.1);
-          const foStart=Math.max(trigTime+fi+0.001,trigTime+slDur*0.85);
-          env.gain.setValueAtTime(0,trigTime);
-          env.gain.linearRampToValueAtTime(1,trigTime+fi);
-          env.gain.setValueAtTime(1,foStart);
-          env.gain.linearRampToValueAtTime(0,trigTime+slDur);
+          env.gain.setValueAtTime(0,trigTime); env.gain.linearRampToValueAtTime(1,trigTime+fi);
+          env.gain.setValueAtTime(1,trigTime+slDur*0.85); env.gain.linearRampToValueAtTime(0,trigTime+slDur);
           src.connect(env); env.connect(chGain);
-          src.start(trigTime, Math.max(0,sl.start), slDur);
+          src.start(trigTime,Math.max(0,sl.start),slDur);
         }
       }
     }
-
     const rendered=await offCtx.startRendering();
     const wavBlob=audioBufferToWav(rendered);
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(wavBlob);
-    const durLabel=totalDurSec.toFixed(1).replace('.','s');
-    a.download=`nykro_${Math.round(bpm)}bpm_${durLabel}.wav`;
-    a.click();
-    slicerSetStatus(`WAV ${totalDurSec.toFixed(1)}s ✓`,'var(--c-green)');
-    window.slicerRecordedSecs=0; // reset after export
+    const a=document.createElement('a'); a.href=URL.createObjectURL(wavBlob);
+    a.download=`nykro_${Math.round(bpm)}bpm_render.wav`; a.click();
+    slicerSetStatus('WAV RENDERED ✓','var(--c-green)');
   }catch(err){
-    console.error('Export error:',err);
-    slicerSetStatus('EXPORT ERR','var(--c-red)');
+    console.error('Render error:',err);
+    slicerSetStatus('RENDER ERR','var(--c-red)');
   }
 }
 
