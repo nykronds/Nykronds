@@ -1,266 +1,390 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nykro-Arpodelic Engine Pro v5.0</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
-
-        :root {
-            --gold: #ffcc00;
-            --cyan: #00d4ff;
-            --green: #2ecc71;
-            --magenta: #ff00ff;
-            --red: #e74c3c;
-            --bg: #0a0a0f;
-            --bg2: #111118;
-            --bg3: #1a1a24;
-            --border: #2a2a3a;
-            --text: #d0d0e0;
-            --text-dim: #888;
-        }
-
-        * { box-sizing: border-box; }
-        body { font-family: 'Rajdhani', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 12px; margin: 0; min-height: 100vh; }
-
-        .main-header {
-            display: flex; width: 95vw; max-width: 1600px;
-            justify-content: space-between; align-items: center;
-            margin-bottom: 10px; background: var(--bg2); padding: 10px 20px;
-            border-radius: 8px; border: 1px solid var(--border);
-            box-shadow: 0 0 30px rgba(0,212,255,0.05);
-        }
-        h1 { color: var(--gold); margin: 0; font-size: 1.2rem; white-space: nowrap; letter-spacing: 2px; text-shadow: 0 0 20px rgba(255,204,0,0.4); }
-        #status-midi { font-size: 0.7rem; color: var(--green); padding: 5px 12px; border-radius: 4px; background: #0a1a0f; border: 1px solid #1a3a1f; font-family: 'Share Tech Mono', monospace; }
-
-        .container { display: flex; gap: 20px; align-items: flex-start; justify-content: center; width: 95vw; max-width: 1600px; }
-
-        #sequencer-container { width: 95vw; max-width: 1600px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden; display: flex; flex-direction: column; }
-        .seq-header { background: #0e0e18; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
-        #midi-grid-scroll { width: 100%; background: #060610; cursor: crosshair; position: relative; overflow-y: auto; max-height: 320px; scrollbar-width: thin; scrollbar-color: #333 #0a0a14; }
-        #midi-grid-scroll::-webkit-scrollbar { width: 6px; } #midi-grid-scroll::-webkit-scrollbar-track { background: #0a0a14; } #midi-grid-scroll::-webkit-scrollbar-thumb { background: #2a2a44; border-radius: 3px; }
-        #midi-grid { display: grid; grid-template-columns: 60px repeat(32, 1fr); grid-auto-rows: 22px; position: relative; user-select: none; min-width: 100%; }
-
-        .grid-cell.playing-now { background: rgba(255,204,0,0.35) !important; z-index: 1; border-left: 2px solid var(--gold); }
-        .grid-cell.out-of-loop { opacity: 0.08; background: #000 !important; }
-        .grid-cell.in-loop { background: #0d0d1a; }
-
-        .note-label { font-size: 0.58rem; color: #aaa; display: flex; align-items: center; padding-left: 6px; background: #111120; border-bottom: 1px solid #222; position: sticky; left: 0; z-index: 20; font-weight: bold; font-family: 'Share Tech Mono', monospace; height: 22px; min-height: 22px; }
-        .note-label.black-key { background: #0a0a18; color: #666; }
-        .note-label.octave-marker { border-top: 1px solid #2a2a44; color: var(--gold); }
-        .grid-cell { border-right: 1px solid #1a1a28; border-bottom: 1px solid #1a1a28; position: relative; transition: background 0.08s; height: 22px; min-height: 22px; }
-        .grid-cell.black-key-row { background: rgba(0,0,0,0.3); }
-
-        /* ── MIDI BLOCKS ── */
-        .midi-block {
-            position: absolute; height: 85%; top: 7.5%; border-radius: 3px; z-index: 5;
-            pointer-events: none; border: 1px solid rgba(255,255,255,0.25);
-        }
-        /* Chord blocks: spans multiple cells, rendered via absolute left+width on first cell */
-        .midi-block.manual   { background: #ff00ff; box-shadow: 0 0 10px rgba(255,0,255,0.7); }
-        .midi-block.suggested { background: var(--cyan); box-shadow: 0 0 10px rgba(0,212,255,0.7); }
-        .midi-block.melody    { background: var(--green); box-shadow: 0 0 10px rgba(46,204,113,0.7); }
-        .midi-block.melody.muted { opacity: 0.15; box-shadow: none; filter: grayscale(1); }
-        /* ARP blocks: narrow, 1-step */
-        .midi-block.arp { background: #00a8ff; box-shadow: 0 0 8px rgba(0,168,255,0.8); border-color: rgba(255,255,255,0.4); }
-
-        #circle-wrapper { position: relative; width: 440px; height: 440px; background: radial-gradient(circle, #141420 0%, #07070f 70%); border-radius: 50%; border: 1px solid var(--border); flex-shrink: 0; box-shadow: 0 0 40px rgba(0,212,255,0.08); }
-        .note { position: absolute; width: 44px; height: 44px; margin-left: -22px; margin-top: -22px; display: flex; align-items: center; justify-content: center; background: #1a1a28; border: 2px solid #333; border-radius: 50%; cursor: pointer; font-weight: 700; transition: all 0.28s cubic-bezier(0.175,0.885,0.32,1.275); z-index: 2; color: #fff; font-size: 0.85rem; letter-spacing: 0.5px; }
-        .note.minor { width: 38px; height: 38px; margin-left: -19px; margin-top: -19px; font-size: 0.72rem; }
-        .note.active { background: var(--gold); color: #000; border-color: #fff; transform: scale(1.2); z-index: 10; box-shadow: 0 0 25px var(--gold); }
-        .note.active-minor { background: var(--magenta) !important; color: #fff !important; border-color: #fff; transform: scale(1.2); z-index: 10; box-shadow: 0 0 25px var(--magenta); }
-        .note.neighbor { border-color: var(--green); color: var(--green); background: #0a2018; }
-
-        #mode-toggle-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-            width: 76px; height: 76px; border-radius: 50%; border: 2px solid #333;
-            background: #181828; color: #888; cursor: pointer; font-weight: 700;
-            font-size: 0.65rem; z-index: 15; transition: all 0.3s;
-            display: flex; align-items: center; justify-content: center; text-align: center;
-            font-family: 'Share Tech Mono', monospace; letter-spacing: 1px;
-        }
-        #mode-toggle-btn.minor-active { background: var(--magenta); color: #fff; border-color: #fff; box-shadow: 0 0 20px rgba(255,0,255,0.5); }
-
-        #sidebar { display: flex; flex-direction: column; gap: 12px; flex: 1; max-width: 620px; }
-        .suggestion-box { background: var(--bg2); padding: 10px; border-radius: 8px; max-height: 185px; overflow-y: auto; border-top: 2px solid #333; scrollbar-width: thin; scrollbar-color: #333 #111; }
-        .suggestion-box::-webkit-scrollbar { width: 4px; } .suggestion-box::-webkit-scrollbar-track { background: #111; } .suggestion-box::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
-        .box-title { font-weight: 700; margin-bottom: 6px; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; }
-        .suggestion-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; padding: 7px 8px; background: #13131f; border-radius: 5px; border: 1px solid #222; transition: border-color 0.2s; }
-        .suggestion-item:hover { border-color: #444; }
-        .info-prog { display: flex; flex-direction: column; gap: 1px; flex: 1; overflow: hidden; }
-        .notes-display { font-size: 0.58rem; color: #666; font-family: 'Share Tech Mono', monospace; }
-        .controls { display: flex; gap: 4px; }
-        .play-btn { background: #2a2a3a; color: #ccc; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: 700; font-size: 0.58rem; transition: background 0.2s; }
-        .play-btn:hover { background: #3a3a4a; }
-        .arp-btn { background: var(--gold); color: #000; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-weight: 700; font-size: 0.58rem; }
-        .gen-btn { background: var(--green); color: #000; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.65rem; letter-spacing: 1px; }
-
-        .mute-btn { background: #2a2a3a; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.62rem; transition: all 0.2s; }
-        .mute-btn.active { background: var(--red); }
-
-        #piano-container { background: var(--bg2); padding: 10px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 4px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        #chord-name { font-size: 0.9rem; color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; }
-
-        .piano { display: flex; height: 52px; background: #000; padding: 2px; border-radius: 4px; justify-content: center; width: 100%; }
-        .key { width: 14px; height: 100%; border: 1px solid #111; background: #c8c8c8; border-radius: 0 0 3px 3px; }
-        .key.black { width: 10px; height: 60%; background: #1a1a1a; margin-left: -5px; margin-right: -5px; z-index: 10; }
-        .key.active { background: var(--gold) !important; }
-        .key.missing { background: var(--cyan) !important; }
-
-        .btn-control { border: 1px solid #333; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.62rem; letter-spacing: 1px; transition: all 0.2s; }
-        .download-btn { background: var(--cyan); color: #000; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 700; border: none; font-size: 0.7rem; letter-spacing: 0.5px; }
-        .download-btn.melody-only { background: var(--green); }
-        .download-btn.chords-only { background: var(--gold); }
-
-        .play-seq-btn { background: #2a2a3a; color: white; border: 1px solid #444; padding: 7px 14px; border-radius: 5px; cursor: pointer; font-weight: 700; font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; letter-spacing: 1px; transition: all 0.2s; }
-        .play-seq-btn.active { background: var(--green); color: #000; border-color: var(--green); box-shadow: 0 0 15px rgba(46,204,113,0.4); }
-
-        .social-float { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; align-items: flex-end; }
-        .social-btn { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; color: white; font-weight: bold; font-size: 0.65rem; transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275); box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1); overflow: hidden; white-space: nowrap; }
-        .social-btn:hover { width: 120px; border-radius: 22px; padding: 0 14px; }
-        .social-btn span { opacity: 0; margin-left: 6px; transition: opacity 0.2s; font-size: 0.7rem; }
-        .social-btn:hover span { opacity: 1; }
-        .fb { background: #1877F2; } .gr { background: #111; } .sc { background: #ff5500; }
-
-        .melody-mode-group { display: flex; gap: 4px; align-items: center; }
-        .melody-mode-btn { background: #1a1a28; border: 1px solid #333; color: #888; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.5px; transition: all 0.2s; font-family: 'Rajdhani', sans-serif; }
-        .melody-mode-btn.active { background: var(--green); color: #000; border-color: var(--green); }
-
-        .arp-style-group { display: flex; gap: 4px; align-items: center; }
-        .arp-style-btn { background: #1a1a28; border: 1px solid #333; color: #888; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.55rem; font-weight: 700; transition: all 0.2s; font-family: 'Rajdhani', sans-serif; }
-        .arp-style-btn.active { background: #00a8cc; color: #000; border-color: var(--cyan); }
-
-        /* Chord duration control */
-        .chord-dur-group { display: flex; gap: 4px; align-items: center; }
-        .chord-dur-btn { background: #1a1a28; border: 1px solid #333; color: #888; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.55rem; font-weight: 700; transition: all 0.2s; font-family: 'Share Tech Mono', monospace; }
-        .chord-dur-btn.active { background: #6600cc; color: #fff; border-color: #aa44ff; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nykro-Arpodelic Engine Pro v7.0</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+:root {
+  --gold:#ffcc00; --cyan:#00d4ff; --green:#2ecc71; --magenta:#ff00ff;
+  --red:#e74c3c; --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24;
+  --border:#2a2a3a; --text:#d0d0e0; --text-dim:#888;
+  --purple:#9b59b6; --orange:#e67e22;
+}
+*{box-sizing:border-box}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:12px;margin:0;min-height:100vh}
+.main-header{display:flex;width:95vw;max-width:1700px;justify-content:space-between;align-items:center;margin-bottom:10px;background:var(--bg2);padding:10px 20px;border-radius:8px;border:1px solid var(--border)}
+h1{color:var(--gold);margin:0;font-size:1.2rem;white-space:nowrap;letter-spacing:2px}
+#status-midi{font-size:0.7rem;color:var(--green);padding:5px 12px;border-radius:4px;background:#0a1a0f;border:1px solid #1a3a1f;font-family:'Share Tech Mono',monospace}
+#tonal-monitor{width:95vw;max-width:1700px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;padding:8px 16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.tm-item{display:flex;flex-direction:column;gap:2px}
+.tm-label{font-size:0.5rem;color:#555;letter-spacing:1.5px;text-transform:uppercase;font-family:'Share Tech Mono',monospace}
+.tm-value{font-size:0.75rem;color:var(--cyan);font-family:'Share Tech Mono',monospace;font-weight:700}
+.tm-divider{width:1px;height:30px;background:var(--border)}
+#harmony-dots{display:flex;gap:4px;align-items:center}
+.hdot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background 0.3s}
+.hdot.active{background:var(--gold)}
+.hdot.playing{background:var(--green);box-shadow:0 0 8px var(--green)}
+#coherence-bar-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:200px}
+#coherence-bar{height:4px;border-radius:2px;background:var(--border);flex:1;overflow:hidden}
+#coherence-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--gold),var(--green));width:0%;transition:width 0.5s}
+#coherence-pct{font-size:0.65rem;font-family:'Share Tech Mono',monospace;color:var(--gold);min-width:32px}
+/* ARP STACK INDICATOR */
+#arp-stack-indicator{display:flex;gap:4px;align-items:center;padding:4px 8px;background:#0a0a14;border:1px solid #222;border-radius:4px}
+.stack-dot{width:6px;height:6px;border-radius:50%;background:#222;transition:background 0.2s}
+.stack-dot.active{background:var(--cyan)}
+#sequencer-container{width:95vw;max-width:1700px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:16px;overflow:hidden;display:flex;flex-direction:column}
+.seq-header{background:#0e0e18;padding:8px 15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+#midi-grid-scroll{width:100%;background:#060610;cursor:crosshair;position:relative;overflow-y:auto;max-height:320px;scrollbar-width:thin;scrollbar-color:#333 #0a0a14}
+#midi-grid-scroll::-webkit-scrollbar{width:6px}
+#midi-grid-scroll::-webkit-scrollbar-track{background:#0a0a14}
+#midi-grid-scroll::-webkit-scrollbar-thumb{background:#2a2a44;border-radius:3px}
+#midi-grid{display:grid;grid-template-columns:60px repeat(32,1fr);grid-auto-rows:22px;position:relative;user-select:none;min-width:100%}
+.grid-cell.playing-now{background:rgba(255,204,0,0.35)!important;z-index:1;border-left:2px solid var(--gold)}
+.grid-cell.out-of-loop{opacity:0.08;background:#000!important}
+.grid-cell.in-loop{background:#0d0d1a}
+.note-label{font-size:0.58rem;color:#aaa;display:flex;align-items:center;padding-left:6px;background:#111120;border-bottom:1px solid #222;position:sticky;left:0;z-index:20;font-weight:bold;font-family:'Share Tech Mono',monospace;height:22px;min-height:22px}
+.note-label.black-key{background:#0a0a18;color:#666}
+.note-label.octave-marker{border-top:1px solid #2a2a44;color:var(--gold)}
+.grid-cell{border-right:1px solid #1a1a28;border-bottom:1px solid #1a1a28;position:relative;transition:background 0.08s;height:22px;min-height:22px}
+.grid-cell.black-key-row{background:rgba(0,0,0,0.3)}
+.midi-block{position:absolute;height:85%;top:7.5%;border-radius:3px;z-index:5;pointer-events:none;border:1px solid rgba(255,255,255,0.2)}
+.midi-block.chord-I    {background:#9b59b6}
+.midi-block.chord-II   {background:#e74c3c}
+.midi-block.chord-III  {background:#e67e22}
+.midi-block.chord-IV   {background:#3498db}
+.midi-block.chord-V    {background:#ffcc00}
+.midi-block.chord-VI   {background:#2ecc71}
+.midi-block.chord-VII  {background:#1abc9c}
+.midi-block.chord-misc {background:#00d4ff}
+.midi-block.melody     {background:#ff00ff}
+.midi-block.melody.muted{opacity:0.15;filter:grayscale(1)}
+/* ARP layers — different alpha per stack level */
+.midi-block.arp        {background:#00a8ff;border-color:rgba(255,255,255,0.4)}
+.midi-block.arp.muted  {opacity:0.12}
+.midi-block.arp.stack1 {background:#00d4ff}
+.midi-block.arp.stack2 {background:#aa00ff}
+.midi-block.arp.stack3 {background:#ff6600}
+#circle-wrapper{position:relative;width:440px;height:440px;background:radial-gradient(circle,#141420 0%,#07070f 70%);border-radius:50%;border:1px solid var(--border);flex-shrink:0}
+.note{position:absolute;width:44px;height:44px;margin-left:-22px;margin-top:-22px;display:flex;align-items:center;justify-content:center;background:#1a1a28;border:2px solid #333;border-radius:50%;cursor:pointer;font-weight:700;transition:all 0.28s;z-index:2;color:#fff;font-size:0.85rem}
+.note.minor{width:38px;height:38px;margin-left:-19px;margin-top:-19px;font-size:0.72rem}
+.note.active{background:var(--gold);color:#000;border-color:#fff;transform:scale(1.2);z-index:10}
+.note.active-minor{background:var(--magenta)!important;color:#fff!important;border-color:#fff;transform:scale(1.2);z-index:10}
+.note.neighbor{border-color:var(--green);color:var(--green);background:#0a2018}
+.note.playing-note{background:var(--green);color:#000}
+#mode-toggle-btn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;border:2px solid #333;background:#181828;color:#888;cursor:pointer;font-weight:700;font-size:0.65rem;z-index:15;transition:all 0.3s;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Share Tech Mono',monospace}
+#mode-toggle-btn.minor-active{background:var(--magenta);color:#fff;border-color:#fff}
+.container{display:flex;gap:20px;align-items:flex-start;justify-content:center;width:95vw;max-width:1700px}
+#sidebar{display:flex;flex-direction:column;gap:12px;flex:1;max-width:680px}
+#piano-container{background:var(--bg2);padding:10px;border-radius:8px;border:1px solid var(--border);margin-bottom:4px;display:flex;flex-direction:column;align-items:center;gap:8px}
+#chord-name{font-size:0.9rem;color:var(--gold);font-weight:700;letter-spacing:2px;text-transform:uppercase;font-family:'Share Tech Mono',monospace}
+.piano{display:flex;height:52px;background:#000;padding:2px;border-radius:4px;justify-content:center;width:100%}
+.key{width:14px;height:100%;border:1px solid #111;background:#c8c8c8;border-radius:0 0 3px 3px}
+.key.black{width:10px;height:60%;background:#1a1a1a;margin-left:-5px;margin-right:-5px;z-index:10}
+.key.active{background:var(--gold)!important}
+.key.chord-tone{background:var(--cyan)!important}
+.suggestion-box{background:var(--bg2);padding:10px;border-radius:8px;max-height:185px;overflow-y:auto;border-top:2px solid #333;scrollbar-width:thin;scrollbar-color:#333 #111}
+.box-title{font-weight:700;margin-bottom:6px;font-size:0.72rem;letter-spacing:2px;text-transform:uppercase}
+.suggestion-item{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;padding:7px 8px;background:#13131f;border-radius:5px;border:1px solid #222;transition:border-color 0.2s}
+.suggestion-item:hover{border-color:#444}
+.info-prog{display:flex;flex-direction:column;gap:1px;flex:1;overflow:hidden}
+.notes-display{font-size:0.58rem;color:#666;font-family:'Share Tech Mono',monospace}
+.controls{display:flex;gap:4px}
+.play-btn{background:#2a2a3a;color:#ccc;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-weight:700;font-size:0.58rem}
+.play-btn:hover{background:#3a3a4a}
+.arp-btn{background:var(--gold);color:#000;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-weight:700;font-size:0.58rem}
+.gen-btn{background:var(--green);color:#000;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;font-size:0.65rem}
+.mute-btn{background:#2a2a3a;color:white;border:none;padding:6px 10px;border-radius:4px;cursor:pointer;font-weight:700;font-size:0.62rem}
+.mute-btn.active{background:var(--red)}
+.btn-control{border:1px solid #333;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;font-size:0.62rem}
+.download-btn{background:var(--cyan);color:#000;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:700;border:none;font-size:0.7rem}
+.download-btn.melody-only{background:var(--green)}
+.download-btn.chords-only{background:var(--gold)}
+.play-seq-btn{background:#2a2a3a;color:white;border:1px solid #444;padding:7px 14px;border-radius:5px;cursor:pointer;font-weight:700;font-family:'Share Tech Mono',monospace;font-size:0.75rem}
+.play-seq-btn.active{background:var(--green);color:#000;border-color:var(--green)}
+.melody-mode-btn{background:#1a1a28;border:1px solid #333;color:#888;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.58rem;font-weight:700}
+.melody-mode-btn.active{background:var(--green);color:#000;border-color:var(--green)}
+.arp-style-btn{background:#1a1a28;border:1px solid #333;color:#888;padding:4px 7px;border-radius:3px;cursor:pointer;font-size:0.55rem;font-weight:700}
+.arp-style-btn.active{background:#00a8cc;color:#000;border-color:var(--cyan)}
+.chord-dur-btn{background:#1a1a28;border:1px solid #333;color:#888;padding:4px 7px;border-radius:3px;cursor:pointer;font-size:0.55rem;font-weight:700;font-family:'Share Tech Mono',monospace}
+.chord-dur-btn.active{background:#6600cc;color:#fff;border-color:#aa44ff}
+/* STACK BUTTON */
+.stack-btn{background:#1a1a28;border:1px solid #333;color:#888;padding:4px 7px;border-radius:3px;cursor:pointer;font-size:0.55rem;font-weight:700}
+.stack-btn.active{background:#004466;color:var(--cyan);border-color:var(--cyan)}
+.social-float{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:1000;align-items:flex-end}
+.social-btn{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;color:white;font-weight:bold;font-size:0.65rem;transition:all 0.3s;box-shadow:0 4px 15px rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.1);overflow:hidden;white-space:nowrap}
+.social-btn:hover{width:120px;border-radius:22px;padding:0 14px}
+.social-btn span{opacity:0;margin-left:6px;transition:opacity 0.2s;font-size:0.7rem}
+.social-btn:hover span{opacity:1}
+.fb{background:#1877F2}.sc{background:#ff5500}
+#chord-legend{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.cl-item{display:flex;align-items:center;gap:4px;font-size:0.52rem;font-family:'Share Tech Mono',monospace;color:#888}
+.cl-swatch{width:10px;height:10px;border-radius:2px}
+</style>
 </head>
 <body>
 
 <header class="main-header">
-    <h1>Nykro-Arpodelic Engine Pro <span style="font-size:0.65rem;opacity:0.5;">V5.0</span></h1>
-    <div id="status-midi">Buscando teclado MIDI...</div>
+  <h1>Nykro-Arpodelic Engine Pro <span style="font-size:0.65rem;opacity:0.5">V7.0 · ZERO-LOSS ARP CORE</span></h1>
+  <div style="display:flex;gap:12px;align-items:center">
+    <div id="status-midi">Buscando teclado MIDI…</div>
+    <div id="tonal-key-display" style="font-size:0.75rem;color:var(--gold);font-family:'Share Tech Mono',monospace;padding:5px 10px;background:#0a0800;border:1px solid #3a3000;border-radius:4px">KEY: —</div>
+  </div>
 </header>
 
+<div id="tonal-monitor">
+  <div class="tm-item">
+    <div class="tm-label">Tonalidad</div>
+    <div class="tm-value" id="tm-key">—</div>
+  </div>
+  <div class="tm-divider"></div>
+  <div class="tm-item">
+    <div class="tm-label">Escala activa</div>
+    <div class="tm-value" id="tm-scale">—</div>
+  </div>
+  <div class="tm-divider"></div>
+  <div class="tm-item">
+    <div class="tm-label">Acorde actual</div>
+    <div class="tm-value" id="tm-chord">—</div>
+  </div>
+  <div class="tm-divider"></div>
+  <div class="tm-item">
+    <div class="tm-label">Función</div>
+    <div class="tm-value" id="tm-function">—</div>
+  </div>
+  <div class="tm-divider"></div>
+  <div class="tm-item">
+    <div class="tm-label">Progresión</div>
+    <div id="harmony-dots"></div>
+  </div>
+  <div class="tm-divider"></div>
+  <div class="tm-item" style="flex:1;min-width:180px">
+    <div class="tm-label">Coherencia armónica</div>
+    <div id="coherence-bar-wrap">
+      <div id="coherence-bar"><div id="coherence-fill"></div></div>
+      <div id="coherence-pct">—</div>
+    </div>
+  </div>
+  <div class="tm-divider"></div>
+  <div class="tm-item">
+    <div class="tm-label">ARP Stack / Notas</div>
+    <div class="tm-value" id="tm-arp-sync">—</div>
+  </div>
+  <div class="tm-divider"></div>
+  <div class="tm-item">
+    <div class="tm-label">Complejidad ARP</div>
+    <div id="arp-stack-indicator">
+      <div class="stack-dot" id="sd0"></div>
+      <div class="stack-dot" id="sd1"></div>
+      <div class="stack-dot" id="sd2"></div>
+      <div class="stack-dot" id="sd3"></div>
+    </div>
+  </div>
+</div>
+
 <div class="social-float">
-    <a href="https://soundcloud.com/nykronds" target="_blank" class="social-btn sc">☁<span>SoundCloud</span></a>
-    <a href="https://sites.google.com/view/nykronds/shop?authuser=0" target="_blank" class="social-btn gr">🛒<span>Gumroad Shop</span></a>
-    <a href="https://www.facebook.com/nykrodelic" target="_blank" class="social-btn fb">f<span>Facebook</span></a>
+  <a href="https://soundcloud.com/nykronds" target="_blank" class="social-btn sc">☁<span>SoundCloud</span></a>
+  <a href="https://www.facebook.com/nykrodelic" target="_blank" class="social-btn fb">f<span>Facebook</span></a>
 </div>
 
 <div id="sequencer-container">
-    <div class="seq-header" style="position:relative;">
-        <div style="position:absolute;right:0;top:-18px;font-size:0.5rem;color:#444;font-family:'Share Tech Mono',monospace;pointer-events:none;">↕ SCROLL PIANO ROLL · 3 OCTAVAS (C3–C5)</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <button id="play-seq-button" class="play-seq-btn" onclick="toggleSequencerPlay()">▶ PLAY</button>
-            <div style="background:#0d0d1a;padding:4px 12px;border-radius:16px;border:1px solid #333;display:flex;align-items:center;gap:8px;">
-                <span style="font-size:0.6rem;color:var(--gold);font-weight:700;letter-spacing:1px;">LOOP:</span>
-                <span id="loop-range-display" style="font-size:0.75rem;font-family:'Share Tech Mono',monospace;color:#fff;min-width:55px;">0 - 31</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-                <span style="font-size:0.6rem;color:#888;">BPM:</span>
-                <input type="range" id="bpm-slider" min="60" max="240" value="138" oninput="updateBPM(this.value)" style="width:75px;accent-color:var(--gold);">
-                <span id="bpm-val" style="font-size:0.7rem;color:var(--gold);font-family:'Share Tech Mono',monospace;">138</span>
-            </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <!-- CHORD DURATION -->
-            <div style="display:flex;flex-direction:column;gap:3px;">
-                <span style="font-size:0.55rem;color:#666;letter-spacing:1px;">CHORD GATE:</span>
-                <div class="chord-dur-group">
-                    <button class="chord-dur-btn" id="cdur-2" onclick="setChordDuration(2,this)">1/2</button>
-                    <button class="chord-dur-btn active" id="cdur-4" onclick="setChordDuration(4,this)">1 BAR</button>
-                    <button class="chord-dur-btn" id="cdur-8" onclick="setChordDuration(8,this)">2 BAR</button>
-                    <button class="chord-dur-btn" id="cdur-16" onclick="setChordDuration(16,this)">4 BAR</button>
-                </div>
-            </div>
-            <!-- MELODY MODE -->
-            <div style="display:flex;flex-direction:column;gap:3px;">
-                <span style="font-size:0.55rem;color:#666;letter-spacing:1px;">MELODÍA IA:</span>
-                <div class="melody-mode-group">
-                    <button class="melody-mode-btn active" id="mel-btn-euphoric" onclick="setMelodyMode('euphoric',this)">EUFÓRICA</button>
-                    <button class="melody-mode-btn" id="mel-btn-ascending" onclick="setMelodyMode('ascending',this)">ASC</button>
-                    <button class="melody-mode-btn" id="mel-btn-descending" onclick="setMelodyMode('descending',this)">DESC</button>
-                    <button class="melody-mode-btn" id="mel-btn-motif" onclick="setMelodyMode('motif',this)">MOTIF</button>
-                    <button class="melody-mode-btn" id="mel-btn-sparse" onclick="setMelodyMode('sparse',this)">SPARSE</button>
-                </div>
-            </div>
-            <button class="gen-btn" onclick="generateTrancemelody()">⟳ IA MELODY</button>
-            <!-- ARP STYLE -->
-            <div style="display:flex;flex-direction:column;gap:3px;">
-                <span style="font-size:0.55rem;color:#666;letter-spacing:1px;">ARP TRANCE 1/16:</span>
-                <div class="arp-style-group">
-                    <button class="arp-style-btn active" id="arp-btn-classic" onclick="setArpStyle('classic',this)">CLASSIC</button>
-                    <button class="arp-style-btn" id="arp-btn-rise" onclick="setArpStyle('rise',this)">RISE</button>
-                    <button class="arp-style-btn" id="arp-btn-fall" onclick="setArpStyle('fall',this)">FALL</button>
-                    <button class="arp-style-btn" id="arp-btn-gate" onclick="setArpStyle('gate',this)">GATE</button>
-                    <button class="arp-style-btn" id="arp-btn-ping" onclick="setArpStyle('ping',this)">PING-P</button>
-                </div>
-            </div>
-            <button class="btn-control" onclick="generarArpTrance()" style="background:linear-gradient(135deg,#004466,#007799);border-color:#00a8cc;color:#00d4ff;">⚡ ARP 1/16</button>
-            <button id="melody-mute-btn" class="mute-btn" onclick="toggleMelodyMute()">MEL: ON</button>
-            <span id="melody-info" style="font-size:0.6rem;color:#666;font-family:'Share Tech Mono',monospace;border-left:1px solid #333;padding-left:8px;">LISTA</span>
-        </div>
-        <div style="display:flex;gap:8px;">
-            <button class="download-btn" onclick="exportToMidiFile('all')" title="Full MIDI">⬇ FULL</button>
-            <button class="download-btn melody-only" onclick="exportToMidiFile('melody')" title="Solo Melodía">⬇ MEL</button>
-            <button class="download-btn chords-only" onclick="exportToMidiFile('chords')" title="Solo Acordes">⬇ CHORDS</button>
-            <button onclick="clearSequencer()" style="background:#1a1a28;color:#888;border:1px solid #333;cursor:pointer;font-size:0.58rem;padding:4px 8px;border-radius:3px;">BORRAR</button>
-        </div>
+  <div class="seq-header">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button id="play-seq-button" class="play-seq-btn" onclick="toggleSequencerPlay()">▶ PLAY</button>
+      <div style="background:#0d0d1a;padding:4px 12px;border-radius:16px;border:1px solid #333;display:flex;align-items:center;gap:8px">
+        <span style="font-size:0.6rem;color:var(--gold);font-weight:700">LOOP:</span>
+        <span id="loop-range-display" style="font-size:0.75rem;font-family:'Share Tech Mono',monospace;color:#fff;min-width:55px">0 - 31</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:0.6rem;color:#888">BPM:</span>
+        <input type="range" id="bpm-slider" min="60" max="240" value="138" oninput="updateBPM(this.value)" style="width:75px;accent-color:var(--gold)">
+        <span id="bpm-val" style="font-size:0.7rem;color:var(--gold);font-family:'Share Tech Mono',monospace">138</span>
+      </div>
+      <div id="chord-legend">
+        <div class="cl-item"><div class="cl-swatch" style="background:#9b59b6"></div>I</div>
+        <div class="cl-item"><div class="cl-swatch" style="background:#3498db"></div>IV</div>
+        <div class="cl-item"><div class="cl-swatch" style="background:#ffcc00"></div>V</div>
+        <div class="cl-item"><div class="cl-swatch" style="background:#2ecc71"></div>VI</div>
+        <div class="cl-item"><div class="cl-swatch" style="background:#e67e22"></div>III</div>
+        <div class="cl-item"><div class="cl-swatch" style="background:#e74c3c"></div>II</div>
+        <div class="cl-item"><div class="cl-swatch" style="background:#1abc9c"></div>VII</div>
+        <div class="cl-item"><div class="cl-swatch" style="background:#ff00ff"></div>MEL</div>
+        <div class="cl-item"><div class="cl-swatch" style="background:#00a8ff"></div>ARP</div>
+      </div>
     </div>
-    <div id="midi-grid-scroll"><div id="midi-grid"></div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-size:0.55rem;color:#666">CHORD GATE:</span>
+        <div style="display:flex;gap:4px">
+          <button class="chord-dur-btn" id="cdur-2" onclick="setChordDuration(2,this)">1/2</button>
+          <button class="chord-dur-btn active" id="cdur-4" onclick="setChordDuration(4,this)">1 BAR</button>
+          <button class="chord-dur-btn" id="cdur-8" onclick="setChordDuration(8,this)">2 BAR</button>
+          <button class="chord-dur-btn" id="cdur-16" onclick="setChordDuration(16,this)">4 BAR</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-size:0.55rem;color:#666">MELODÍA IA:</span>
+        <div style="display:flex;gap:4px">
+          <button class="melody-mode-btn active" id="mel-btn-euphoric" onclick="setMelodyMode('euphoric',this)">EUFÓRICA</button>
+          <button class="melody-mode-btn" id="mel-btn-ascending" onclick="setMelodyMode('ascending',this)">ASC</button>
+          <button class="melody-mode-btn" id="mel-btn-descending" onclick="setMelodyMode('descending',this)">DESC</button>
+          <button class="melody-mode-btn" id="mel-btn-motif" onclick="setMelodyMode('motif',this)">MOTIF</button>
+          <button class="melody-mode-btn" id="mel-btn-sparse" onclick="setMelodyMode('sparse',this)">SPARSE</button>
+        </div>
+      </div>
+      <button class="gen-btn" onclick="generateTrancemelody()">⟳ IA MELODY</button>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-size:0.55rem;color:#666">ARP MODE (1/16 · ZERO-LOSS):</span>
+        <div style="display:flex;gap:4px">
+          <button class="arp-style-btn active" id="arp-btn-classic" onclick="setArpStyle('classic',this)">CLASSIC</button>
+          <button class="arp-style-btn" id="arp-btn-rise" onclick="setArpStyle('rise',this)">RISE</button>
+          <button class="arp-style-btn" id="arp-btn-fall" onclick="setArpStyle('fall',this)">FALL</button>
+          <button class="arp-style-btn" id="arp-btn-gate" onclick="setArpStyle('gate',this)">GATE</button>
+          <button class="arp-style-btn" id="arp-btn-ping" onclick="setArpStyle('ping',this)">PING-P</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <span style="font-size:0.55rem;color:#666">ARP STACK (acumulativo):</span>
+        <div style="display:flex;gap:4px">
+          <button class="stack-btn active" id="stack-btn-0" onclick="setArpStack(0,this)">BASE</button>
+          <button class="stack-btn" id="stack-btn-1" onclick="setArpStack(1,this)">+OCT</button>
+          <button class="stack-btn" id="stack-btn-2" onclick="setArpStack(2,this)">+GROOVE</button>
+          <button class="stack-btn" id="stack-btn-3" onclick="setArpStack(3,this)">+CHROMATIC</button>
+        </div>
+      </div>
+      <button class="btn-control" onclick="generarArpTrance()" style="background:linear-gradient(135deg,#004466,#007799);border-color:#00a8cc;color:#00d4ff">⚡ GEN ARP</button>
+      <button id="melody-mute-btn" class="mute-btn" onclick="toggleMelodyMute()">MEL: ON</button>
+      <button id="arp-mute-btn" class="mute-btn" onclick="toggleArpMute()">ARP: ON</button>
+      <span id="melody-info" style="font-size:0.6rem;color:#666;font-family:'Share Tech Mono',monospace;border-left:1px solid #333;padding-left:8px">LISTO</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="download-btn" onclick="exportToMidiFile('all')">⬇ FULL</button>
+      <button class="download-btn melody-only" onclick="exportToMidiFile('melody')">⬇ MEL</button>
+      <button class="download-btn chords-only" onclick="exportToMidiFile('chords')">⬇ CHORDS</button>
+      <button onclick="clearSequencer()" style="background:#1a1a28;color:#888;border:1px solid #333;cursor:pointer;font-size:0.58rem;padding:4px 8px;border-radius:3px">BORRAR</button>
+    </div>
+  </div>
+  <div id="midi-grid-scroll"><div id="midi-grid"></div></div>
 </div>
 
 <div class="container">
-    <div id="circle-wrapper">
-        <button id="mode-toggle-btn" onclick="toggleMidiMode()">MODO:<br>MAYOR</button>
+  <div id="circle-wrapper">
+    <button id="mode-toggle-btn" onclick="toggleMidiMode()">MODO:<br>MAYOR</button>
+  </div>
+  <div id="sidebar">
+    <div id="piano-container">
+      <div id="chord-name">SELECCIONA UN TONO</div>
+      <div class="piano" id="piano"></div>
     </div>
-
-    <div id="sidebar">
-        <div id="piano-container">
-            <div id="chord-name">SELECCIONA UN TONO</div>
-            <div class="piano" id="piano"></div>
-        </div>
-
-        <div class="suggestion-box">
-            <div class="box-title" style="color:var(--green);">▸ TEORÍA &amp; CLÁSICOS</div>
-            <div id="suggestion-list"></div>
-        </div>
-        <div class="suggestion-box">
-            <div class="box-title" style="color:var(--magenta);">▸ PSYTRANCE &amp; GOA</div>
-            <div id="psy-list"></div>
-        </div>
-        <div class="suggestion-box">
-            <div class="box-title" style="color:var(--cyan);">▸ TECHNO &amp; HOUSE</div>
-            <div id="techno-list"></div>
-        </div>
-        <div class="suggestion-box">
-            <div class="box-title" style="color:#3498db;">▸ TRANCE &amp; PROGRESSIVE</div>
-            <div id="trance-list"></div>
-        </div>
-        <div class="suggestion-box">
-            <div class="box-title" style="color:#f1c40f;">▸ MODAL EXPLORATION</div>
-            <div id="modes-list"></div>
-        </div>
-        <div class="suggestion-box">
-            <div class="box-title" style="color:#e67e22;">▸ AMBIENT &amp; CINEMATIC</div>
-            <div id="ambient-list"></div>
-        </div>
+    <div class="suggestion-box">
+      <div class="box-title" style="color:var(--green)">▸ TEORÍA &amp; CLÁSICOS</div>
+      <div id="suggestion-list"></div>
     </div>
+    <div class="suggestion-box">
+      <div class="box-title" style="color:var(--magenta)">▸ PSYTRANCE &amp; GOA</div>
+      <div id="psy-list"></div>
+    </div>
+    <div class="suggestion-box">
+      <div class="box-title" style="color:var(--cyan)">▸ TECHNO &amp; HOUSE</div>
+      <div id="techno-list"></div>
+    </div>
+    <div class="suggestion-box">
+      <div class="box-title" style="color:#3498db">▸ TRANCE &amp; PROGRESSIVE</div>
+      <div id="trance-list"></div>
+    </div>
+    <div class="suggestion-box">
+      <div class="box-title" style="color:#f1c40f">▸ MODAL EXPLORATION</div>
+      <div id="modes-list"></div>
+    </div>
+    <div class="suggestion-box">
+      <div class="box-title" style="color:#e67e22">▸ AMBIENT &amp; CINEMATIC</div>
+      <div id="ambient-list"></div>
+    </div>
+  </div>
 </div>
 
 <script>
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
 const VISIBLE_ROWS = 36;
-const notes  = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const freqs  = { 'C':261.63,'C#':277.18,'D':293.66,'D#':311.13,'E':329.63,'F':349.23,'F#':369.99,'G':392.00,'G#':415.30,'A':440.00,'A#':466.16,'B':493.88 };
-const midiMap= { 'C':60,'C#':61,'D':62,'D#':63,'E':64,'F':65,'F#':66,'G':67,'G#':68,'A':69,'A#':70,'B':71 };
-const majors = ['C','G','D','A','E','B','Gb','Db','Ab','Eb','Bb','F'];
-const minors = ['Am','Em','Bm','F#m','C#m','G#m','Ebm','Bbm','Fm','Cm','Gm','Dm'];
+const notes   = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const freqs   = {C:261.63,'C#':277.18,D:293.66,'D#':311.13,E:329.63,F:349.23,'F#':369.99,G:392.00,'G#':415.30,A:440.00,'A#':466.16,B:493.88};
+const midiMap = {C:60,'C#':61,D:62,'D#':63,E:64,F:65,'F#':66,G:67,'G#':68,A:69,'A#':70,B:71};
+const majors  = ['C','G','D','A','E','B','Gb','Db','Ab','Eb','Bb','F'];
+const minors  = ['Am','Em','Bm','F#m','C#m','G#m','Ebm','Bbm','Fm','Cm','Gm','Dm'];
+const TOTAL_STEPS = 32;
+const GRID_OCTAVES = [5,4,3];
+const CHROMATIC_ORDER = ['B','A#','A','G#','G','F#','F','E','D#','D','C#','C'];
+const MAJOR_SCALE_INTERVALS  = [0,2,4,5,7,9,11];
+const MINOR_SCALE_INTERVALS  = [0,2,3,5,7,8,10];
+const HARM_MINOR_INTERVALS   = [0,2,3,5,7,8,11];
+const PHRYGIAN_DOM_INTERVALS = [0,1,4,5,7,8,10];
+const DEGREE_COLORS = ['chord-I','chord-II','chord-III','chord-IV','chord-V','chord-VI','chord-VII'];
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════
+// UNIFIED TONAL STATE
+// ═══════════════════════════════════════════════════
+const TONAL = {
+  root:'C', isMinor:false, mode:'major',
+  scaleIntervals:MAJOR_SCALE_INTERVALS, rootIdx:0,
+  scaleNotes:[], semitoneScale:[],
+
+  update(rootNote, isMin, forceMode) {
+    this.root = rootNote.replace('m','').replace('Gb','F#').replace('Db','C#')
+                .replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+    this.isMinor = isMin;
+    this.rootIdx = notes.indexOf(this.root) >= 0 ? notes.indexOf(this.root) : 0;
+    this.mode = forceMode || (isMin ? 'minor' : 'major');
+    this.scaleIntervals = {major:MAJOR_SCALE_INTERVALS, minor:MINOR_SCALE_INTERVALS,
+      harmonic:HARM_MINOR_INTERVALS, phrygian_dom:PHRYGIAN_DOM_INTERVALS}[this.mode]||MAJOR_SCALE_INTERVALS;
+    this.scaleNotes = this.scaleIntervals.map(i => notes[(this.rootIdx + i) % 12]);
+    this.semitoneScale = this.scaleIntervals;
+    updateTonalMonitor();
+  },
+
+  inScale(noteName) {
+    const clean = noteName.replace(/\d/g,'');
+    return this.scaleNotes.includes(clean);
+  },
+
+  // Snap a semitone to the nearest scale semitone within the same octave range
+  snapToScale(semi) {
+    const oct = Math.floor(semi / 12);
+    const pitch = semi % 12;
+    let best = -1, bestDist = 99;
+    this.scaleIntervals.forEach(iv => {
+      const candidate = (this.rootIdx + iv) % 12;
+      const dist = Math.min(Math.abs(candidate - pitch), 12 - Math.abs(candidate - pitch));
+      if(dist < bestDist) { bestDist = dist; best = candidate; }
+    });
+    return oct * 12 + best;
+  },
+
+  getScalePool(octLow=3, octHigh=5) {
+    const pool = [];
+    for(let oct = octLow; oct <= octHigh; oct++) {
+      this.scaleIntervals.forEach(interval => {
+        const ni = (this.rootIdx + interval) % 12;
+        pool.push({ name: notes[ni], octave: oct, semitone: oct * 12 + ni });
+      });
+    }
+    return pool.sort((a,b) => a.semitone - b.semitone);
+  },
+
+  getDegree(noteName) {
+    const clean = noteName.replace(/\d/g,'');
+    const ni = notes.indexOf(clean);
+    if(ni < 0) return -1;
+    const offset = (ni - this.rootIdx + 12) % 12;
+    return this.scaleIntervals.indexOf(offset);
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// SEQUENCER STATE
+// ═══════════════════════════════════════════════════
 let currentSequence    = [];
 let currentRootForGrid = 'C';
 let isPlayingSeq       = false;
@@ -268,998 +392,1048 @@ let seqInterval        = null;
 let currentStep        = 0;
 let currentBPM         = 138;
 let activeTimeouts     = [];
-const TOTAL_STEPS      = 32;
 let loopStart          = 0;
 let loopEnd            = 31;
 let isDraggingLoop     = false;
 let onlyMinorsMode     = false;
 let isMelodyMuted      = false;
+let isArpMuted         = false;
 let melodyMode         = 'euphoric';
 let arpStyle           = 'classic';
+let arpStackLevel      = 0; // 0=BASE, 1=+OCT, 2=+GROOVE, 3=+CHROMATIC
 let currentPresetSteps = null;
-// Chord gate: number of 1/16 steps each chord lasts (default = 4 = 1 bar in 4/4 at 1/16 resolution)
 let chordDurationSteps = 4;
 
-// ─── CHORD DURATION SELECTOR ──────────────────────────────────────────────────
-function setChordDuration(steps, btn) {
-    chordDurationSteps = steps;
-    document.querySelectorAll('.chord-dur-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+// ═══════════════════════════════════════════════════
+// TONAL MONITOR UI
+// ═══════════════════════════════════════════════════
+function updateTonalMonitor() {
+  document.getElementById('tm-key').textContent   = TONAL.root + (TONAL.isMinor?'m':'') + ' ' + TONAL.mode.toUpperCase();
+  document.getElementById('tm-scale').textContent = TONAL.scaleNotes.join(' ');
+  document.getElementById('tonal-key-display').textContent = 'KEY: ' + TONAL.root + (TONAL.isMinor?'m':'');
+  const dotsEl = document.getElementById('harmony-dots');
+  dotsEl.innerHTML = '';
+  if(currentPresetSteps) {
+    currentPresetSteps.slice(0,8).forEach(s => {
+      const d = document.createElement('div');
+      d.className = 'hdot active';
+      d.title = s.n + (s.min?'m':'');
+      dotsEl.appendChild(d);
+    });
+  }
+  // Stack indicator
+  for(let i=0;i<4;i++) {
+    const el = document.getElementById('sd'+i);
+    if(el) el.className = 'stack-dot' + (i <= arpStackLevel ? ' active' : '');
+  }
+  computeCoherence();
 }
 
-function setMelodyMode(mode, btn) {
-    melodyMode = mode;
-    document.querySelectorAll('.melody-mode-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-}
-function setArpStyle(style, btn) {
-    arpStyle = style;
-    document.querySelectorAll('.arp-style-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+function updatePlayingDot(idx) {
+  document.querySelectorAll('.hdot').forEach((d,i) => {
+    d.classList.toggle('playing', i===idx);
+  });
 }
 
-window.addEventListener('keydown', e => { if(e.code==='Space'){ e.preventDefault(); toggleSequencerPlay(); }});
+function computeCoherence() {
+  if(!currentSequence.length || !TONAL.scaleNotes.length) {
+    document.getElementById('coherence-fill').style.width='0%';
+    document.getElementById('coherence-pct').textContent='—';
+    return;
+  }
+  let total=0, inScaleCount=0;
+  currentSequence.forEach(item => {
+    item.notes.forEach(n => {
+      total++;
+      if(TONAL.inScale(n)) inScaleCount++;
+    });
+  });
+  const pct = total ? Math.round(inScaleCount/total*100) : 0;
+  document.getElementById('coherence-fill').style.width=pct+'%';
+  document.getElementById('coherence-pct').textContent=pct+'%';
 
-function toggleMidiMode() {
-    onlyMinorsMode = !onlyMinorsMode;
-    const btn = document.getElementById('mode-toggle-btn');
-    if(onlyMinorsMode){ btn.classList.add('minor-active'); btn.innerHTML='MODO:<br>MENOR'; }
-    else { btn.classList.remove('minor-active'); btn.innerHTML='MODO:<br>MAYOR'; }
+  const arpItems = currentSequence.filter(i => i.isArp);
+  if(arpItems.length) {
+    const arpInScale = arpItems.filter(i => i.notes.every(n => TONAL.inScale(n))).length;
+    const arpPct = Math.round(arpInScale/arpItems.length*100);
+    document.getElementById('tm-arp-sync').textContent =
+      arpPct+'% · '+arpItems.length+' notas · stack:'+arpStackLevel;
+  } else {
+    document.getElementById('tm-arp-sync').textContent = '—';
+  }
 }
 
-function toggleMelodyMute() {
-    isMelodyMuted = !isMelodyMuted;
-    const btn = document.getElementById('melody-mute-btn');
-    btn.innerText = isMelodyMuted ? 'MEL: OFF' : 'MEL: ON';
-    if(isMelodyMuted) btn.classList.add('active'); else btn.classList.remove('active');
-    drawSequenceOnGrid();
+// ═══════════════════════════════════════════════════
+// CHORD BLOCK LOOKUP — reads the piano roll directly
+// ═══════════════════════════════════════════════════
+// Returns sorted semitones of the chord active at a given global step.
+// This is the GROUND TRUTH that both ARP and melody must reference.
+function getChordSemitonesAtStep(step) {
+  const block = currentSequence
+    .filter(i => i.isChordBlock && !i.isMelody)
+    .find(i => step >= i.step && step < i.step + (i.duration || 1));
+  if(!block) return null;
+  return block.notes.map(n => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    if(m) return parseInt(m[2])*12 + notes.indexOf(m[1]);
+    return 60;
+  }).sort((a,b)=>a-b);
 }
 
-if(navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(onMIDISuccess, ()=>{});
-
-function onMIDISuccess(midiAccess) {
-    const status = document.getElementById('status-midi');
-    let hasInputs = false;
-    for(let input of midiAccess.inputs.values()) {
-        input.onmidimessage = getMIDIMessage;
-        status.innerText = `MIDI: ${input.name}`; status.style.color='#2ecc71'; hasInputs=true;
-    }
-    if(!hasInputs) status.innerText='No se detectó MIDI USB';
-}
-
-function getMIDIMessage(message) {
-    const [command, note, velocity] = message.data;
-    if(command===144 && velocity>0) {
-        const noteName = notes[note % 12];
-        const fullNoteName = onlyMinorsMode ? noteName+'m' : noteName;
-        stopSequencer(); clearAudioQueue(); currentSequence = [];
-        if(audioCtx.state==='suspended') audioCtx.resume();
-        const listToSearch = onlyMinorsMode ? minors : majors;
-        let searchStr = fullNoteName.replace('F#','Gb').replace('C#','Db').replace('G#','Ab').replace('D#','Eb').replace('A#','Bb');
-        const noteIndex = listToSearch.indexOf(searchStr);
-        document.getElementById('chord-name').innerText = `TONO: ${fullNoteName}`;
-        updateUI(fullNoteName, noteIndex, onlyMinorsMode);
-        const cleanRoot = noteName;
-        const rootIdx = notes.indexOf(cleanRoot);
-        const getN = (off) => notes[(rootIdx+off)%12];
-        const totalSteps = Math.abs(loopEnd-loopStart)+1;
-        let progression = !onlyMinorsMode ?
-            [{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:cleanRoot,min:false}] :
-            [{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(7),min:false},{n:cleanRoot,min:true}];
-        currentPresetSteps = progression;
-        loadChordsSmooth(progression, totalSteps);
-        generateTrancemelody();
-        playChordAudio(getChordNotes(noteName,onlyMinorsMode),0,0.6,'sawtooth');
-        highlightPiano(getChordNotes(noteName,onlyMinorsMode));
-        highlightCircleFromMidi(noteName,onlyMinorsMode);
-    }
-}
-
-// ─── CHORD NOTES ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════
+// CHORD CONSTRUCTION + VOICE LEADING
+// ═══════════════════════════════════════════════════
 function getChordNotes(root, isMinor, type) {
-    let r = root.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-    let rootIdx = notes.indexOf(r);
-    if(rootIdx < 0) rootIdx = 0;
-    let intervals = isMinor ? [0,3,7] : [0,4,7];
-    if(type==='phrygian')  intervals = [0,1,7];
-    if(type==='sus2')      intervals = [0,2,7];
-    if(type==='sus4')      intervals = [0,5,7];
-    if(type==='dim')       intervals = [0,3,6];
-    if(type==='aug')       intervals = [0,4,8];
-    if(type==='maj7')      intervals = [0,4,7,11];
-    if(type==='min7')      intervals = [0,3,7,10];
-    if(type==='dom7')      intervals = [0,4,7,10];
-    if(type==='dim7')      intervals = [0,3,6,9];
-    if(type==='half-dim')  intervals = [0,3,6,10];
-    if(type==='add9')      intervals = [0,4,7,14%12];
-    if(type==='minmaj7')   intervals = [0,3,7,11];
-    return intervals.map(v => {
-        let idx = (rootIdx+v)%12;
-        return (rootIdx+v)<12 ? notes[idx] : notes[idx]+'2';
-    });
+  let r = root.replace('m','').replace('Gb','F#').replace('Db','C#')
+              .replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+  let rootIdx = notes.indexOf(r); if(rootIdx<0) rootIdx=0;
+  let intervals = isMinor ? [0,3,7] : [0,4,7];
+  if(type==='phrygian')  intervals=[0,1,7];
+  if(type==='sus2')      intervals=[0,2,7];
+  if(type==='sus4')      intervals=[0,5,7];
+  if(type==='dim')       intervals=[0,3,6];
+  if(type==='aug')       intervals=[0,4,8];
+  if(type==='maj7')      intervals=[0,4,7,11];
+  if(type==='min7')      intervals=[0,3,7,10];
+  if(type==='dom7')      intervals=[0,4,7,10];
+  if(type==='dim7')      intervals=[0,3,6,9];
+  if(type==='half-dim')  intervals=[0,3,6,10];
+  if(type==='add9')      intervals=[0,4,7,2];
+  if(type==='minmaj7')   intervals=[0,3,7,11];
+  return intervals.map(v => {
+    const idx=(rootIdx+v)%12;
+    return (rootIdx+v)<12 ? notes[idx] : notes[idx]+'2';
+  });
 }
 
-// ─── VOICE LEADING ────────────────────────────────────────────────────────────
-// Returns voiced chord notes as MIDI semitones in close voicing starting near prevTop
 function voiceLead(chordNotes, prevSemitones) {
-    // Convert note names to base semitone (octave 4)
-    const toSemi = (n) => {
-        const clean = n.replace('2','');
-        const idx = notes.indexOf(clean);
-        return idx >= 0 ? 48 + idx : 60; // base oct 4
-    };
-    // Build candidate voicings across 2 octaves
-    const candidates = chordNotes.map(n => {
-        const base = toSemi(n);
-        return [base, base+12, base+24].filter(s => s >= 36 && s <= 84);
-    });
-    if(!prevSemitones || prevSemitones.length === 0) {
-        // Default: root position, oct 4
-        return candidates.map(c => c.find(s => s >= 48) || c[0]);
-    }
-    // Greedy voice leading: each new voice picks the pitch closest to previous voices
-    const prevMid = prevSemitones.reduce((a,b) => a+b, 0) / prevSemitones.length;
-    const result = [];
-    candidates.forEach((opts, i) => {
-        const target = prevSemitones[i] !== undefined ? prevSemitones[i] : prevMid;
-        const best = opts.reduce((a, b) => Math.abs(b - target) < Math.abs(a - target) ? b : a);
-        result.push(best);
-    });
-    return result;
+  const toSemi = n => {
+    const clean=n.replace('2',''); const idx=notes.indexOf(clean);
+    return idx>=0 ? 48+idx : 60;
+  };
+  const candidates = chordNotes.map(n=>{
+    const base=toSemi(n);
+    return [base-12,base,base+12,base+24].filter(s=>s>=36&&s<=84);
+  });
+  if(!prevSemitones||!prevSemitones.length) return candidates.map(c=>c.find(s=>s>=48)||c[0]);
+  const prevMid=prevSemitones.reduce((a,b)=>a+b,0)/prevSemitones.length;
+  const result=[]; let lastPicked=-999;
+  candidates.forEach((opts,i)=>{
+    const target=prevSemitones[i]!==undefined?prevSemitones[i]:prevMid;
+    let best=opts.reduce((a,b)=>Math.abs(b-target)<Math.abs(a-target)?b:a);
+    if(best<lastPicked){ best=opts.find(s=>s>=lastPicked)||best+12; best=Math.min(best,84); }
+    result.push(best); lastPicked=best;
+  });
+  return result;
 }
 
 function semitoneToNoteName(semi) {
-    const octave = Math.floor(semi / 12);
-    const noteIdx = semi % 12;
-    return notes[noteIdx] + octave;
+  return notes[semi%12] + Math.floor(semi/12);
 }
 
-// ─── SMOOTH CHORD LOADER ──────────────────────────────────────────────────────
-// Places chords in sequencer with voice-leading, using chordDurationSteps gate
-function loadChordsSmooth(progression, totalSteps) {
-    currentSequence = currentSequence.filter(i => i.isMelody);
-    currentPresetSteps = progression;
-
-    const numChords = progression.length;
-    const stepsPerChord = Math.max(chordDurationSteps, Math.floor(totalSteps / numChords));
-    let prevSemis = null;
-
-    progression.forEach((step, i) => {
-        const rawNotes = getChordNotes(step.n, step.min, step.type);
-        const semitones = voiceLead(rawNotes, prevSemis);
-        prevSemis = semitones;
-        const namedNotes = semitones.map(semitoneToNoteName);
-        const chordStep = loopStart + i * stepsPerChord;
-        if(chordStep > loopEnd) return;
-        const actualDur = Math.min(stepsPerChord, loopEnd - chordStep + 1);
-        currentSequence.push({
-            step: chordStep,
-            notes: namedNotes,
-            duration: actualDur,
-            isSuggested: true,
-            isMelody: false,
-            isChordBlock: true
-        });
-    });
-    drawSequenceOnGrid();
-}
-
-// ─── SCALE HELPERS ────────────────────────────────────────────────────────────
-const MAJOR_SCALE_INTERVALS = [0,2,4,5,7,9,11];
-const MINOR_SCALE_INTERVALS = [0,2,3,5,7,8,10];
-const HARM_MINOR_INTERVALS  = [0,2,3,5,7,8,11];
-
-const MAJOR_DEGREE_QUALITIES = [
-    {min:false},{min:true},{min:true},{min:false},{min:false},{min:true},{type:'dim'}
-];
-const MINOR_DEGREE_QUALITIES = [
-    {min:true},{type:'dim'},{min:false},{min:true},{min:true},{min:false},{min:false}
-];
-const HARM_MINOR_DEGREE_QUALITIES = [
-    {min:true},{type:'dim'},{min:false,type:'aug'},{min:true},{min:false},{min:false},{type:'dim'}
-];
+// ═══════════════════════════════════════════════════
+// SCALE HELPERS
+// ═══════════════════════════════════════════════════
+const MAJOR_DEGREE_QUALITIES=[{min:false},{min:true},{min:true},{min:false},{min:false},{min:true},{type:'dim'}];
+const MINOR_DEGREE_QUALITIES=[{min:true},{type:'dim'},{min:false},{min:true},{min:true},{min:false},{min:false}];
+const HARM_MINOR_DEGREE_QUALITIES=[{min:true},{type:'dim'},{min:false,type:'aug'},{min:true},{min:false},{min:false},{type:'dim'}];
 
 function scaleDeg(degree, rootIdx, mode, overrideType) {
-    const deg = ((degree - 1) % 7 + 7) % 7;
-    let scaleIntervals, qualities;
-    if(mode === 'harmonic') {
-        scaleIntervals = HARM_MINOR_INTERVALS;
-        qualities = HARM_MINOR_DEGREE_QUALITIES;
-    } else if(mode === 'phrygian_dom') {
-        scaleIntervals = [0,1,4,5,7,8,10];
-        qualities = [{min:false},{min:false},{min:false},{min:true},{type:'dim'},{min:false},{min:true}];
-    } else if(mode === 'minor') {
-        scaleIntervals = MINOR_SCALE_INTERVALS;
-        qualities = MINOR_DEGREE_QUALITIES;
-    } else {
-        scaleIntervals = MAJOR_SCALE_INTERVALS;
-        qualities = MAJOR_DEGREE_QUALITIES;
-    }
-    const interval = scaleIntervals[deg];
-    const noteIdx = (rootIdx + interval) % 12;
-    const noteName = notes[noteIdx];
-    const q = qualities[deg];
-    if(overrideType) return {n: noteName, min: q.min || false, type: overrideType};
-    if(q.type) return {n: noteName, min: false, type: q.type};
-    return {n: noteName, min: q.min};
+  const deg=((degree-1)%7+7)%7;
+  let scaleIntervals, qualities;
+  if(mode==='harmonic'){scaleIntervals=HARM_MINOR_INTERVALS;qualities=HARM_MINOR_DEGREE_QUALITIES;}
+  else if(mode==='phrygian_dom'){
+    scaleIntervals=PHRYGIAN_DOM_INTERVALS;
+    qualities=[{min:false},{min:false},{min:false},{min:true},{type:'dim'},{min:false},{min:true}];
+  } else if(mode==='minor'){scaleIntervals=MINOR_SCALE_INTERVALS;qualities=MINOR_DEGREE_QUALITIES;}
+  else{scaleIntervals=MAJOR_SCALE_INTERVALS;qualities=MAJOR_DEGREE_QUALITIES;}
+  const interval=scaleIntervals[deg];
+  const noteName=notes[(rootIdx+interval)%12];
+  const q=qualities[deg];
+  if(overrideType) return{n:noteName,min:q.min||false,type:overrideType,degree:deg};
+  if(q.type) return{n:noteName,min:false,type:q.type,degree:deg};
+  return{n:noteName,min:q.min,degree:deg};
 }
 
 function makeScaleBuilder(cleanRoot, isMinor, forceMode) {
-    const rootIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
-    const mode = forceMode || (isMinor ? 'minor' : 'major');
-    return (degree, overrideType) => scaleDeg(degree, rootIdx, mode, overrideType);
+  const rootIdx=notes.indexOf(cleanRoot)>=0?notes.indexOf(cleanRoot):0;
+  const mode=forceMode||(isMinor?'minor':'major');
+  return (degree,overrideType)=>scaleDeg(degree,rootIdx,mode,overrideType);
 }
 
-function getScalePool(cleanRoot, isMinor) {
-    const rootIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
-    const scaleIntervals = isMinor ? MINOR_SCALE_INTERVALS : MAJOR_SCALE_INTERVALS;
-    const pool = [];
-    [3,4,5].forEach(oct => {
-        scaleIntervals.forEach(interval => {
-            const noteIdx = (rootIdx + interval) % 12;
-            const semitone = oct * 12 + noteIdx;
-            pool.push({ name: notes[noteIdx], octave: oct, semitone });
-        });
+// ═══════════════════════════════════════════════════
+// CHORD LOADER WITH VOICE LEADING
+// ═══════════════════════════════════════════════════
+function loadChordsSmooth(progression, totalSteps) {
+  currentSequence=currentSequence.filter(i=>i.isMelody);
+  currentPresetSteps=progression;
+  const stepsPerChord=Math.max(chordDurationSteps,Math.floor(totalSteps/progression.length));
+  let prevSemis=null;
+
+  progression.forEach((step,i)=>{
+    const rawNotes=getChordNotes(step.n,step.min,step.type);
+    const semitones=voiceLead(rawNotes,prevSemis);
+    prevSemis=semitones;
+    const namedNotes=semitones.map(semitoneToNoteName);
+    const chordStep=loopStart+i*stepsPerChord;
+    if(chordStep>loopEnd) return;
+    const actualDur=Math.min(stepsPerChord,loopEnd-chordStep+1);
+    const degreeIdx=step.degree!==undefined?step.degree:i%7;
+    const colorClass=DEGREE_COLORS[degreeIdx]||'chord-misc';
+    currentSequence.push({
+      step:chordStep, notes:namedNotes, duration:actualDur,
+      isSuggested:true, isMelody:false, isChordBlock:true,
+      colorClass, chordLabel:step.n+(step.min?'m':'')+(step.type?'/'+step.type:'')
     });
-    return pool.sort((a,b) => a.semitone - b.semitone);
+  });
+
+  updateTonalMonitor();
+  drawSequenceOnGrid();
 }
 
-function getCurrentScaleNotes() {
-    const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-    const isMinor = currentRootForGrid.includes('m');
-    return getScalePool(cleanRoot, isMinor).map(p => p.name);
+// ═══════════════════════════════════════════════════
+// ▶▶▶ RULE 1: ZERO-LOSS ARP GENERATOR ◀◀◀
+// Reads chord tones directly from the piano roll.
+// Applies mathematical transformations: RISE / FALL /
+// PING-P / GATE / CLASSIC — NO notes created from scratch.
+// ═══════════════════════════════════════════════════
+function generarArpTrance() {
+  // Remove previous ARP notes only (preserve melody + chords)
+  currentSequence = currentSequence.filter(item => !item.isArp);
+
+  const totalSteps = Math.abs(loopEnd - loopStart) + 1;
+
+  // If no chord progression loaded yet, build default and load it
+  if(!currentPresetSteps || !currentPresetSteps.length) {
+    const getN = off => notes[(TONAL.rootIdx+off)%12];
+    const prog = TONAL.isMinor
+      ? [{n:TONAL.root,min:true,degree:0},{n:getN(8),min:false,degree:3},{n:getN(3),min:true,degree:4},{n:getN(10),min:false,degree:5}]
+      : [{n:TONAL.root,min:false,degree:0},{n:getN(9),min:true,degree:5},{n:getN(5),min:false,degree:3},{n:getN(7),min:false,degree:4}];
+    currentPresetSteps=prog;
+    loadChordsSmooth(prog,totalSteps);
+  }
+
+  // CRITICAL INVARIANT: ensure there are chord blocks to read from
+  const chordBlocks = currentSequence.filter(i=>i.isChordBlock);
+  if(!chordBlocks.length) {
+    document.getElementById('melody-info').textContent='ERROR: No hay acordes en el piano roll. Carga una progresión primero.';
+    return;
+  }
+
+  let totalArpNotes = 0;
+
+  for(let gs = loopStart; gs <= loopEnd; gs++) {
+    // ── RULE 1: Read chord tones from sequencer at this exact step
+    const chordSemis = getChordSemitonesAtStep(gs); // sorted ascending
+    if(!chordSemis || !chordSemis.length) continue; // no chord → no arp (silence is correct)
+
+    // ── RULE 2: Apply stack modifications (additive, NOT destructive)
+    const expandedSemis = applyArpStack(chordSemis, gs);
+
+    // ── RULE 3: Apply style pattern — determines which tone at each 1/16 step
+    const patStep = (gs - loopStart) % 16;
+    const notesToPlay = applyArpStyle(expandedSemis, patStep);
+
+    notesToPlay.forEach(semi => {
+      if(semi === null) return; // GATE silences represented as null
+      const clamped = Math.max(36, Math.min(84, semi));
+      currentSequence.push({
+        step: gs, notes: [semitoneToNoteName(clamped)],
+        duration: 1, isMelody: false, isSuggested: true, isArp: true,
+        velocity: computeVelocityGroove(gs, patStep, arpStackLevel),
+        stackClass: 'stack'+Math.min(arpStackLevel,3)
+      });
+      totalArpNotes++;
+    });
+  }
+
+  computeCoherence();
+  drawSequenceOnGrid();
+  document.getElementById('melody-info').textContent =
+    'ARP ' + arpStyle.toUpperCase() + ' · stack:' + arpStackLevel +
+    ' · ' + totalArpNotes + ' notas · ' + TONAL.root + (TONAL.isMinor?'m':'') + ' [zero-loss]';
 }
 
-// ─── TRANCE MELODY GENERATOR v5 ──────────────────────────────────────────────
-// Generates epic, euphoric Trance melodies with question-answer phrasing,
-// strong interval jumps (5ths, octaves), and chord-tone targeting on downbeats.
+// ── RULE 2: ADDITIVE STACK TRANSFORMATIONS ──────────────────
+// Each level ADDS behavior without removing previous behavior.
+// Level 0 = base chord tones only
+// Level 1 = + octave doubles on downbeats
+// Level 2 = + groove velocity + syncopation positions
+// Level 3 = + scale-snapped chromatic approach notes
+function applyArpStack(sortedSemis, globalStep) {
+  const expanded = [...sortedSemis]; // always start with original chord tones
+
+  if(arpStackLevel >= 1) {
+    // Add octave doubles: every chord root note gets an octave-up version
+    const rootSemi = sortedSemis[0];
+    expanded.push(rootSemi + 12);
+  }
+
+  if(arpStackLevel >= 2) {
+    // Add the 5th an octave up for rhythmic emphasis
+    if(sortedSemis.length >= 3) {
+      expanded.push(sortedSemis[2] + 12);
+    }
+  }
+
+  if(arpStackLevel >= 3) {
+    // Add chromatic approach note below root — snapped to scale
+    const approachRaw = sortedSemis[0] - 1;
+    const approachSnapped = TONAL.snapToScale(approachRaw);
+    if(!expanded.includes(approachSnapped)) expanded.push(approachSnapped);
+  }
+
+  return expanded.sort((a,b)=>a-b);
+}
+
+// ── RULE 1 CORE: ARP STYLE PATTERN FUNCTIONS ──────────────────
+// Returns an array of semitones to play at this 1/16 step.
+// NEVER returns empty on base mode. null = intentional GATE silence.
+function applyArpStyle(sortedSemis, patStep) {
+  const n = sortedSemis.length;
+  if(!n) return [];
+
+  switch(arpStyle) {
+    case 'rise': {
+      // Ascending order, cycling through all chord tones + octave
+      const allNotes = [...sortedSemis, sortedSemis[0]+12];
+      const idx = patStep % allNotes.length;
+      return [allNotes[idx]];
+    }
+
+    case 'fall': {
+      // Descending order
+      const allNotes = [sortedSemis[0]+12, ...sortedSemis].reverse();
+      const idx = patStep % allNotes.length;
+      return [allNotes[idx]];
+    }
+
+    case 'ping': {
+      // Ping-pong: 0,1,2,1,0,1,2... no repeated extremes mid-bounce
+      const allNotes = [...sortedSemis];
+      const period = (allNotes.length - 1) * 2;
+      let pos = patStep % Math.max(period, 1);
+      if(pos >= allNotes.length) pos = period - pos;
+      pos = Math.max(0, Math.min(pos, allNotes.length-1));
+      return [allNotes[pos]];
+    }
+
+    case 'gate': {
+      // All chord tones simultaneously, but every other 1/16 is silenced (50% duty cycle)
+      if(patStep % 2 === 1) return [null]; // silent pulse
+      return sortedSemis; // full chord on even pulses
+    }
+
+    case 'classic':
+    default: {
+      // Root → 5th → root+oct → 3rd → root → 5th+oct → root → 3rd
+      const seq = [0, Math.min(2,n-1), 0, Math.min(1,n-1), 0, Math.min(2,n-1), 0, Math.min(1,n-1)];
+      const octSeq = [0,0,1,0,0,1,0,0];
+      const idx = patStep % seq.length;
+      return [sortedSemis[seq[idx]] + octSeq[idx]*12];
+    }
+  }
+}
+
+// ── RULE 2: Groove velocity per stack level ─────────────────
+function computeVelocityGroove(globalStep, patStep, stackLevel) {
+  // Base velocity grid (16-step accents: downbeat, off-beat, weak)
+  const baseGrid = [1.0, 0.5, 0.75, 0.5, 0.9, 0.5, 0.7, 0.45,
+                    0.95, 0.5, 0.75, 0.5, 0.85, 0.5, 0.7, 0.4];
+  let vel = baseGrid[patStep % 16];
+
+  if(stackLevel >= 2) {
+    // Add groove: boost 2nd and 4th beats (1/16 positions 4, 12)
+    if(patStep === 4 || patStep === 12) vel = Math.min(1.0, vel + 0.15);
+    // Slight swing on 8th-note off-beats
+    if([2,6,10,14].includes(patStep)) vel = Math.min(1.0, vel + 0.08);
+  }
+
+  if(stackLevel >= 3) {
+    // Approach note gets quieter velocity
+    vel *= 0.85;
+  }
+
+  return Math.round(vel * 100) / 100;
+}
+
+// ═══════════════════════════════════════════════════
+// ▶▶▶ RULE 3: MELODÍA IA — Chord-Aware & Preset-Aware ◀◀◀
+// Melody adapts intervals based on preset character:
+// Dark/technical → minor 2nds & tritones
+// Euphoric/uplifting → perfect 4ths, 5ths, octaves
+// All notes restricted to TONAL.scaleNotes
+// Downbeats ALWAYS anchor to active chord tone
+// ═══════════════════════════════════════════════════
 function generateTrancemelody() {
-    currentSequence = currentSequence.filter(item => !item.isMelody);
-    const totalSteps = Math.abs(loopEnd - loopStart) + 1;
-    const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-    const isMinor = currentRootForGrid.includes('m');
-    const rootIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
-    const scalePool = getScalePool(cleanRoot, isMinor);
+  currentSequence = currentSequence.filter(item => !item.isMelody);
+  const totalSteps = Math.abs(loopEnd - loopStart) + 1;
 
-    // Harmonic scale pool for extra tension options
-    const harmIntervals = HARM_MINOR_INTERVALS;
-    const harmPool = [3,4,5].flatMap(oct =>
-        harmIntervals.map(interval => {
-            const ni = (rootIdx+interval)%12;
-            return { name: notes[ni], octave: oct, semitone: oct*12+ni };
-        })
-    ).sort((a,b) => a.semitone - b.semitone);
+  // Detect preset character from active progression label
+  const presetChar = detectPresetCharacter();
+  const scalePool = TONAL.getScalePool(3,5);
 
-    const activePool = isMinor ? harmPool : scalePool;
+  // Choose interval palette based on character (RULE 3)
+  // dark/technical: small intervals (semitones 1-3)
+  // euphoric/uplifting: large intervals (5,7,12)
+  const INTERVAL_PALETTES = {
+    dark:    { leaps:[1,2,3,-1,-2,-3,6,-6], step:[-1,1,-2,2], skipChance:0.3 },
+    euphoric:{ leaps:[7,5,12,-7,-5,-12,4,-4], step:[-2,-1,1,2], skipChance:0.20 },
+    neutral: { leaps:[5,4,3,-4,-3,7,-7], step:[-1,1,-2,2], skipChance:0.25 }
+  };
+  const palette = INTERVAL_PALETTES[presetChar] || INTERVAL_PALETTES.neutral;
 
-    // Get chord tones at a specific step for downbeat targeting
-    function getChordTonesAt(s) {
-        if (!currentPresetSteps || !currentPresetSteps.length) return activePool.filter((_,i) => i%3===0);
-        const idx = Math.min(Math.floor(s * currentPresetSteps.length / totalSteps), currentPresetSteps.length-1);
-        const st = currentPresetSteps[idx];
-        const rawNotes = getChordNotes(st.n, st.min, st.type).map(n => n.replace('2',''));
-        return [4,5].flatMap(oct => rawNotes.map(rn => {
-            const ni = notes.indexOf(rn);
-            if(ni < 0) return null;
-            return { name: rn, octave: oct, semitone: oct*12+ni };
-        })).filter(Boolean).sort((a,b) => a.semitone - b.semitone);
+  function nearestInPool(semi) {
+    return scalePool.reduce((b,c)=>Math.abs(c.semitone-semi)<Math.abs(b.semitone-semi)?c:b);
+  }
+
+  function pickMelodyNote(cur, step, direction, forceChordTone) {
+    if(!cur) return scalePool[Math.floor(scalePool.length/2)];
+    const curSemi = cur.semitone;
+
+    // RULE 3 CRITICAL: on downbeats (step%4===0), anchor to active chord tone
+    if(forceChordTone) {
+      const cs = getChordSemitonesAtStep(loopStart + step);
+      if(cs && cs.length) {
+        // Closest chord semitone to current melody position
+        const closestCS = cs.reduce((b,s)=>Math.abs(s-curSemi)<Math.abs(b-curSemi)?s:b);
+        return nearestInPool(closestCS);
+      }
     }
 
-    function nearestInPool(pool, semitone) {
-        if(!pool.length) return activePool[Math.floor(activePool.length/2)];
-        return pool.reduce((best, cur) => Math.abs(cur.semitone - semitone) < Math.abs(best.semitone - semitone) ? cur : best);
+    const r = Math.random();
+    if(r < 0.30) {
+      const leap = palette.leaps[Math.floor(Math.random()*palette.leaps.length)];
+      return nearestInPool(curSemi + leap);
+    } else if(r < 0.60) {
+      const dir = direction==='up'?1:direction==='down'?-1:(Math.random()<0.5?1:-1);
+      const stepIv = palette.step[Math.floor(Math.random()*palette.step.length)];
+      return nearestInPool(curSemi + stepIv * dir);
+    } else {
+      // Chord tone approach (read live from piano roll)
+      const cs = getChordSemitonesAtStep(loopStart + step);
+      const pool = cs && cs.length ? cs.map(s=>nearestInPool(s)) : scalePool;
+      return pool.reduce((b,c)=>Math.abs(c.semitone-curSemi)<Math.abs(b.semitone-curSemi)?c:b);
     }
+  }
 
-    // Trance-characteristic intervals: perfect 5th (+7), octave (+12), perfect 4th (+5)
-    const TRANCE_LEAPS = [7, 5, 12, -7, -5, -12, 3, -3];
+  const rootNote4 = scalePool.find(p=>p.name===TONAL.root&&p.octave===4)||scalePool[Math.floor(scalePool.length/2)];
+  const fifthName = notes[(TONAL.rootIdx+7)%12];
+  const fifthNote4 = scalePool.find(p=>p.name===fifthName&&p.octave===4)||nearestInPool(rootNote4.semitone+7);
+  const octNote   = scalePool.find(p=>p.name===TONAL.root&&p.octave===5)||nearestInPool(rootNote4.semitone+12);
+  function nearestInPool(semi) { return scalePool.reduce((b,c)=>Math.abs(c.semitone-semi)<Math.abs(b.semitone-semi)?c:b); }
 
-    function nextTranceNote(current, step, direction, forceChordTone) {
-        if(!current) return activePool[Math.floor(activePool.length/2)];
-        const ct = getChordTonesAt(step);
-        const curSemi = current.semitone;
-        const r = Math.random();
+  const midPoint = Math.floor(totalSteps/2);
+  const skipChance = {
+    euphoric:palette.skipChance, ascending:0.25, descending:0.25, motif:0.35, sparse:0.55
+  }[melodyMode] || palette.skipChance;
 
-        if(forceChordTone && ct.length) {
-            // On downbeats: always land on a chord tone (root/3rd/5th)
-            const target = ct.reduce((best, c) => {
-                const ctDist = Math.abs(c.semitone - curSemi);
-                const bDist  = Math.abs(best.semitone - curSemi);
-                return ctDist < bDist ? c : best;
-            });
-            return target;
-        }
+  let cur = rootNote4;
 
-        if(r < 0.30) {
-            // Trance leap (5th, octave, 4th) - core of epic Trance sound
-            const leap = TRANCE_LEAPS[Math.floor(Math.random() * TRANCE_LEAPS.length)];
-            const targetSemi = curSemi + leap;
-            return nearestInPool(activePool, targetSemi);
-        } else if(r < 0.60) {
-            // Step motion (2nd) in the direction bias
-            const stepDir = direction === 'up' ? 1 : direction === 'down' ? -1 : (Math.random() < 0.5 ? 1 : -1);
-            const sorted = [...activePool].sort((a,b) => a.semitone - b.semitone);
-            const idx = sorted.findIndex(p => p.semitone >= curSemi);
-            const safeIdx = idx >= 0 ? idx : Math.floor(sorted.length/2);
-            const newIdx = Math.max(0, Math.min(sorted.length-1, safeIdx + stepDir));
-            return sorted[newIdx];
-        } else if(r < 0.80) {
-            // Chord tone approach
-            if(ct.length) return nearestInPool(ct, curSemi + (direction === 'up' ? 4 : -4));
-            return nearestInPool(activePool, curSemi);
-        } else {
-            // Neighbor note (tension)
-            const delta = Math.random() < 0.5 ? 2 : -2;
-            return nearestInPool(activePool, curSemi + delta);
-        }
+  // QUESTION phrase
+  for(let s=0;s<midPoint;s++) {
+    if(s>0 && Math.random()<skipChance) continue;
+    const isDownbeat = (s%4===0);
+    const dir = melodyMode==='descending'?'down':melodyMode==='ascending'?'up':'up';
+    let chosen;
+    if(melodyMode==='motif'&&s>=4) {
+      const base = rootNote4.semitone + [0,7,5,3][s%4];
+      chosen = nearestInPool(base+(Math.random()<0.3?12:0));
+    } else {
+      chosen = pickMelodyNote(cur, s, dir, isDownbeat&&s>0);
     }
+    if(s===midPoint-1) chosen=fifthNote4;
+    if(s===Math.floor(midPoint*0.75)) chosen=octNote;
+    if(chosen){ addMelodyNote(chosen.name,chosen.octave,s,1); cur=chosen; }
+  }
 
-    // Build question (bars 1-2) and answer (bars 3-4) phrases
-    const midPoint = Math.floor(totalSteps / 2);
-    const rootNote4  = activePool.find(p => p.name === cleanRoot && p.octave === 4) || activePool[0];
-    const fifthName  = notes[(rootIdx + 7) % 12];
-    const fifthNote4 = activePool.find(p => p.name === fifthName && p.octave === 4)
-                    || nearestInPool(activePool, rootNote4.semitone + 7);
-    const octNote    = activePool.find(p => p.name === cleanRoot && p.octave === 5)
-                    || nearestInPool(activePool, rootNote4.semitone + 12);
-
-    // Density: fraction of steps to SKIP (rest)
-    const skipChance = {
-        euphoric:   0.20,   // dense, flowing
-        ascending:  0.25,
-        descending: 0.25,
-        motif:      0.35,   // repetitive motif pattern
-        sparse:     0.55    // breathing room
-    }[melodyMode] || 0.25;
-
-    // QUESTION phrase (bar 1-2): tension, rising
-    let cur = rootNote4;
-    for(let s = 0; s < midPoint; s++) {
-        if(s > 0 && Math.random() < skipChance) continue;
-        const isDownbeat = (s % 4 === 0);
-        const progress = s / midPoint;
-        const dir = melodyMode === 'descending' ? 'down' :
-                    melodyMode === 'ascending'  ? 'up'   :
-                    progress < 0.5 ? 'up' : 'up';
-
-        let chosen;
-        if(melodyMode === 'motif' && s >= 4) {
-            // Repeat the first 4-note motif with slight variation
-            const motifStep = s % 4;
-            const base = rootNote4.semitone + [0, 7, 5, 3][motifStep];
-            chosen = nearestInPool(activePool, base + (Math.random() < 0.3 ? 12 : 0));
-        } else {
-            chosen = nextTranceNote(cur, s, dir, isDownbeat && s > 0);
-        }
-
-        // Climax: aim for octave at phrase peak
-        if(s === midPoint - 1) chosen = fifthNote4;
-        if(s === Math.floor(midPoint * 0.75)) chosen = octNote;
-
-        if(chosen) { addMelodyNote(chosen.name, chosen.octave, s, 1); cur = chosen; }
+  // ANSWER phrase (resolution)
+  cur = fifthNote4;
+  for(let s=midPoint;s<totalSteps;s++) {
+    if(s>midPoint && Math.random()<skipChance) continue;
+    const isDownbeat=(s%4===0);
+    const dir=melodyMode==='ascending'?'up':'down';
+    let chosen;
+    if(melodyMode==='motif') {
+      const base=fifthNote4.semitone+[0,-3,-5,-7][(s-midPoint)%4];
+      chosen=nearestInPool(base);
+    } else {
+      chosen=pickMelodyNote(cur,s,dir,isDownbeat);
     }
+    if(s>=totalSteps-2) chosen=rootNote4;
+    if(chosen){ addMelodyNote(chosen.name,chosen.octave,s,1); cur=chosen; }
+  }
 
-    // ANSWER phrase (bar 3-4): resolution, descending back to root
-    cur = fifthNote4;
-    for(let s = midPoint; s < totalSteps; s++) {
-        if(s > midPoint && Math.random() < skipChance) continue;
-        const isDownbeat = (s % 4 === 0);
-        const progress = (s - midPoint) / (totalSteps - midPoint);
-        const dir = melodyMode === 'ascending' ? 'up' : 'down';
+  document.getElementById('melody-info').textContent =
+    TONAL.root+(TONAL.isMinor?'m':'')+' · '+melodyMode.toUpperCase()+
+    ' · char:'+presetChar+' · v7';
+  computeCoherence();
+  drawSequenceOnGrid();
+}
 
-        let chosen;
-        if(melodyMode === 'motif') {
-            const motifStep = (s - midPoint) % 4;
-            const base = fifthNote4.semitone + [0, -3, -5, -7][motifStep];
-            chosen = nearestInPool(activePool, base);
-        } else {
-            chosen = nextTranceNote(cur, s, dir, isDownbeat);
-        }
-
-        // Final cadence: land on root
-        if(s >= totalSteps - 2) chosen = rootNote4;
-
-        if(chosen) { addMelodyNote(chosen.name, chosen.octave, s, 1); cur = chosen; }
-    }
-
-    if(document.getElementById('melody-info'))
-        document.getElementById('melody-info').innerText = `${currentRootForGrid} · ${melodyMode.toUpperCase()} · TRANCE`;
-    drawSequenceOnGrid();
+// RULE 3: detect preset character from active chord label or progression
+function detectPresetCharacter() {
+  if(!currentPresetSteps) return 'neutral';
+  // Count minor chords and dim chords vs major
+  let minorCount=0, dimCount=0, total=currentPresetSteps.length;
+  currentPresetSteps.forEach(s=>{
+    if(s.min) minorCount++;
+    if(s.type==='dim'||s.type==='dim7') dimCount++;
+  });
+  const darkRatio = (minorCount + dimCount*1.5) / total;
+  if(darkRatio > 0.6) return 'dark';
+  if(darkRatio < 0.3 && !TONAL.isMinor) return 'euphoric';
+  return 'neutral';
 }
 
 function addMelodyNote(noteName, octave, step, duration) {
-    const rangeSize = Math.abs(loopEnd - loopStart) + 1;
-    const stepToPlace = loopStart + (step % rangeSize);
-    currentSequence.push({ step: stepToPlace, notes: [`${noteName}${octave}`], duration, isMelody: true });
+  const rangeSize = Math.abs(loopEnd-loopStart)+1;
+  const stepToPlace = loopStart + (step%rangeSize);
+  currentSequence.push({ step:stepToPlace, notes:[`${noteName}${octave}`], duration, isMelody:true });
 }
 
-// ─── TRANCE ARP 1/16 GENERATOR v5 ────────────────────────────────────────────
-// Full 1/16-note arpeggio grid with velocity accents and classic Trance patterns.
-// Patterns are expressed as arrays of 16 events per bar, each: {semDelta, vel}
-// semDelta: semitone offset from chord root (within chord + scale extensions)
-// vel: relative velocity weight (0.4-1.0)
-function generarArpTrance() {
-    currentSequence = currentSequence.filter(item => item.isMelody);
-    const totalSteps = Math.abs(loopEnd - loopStart) + 1;
-    const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-    const isMinor = currentRootForGrid.includes('m');
-    const rootIdx = notes.indexOf(cleanRoot);
-
-    const getN = (off) => notes[(rootIdx+off)%12];
-    let prog = isMinor ?
-        [{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(3),min:true},{n:getN(10),min:false}] :
-        [{n:cleanRoot,min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),min:false}];
-
-    currentPresetSteps = prog.map(p => ({n:p.n, min:p.min}));
-
-    // 1/16 patterns: each entry = { offsets: [semitone offsets from root], vels: [0-1] }
-    // chord tones for a triad: [0, 3or4, 7], octave up = +12
-    // Pattern length = 16 per chord block (one bar of 1/16th notes)
-    const ARP_PATTERNS = {
-        // Classic Trance: root-5th-oct-5th pattern, accents on 1 and 9
-        classic: (isMaj) => {
-            const t = 0, th = isMaj ? 4 : 3, fi = 7;
-            return [
-                {o:t,    v:1.0}, {o:fi,   v:0.5}, {o:t+12, v:0.7}, {o:fi,   v:0.5},
-                {o:t,    v:0.6}, {o:fi,   v:0.5}, {o:t+12, v:0.6}, {o:th,   v:0.4},
-                {o:t,    v:0.9}, {o:fi,   v:0.5}, {o:t+12, v:0.7}, {o:fi,   v:0.5},
-                {o:t,    v:0.6}, {o:th,   v:0.5}, {o:fi,   v:0.5}, {o:t+12, v:0.6},
-            ];
-        },
-        // Rising: strict ascending arpeggio, builds tension
-        rise: (isMaj) => {
-            const t = 0, th = isMaj ? 4 : 3, fi = 7;
-            return [
-                {o:t,      v:1.0}, {o:th,    v:0.6}, {o:fi,    v:0.7}, {o:t+12,  v:0.8},
-                {o:th+12,  v:0.6}, {o:fi+12, v:0.7}, {o:t+24,  v:0.9}, {o:fi+12, v:0.5},
-                {o:t,      v:0.9}, {o:th,    v:0.6}, {o:fi,    v:0.7}, {o:t+12,  v:0.8},
-                {o:fi+12,  v:0.6}, {o:th+12, v:0.5}, {o:t+12,  v:0.7}, {o:th,    v:0.5},
-            ];
-        },
-        // Falling: descending resolution, answer phrase feel
-        fall: (isMaj) => {
-            const t = 0, th = isMaj ? 4 : 3, fi = 7;
-            return [
-                {o:t+24,  v:1.0}, {o:fi+12, v:0.7}, {o:th+12, v:0.6}, {o:t+12,  v:0.8},
-                {o:fi,    v:0.6}, {o:th,    v:0.5}, {o:t,     v:0.9}, {o:fi,    v:0.5},
-                {o:t+12,  v:0.8}, {o:fi,    v:0.6}, {o:th,    v:0.5}, {o:t,     v:0.9},
-                {o:th,    v:0.5}, {o:fi,    v:0.6}, {o:t+12,  v:0.7}, {o:t,     v:0.8},
-            ];
-        },
-        // Gate: rhythmic off-beat accents, house-trance hybrid
-        gate: (isMaj) => {
-            const t = 0, th = isMaj ? 4 : 3, fi = 7;
-            return [
-                {o:t,    v:1.0}, {o:null, v:0},   {o:t+12, v:0.7}, {o:null, v:0},
-                {o:fi,   v:0.8}, {o:null, v:0},   {o:t+12, v:0.6}, {o:null, v:0},
-                {o:t,    v:0.9}, {o:null, v:0},   {o:fi,   v:0.7}, {o:null, v:0},
-                {o:th,   v:0.8}, {o:null, v:0},   {o:t+12, v:0.7}, {o:fi,   v:0.5},
-            ];
-        },
-        // Ping-pong: alternates between low and high registers, energetic
-        ping: (isMaj) => {
-            const t = 0, th = isMaj ? 4 : 3, fi = 7;
-            return [
-                {o:t,    v:1.0}, {o:t+24, v:0.7}, {o:fi,   v:0.8}, {o:t+12, v:0.6},
-                {o:th,   v:0.7}, {o:fi+12,v:0.6}, {o:t,    v:0.9}, {o:t+24, v:0.7},
-                {o:t,    v:0.9}, {o:fi+12,v:0.7}, {o:th,   v:0.6}, {o:t+12, v:0.8},
-                {o:fi,   v:0.6}, {o:t+24, v:0.7}, {o:th,   v:0.5}, {o:t+12, v:0.7},
-            ];
-        }
-    };
-
-    const pasosPorAcorde = Math.max(8, Math.floor(totalSteps / prog.length));
-    let stepGlobal = 0;
-
-    prog.forEach(acorde => {
-        const chordNotes = getChordNotes(acorde.n, acorde.min);
-        const isMaj = !acorde.min;
-        const rootNote = chordNotes[0].replace('2','');
-        const rootNoteIdx = notes.indexOf(rootNote);
-        const patternFn = ARP_PATTERNS[arpStyle] || ARP_PATTERNS.classic;
-        const pattern = patternFn(isMaj);
-
-        for(let i = 0; i < pasosPorAcorde; i++) {
-            const p = pattern[i % 16];
-            const actualStep = loopStart + stepGlobal + i;
-            if(actualStep > loopEnd) break;
-            if(p.o === null || p.v === 0) continue; // gate rest
-
-            // Clamp offset to avoid extreme octaves
-            const clampedOffset = Math.min(p.o, 24);
-            const targetSemi = rootNoteIdx + 48 + clampedOffset; // oct 4 base
-            const noteName = semitoneToNoteName(Math.max(36, Math.min(84, targetSemi)));
-
-            currentSequence.push({
-                step: actualStep,
-                notes: [noteName],
-                duration: 1,
-                isMelody: false,
-                isSuggested: true,
-                isArp: true,
-                velocity: p.v
-            });
-        }
-        stepGlobal += pasosPorAcorde;
-    });
-
-    drawSequenceOnGrid();
-    if(document.getElementById('melody-info'))
-        document.getElementById('melody-info').innerText = `ARP 1/16 ${arpStyle.toUpperCase()}: ${currentRootForGrid}`;
-}
-
-// ─── GRID ─────────────────────────────────────────────────────────────────────
-const GRID_OCTAVES = [5,4,3];
-const CHROMATIC_ORDER = ['B','A#','A','G#','G','F#','F','E','D#','D','C#','C'];
-
-function noteRowId(noteName, octave) { return `${noteName}${octave}`; }
+// ═══════════════════════════════════════════════════
+// GRID RENDERING
+// ═══════════════════════════════════════════════════
+function noteRowId(noteName,octave){ return `${noteName}${octave}`; }
 
 function initGrid() {
-    const grid = document.getElementById('midi-grid');
-    grid.innerHTML = '';
-    GRID_OCTAVES.forEach(oct => {
-        CHROMATIC_ORDER.forEach(noteName => {
-            const isBlack = [1,3,6,8,10].includes(notes.indexOf(noteName));
-            const isC = noteName === 'C';
-            const rowId = noteRowId(noteName, oct);
-            const label = document.createElement('div');
-            label.className = 'note-label' + (isBlack ? ' black-key' : '') + (isC ? ' octave-marker' : '');
-            label.innerText = isC ? `C${oct}` : (isBlack ? '♭' : noteName[0]);
-            label.title = `${noteName}${oct}`;
-            grid.appendChild(label);
-            for(let s = 0; s < TOTAL_STEPS; s++) {
-                const cell = document.createElement('div');
-                cell.className = `grid-cell step-${s}` + (isBlack ? ' black-key-row' : '');
-                cell.id = `cell-${s}-${rowId}`;
-                cell.onmousedown = e => { e.preventDefault(); isDraggingLoop=true; loopStart=s; loopEnd=s; updateLoopVisuals(); };
-                cell.onmouseenter = () => { if(isDraggingLoop){ loopEnd=s; updateLoopVisuals(); }};
-                grid.appendChild(cell);
-            }
-        });
+  const grid=document.getElementById('midi-grid');
+  grid.innerHTML='';
+  GRID_OCTAVES.forEach(oct=>{
+    CHROMATIC_ORDER.forEach(noteName=>{
+      const isBlack=[1,3,6,8,10].includes(notes.indexOf(noteName));
+      const isC=noteName==='C';
+      const label=document.createElement('div');
+      label.className='note-label'+(isBlack?' black-key':'')+(isC?' octave-marker':'');
+      label.innerText=isC?`C${oct}`:(isBlack?'♭':noteName[0]);
+      label.title=`${noteName}${oct}`;
+      grid.appendChild(label);
+      for(let s=0;s<TOTAL_STEPS;s++){
+        const cell=document.createElement('div');
+        cell.className=`grid-cell step-${s}`+(isBlack?' black-key-row':'');
+        cell.id=`cell-${s}-${noteRowId(noteName,oct)}`;
+        cell.onmousedown=e=>{e.preventDefault();isDraggingLoop=true;loopStart=s;loopEnd=s;updateLoopVisuals();};
+        cell.onmouseenter=()=>{if(isDraggingLoop){loopEnd=s;updateLoopVisuals();}};
+        grid.appendChild(cell);
+      }
     });
-    window.addEventListener('mouseup', () => { if(isDraggingLoop){ isDraggingLoop=false; finalizeLoopSelection(); }});
-    const scroll = document.getElementById('midi-grid-scroll');
-    scroll.scrollTop = 12 * 22;
-    updateLoopVisuals();
-    drawSequenceOnGrid();
+  });
+  window.addEventListener('mouseup',()=>{if(isDraggingLoop){isDraggingLoop=false;finalizeLoopSelection();}});
+  document.getElementById('midi-grid-scroll').scrollTop=12*22;
+  updateLoopVisuals();
+  drawSequenceOnGrid();
 }
 
-function finalizeLoopSelection() {
-    if(loopStart > loopEnd) [loopStart, loopEnd] = [loopEnd, loopStart];
-    document.getElementById('loop-range-display').innerText = `${loopStart} - ${loopEnd}`;
+function finalizeLoopSelection(){
+  if(loopStart>loopEnd)[loopStart,loopEnd]=[loopEnd,loopStart];
+  document.getElementById('loop-range-display').innerText=`${loopStart} - ${loopEnd}`;
 }
 
-function updateLoopVisuals() {
-    const start = Math.min(loopStart, loopEnd), end = Math.max(loopStart, loopEnd);
-    for(let s = 0; s < TOTAL_STEPS; s++) {
-        document.querySelectorAll(`.step-${s}`).forEach(c => {
-            if(s < start || s > end){ c.classList.add('out-of-loop'); c.classList.remove('in-loop'); }
-            else { c.classList.remove('out-of-loop'); c.classList.add('in-loop'); }
-        });
+function updateLoopVisuals(){
+  const start=Math.min(loopStart,loopEnd),end=Math.max(loopStart,loopEnd);
+  for(let s=0;s<TOTAL_STEPS;s++){
+    document.querySelectorAll(`.step-${s}`).forEach(c=>{
+      if(s<start||s>end){c.classList.add('out-of-loop');c.classList.remove('in-loop');}
+      else{c.classList.remove('out-of-loop');c.classList.add('in-loop');}
+    });
+  }
+}
+
+function parseNoteStr(n){
+  if(n.endsWith('2')&&n.length<=3) return{name:n.slice(0,-1),octave:5};
+  const m=n.match(/^([A-G]#?)(\d)$/);
+  if(m) return{name:m[1],octave:parseInt(m[2])};
+  return{name:n,octave:4};
+}
+
+function drawSequenceOnGrid(){
+  document.querySelectorAll('.midi-block').forEach(b=>b.remove());
+  currentSequence.forEach(item=>{
+    item.notes.forEach(n=>{
+      const {name,octave}=parseNoteStr(n);
+      const startCell=document.getElementById(`cell-${item.step}-${noteRowId(name,octave)}`);
+      if(!startCell) return;
+      const block=document.createElement('div');
+      let cn='midi-block ';
+      if(item.isMelody)       cn+='melody'+(isMelodyMuted?' muted':'');
+      else if(item.isArp)     cn+='arp '+(item.stackClass||'stack0')+(isArpMuted?' muted':'');
+      else if(item.isChordBlock) cn+=(item.colorClass||'chord-misc');
+      else                    cn+='chord-misc';
+      block.className=cn;
+      if(item.isChordBlock&&item.duration>1){
+        const cellRect=startCell.getBoundingClientRect();
+        const cellW=cellRect.width||20;
+        block.style.width=(item.duration*cellW*0.96)+'px';
+        block.style.left='2%'; block.style.zIndex='6';
+        if(item.chordLabel){
+          block.title=item.chordLabel; block.style.overflow='hidden';
+          const lbl=document.createElement('span');
+          lbl.style.cssText='position:absolute;left:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:700;color:rgba(255,255,255,0.85);font-family:Share Tech Mono,monospace;white-space:nowrap;pointer-events:none';
+          lbl.textContent=item.chordLabel; block.appendChild(lbl);
+        }
+      } else {
+        block.style.width='88%'; block.style.left='6%';
+      }
+      startCell.appendChild(block);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// SEQUENCER PLAYBACK
+// ═══════════════════════════════════════════════════
+function updateBPM(val){
+  currentBPM=parseFloat(val);
+  document.getElementById('bpm-val').innerText=val;
+  if(isPlayingSeq){if(seqInterval)clearInterval(seqInterval);startSequencer();}
+}
+
+function toggleSequencerPlay(){
+  if(!isPlayingSeq){
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    clearAudioQueue(); isPlayingSeq=true;
+    const btn=document.getElementById('play-seq-button');
+    btn.innerText='■ STOP'; btn.classList.add('active');
+    currentStep=loopStart; startSequencer();
+  } else stopSequencer();
+}
+
+function startSequencer(){
+  const stepTime=(60/currentBPM/4)*1000;
+  if(seqInterval) clearInterval(seqInterval);
+  seqInterval=setInterval(()=>{
+    document.querySelectorAll('.grid-cell').forEach(c=>c.classList.remove('playing-now'));
+    document.querySelectorAll(`.step-${currentStep}`).forEach(c=>c.classList.add('playing-now'));
+
+    const activeChord=currentSequence.find(i=>i.isChordBlock&&i.step===currentStep);
+    if(activeChord){
+      document.getElementById('tm-chord').textContent=activeChord.chordLabel||'—';
+      document.getElementById('tm-function').textContent=(activeChord.colorClass||'').replace('chord-','').toUpperCase()||'—';
+      if(currentPresetSteps){
+        const dotIdx=currentPresetSteps.findIndex(s=>activeChord.chordLabel&&activeChord.chordLabel.startsWith(s.n));
+        if(dotIdx>=0) updatePlayingDot(dotIdx);
+      }
     }
-}
 
-function parseNoteStr(n) {
-    if(n.endsWith('2') && n.length <= 3) return { name: n.slice(0,-1), octave: 5 };
-    const m = n.match(/^([A-G]#?)(\d)$/);
-    if(m) return { name: m[1], octave: parseInt(m[2]) };
-    return { name: n, octave: 4 };
-}
-
-// ─── DRAW SEQUENCE ON GRID ────────────────────────────────────────────────────
-// Chord blocks now span multiple steps visually using CSS width calculation.
-function drawSequenceOnGrid() {
-    document.querySelectorAll('.midi-block').forEach(b => b.remove());
-
-    // Group multi-step chord blocks and single-step notes
-    currentSequence.forEach(item => {
-        item.notes.forEach(n => {
-            const { name, octave } = parseNoteStr(n);
-            const rowId = noteRowId(name, octave);
-            const startCell = document.getElementById(`cell-${item.step}-${rowId}`);
-            if(!startCell) return;
-
-            const block = document.createElement('div');
-            const isChord = item.isChordBlock && item.duration > 1;
-            const isArp   = item.isArp;
-
-            let className = 'midi-block ';
-            if(item.isMelody)      className += 'melody';
-            else if(isArp)         className += 'arp';
-            else if(item.isSuggested) className += 'suggested';
-            else                   className += 'manual';
-
-            if(item.isMelody && isMelodyMuted) className += ' muted';
-
-            block.className = className;
-
-            if(isChord && item.duration > 1) {
-                // Span across cells: use absolute positioning relative to grid row
-                // Width = duration * one cell width
-                const gridEl = document.getElementById('midi-grid');
-                const totalCols = TOTAL_STEPS;
-                const cellWidthPct = 100 / (totalCols + 1); // approximate
-                // Use pixel approach: measure a cell
-                const cellRect = startCell.getBoundingClientRect();
-                const cellW = cellRect.width || 20;
-                block.style.width = (item.duration * cellW * 0.96) + 'px';
-                block.style.left = '2%';
-                block.style.zIndex = '6';
-            } else {
-                // Single cell block
-                block.style.width = '88%';
-                block.style.left = '6%';
-            }
-
-            startCell.appendChild(block);
-        });
+    const activeNotes=[];
+    currentSequence.filter(item=>item.step===currentStep).forEach(item=>{
+      if(item.isMelody&&isMelodyMuted) return;
+      if(item.isArp&&isArpMuted) return;
+      const type=item.isMelody?'square':'sawtooth';
+      const dur=(60/currentBPM/4)*item.duration;
+      const vel=item.velocity||0.8;
+      playChordAudio(item.notes,0,dur,type,vel);
+      item.notes.forEach(n=>activeNotes.push(n.replace(/\d/g,'')));
     });
+    highlightCircleNotes(activeNotes);
+    if(activeNotes.length) highlightPiano(activeNotes.map(n=>n+'4'));
+
+    currentStep++;
+    if(currentStep>loopEnd) currentStep=loopStart;
+  },stepTime);
 }
 
-// ─── BPM / SEQUENCER ──────────────────────────────────────────────────────────
-function updateBPM(val) {
-    currentBPM = parseFloat(val);
-    document.getElementById('bpm-val').innerText = val;
-    if(isPlayingSeq){ if(seqInterval) clearInterval(seqInterval); startSequencer(); }
+function stopSequencer(){
+  if(seqInterval) clearInterval(seqInterval);
+  isPlayingSeq=false;
+  const btn=document.getElementById('play-seq-button');
+  if(btn){btn.innerText='▶ PLAY';btn.classList.remove('active');}
+  document.querySelectorAll('.grid-cell').forEach(c=>c.classList.remove('playing-now'));
+  document.querySelectorAll('.note').forEach(n=>n.classList.remove('playing-note'));
 }
 
-function toggleSequencerPlay() {
-    if(!isPlayingSeq) {
-        if(audioCtx.state==='suspended') audioCtx.resume();
-        clearAudioQueue(); isPlayingSeq = true;
-        const btn = document.getElementById('play-seq-button');
-        btn.innerText = '■ STOP'; btn.classList.add('active');
-        currentStep = loopStart; startSequencer();
-    } else stopSequencer();
-}
+function clearSequencer(){currentSequence=[];drawSequenceOnGrid();computeCoherence();}
 
-function startSequencer() {
-    const stepTime = (60 / currentBPM / 4) * 1000; // 1/16th note duration in ms
-    if(seqInterval) clearInterval(seqInterval);
-    seqInterval = setInterval(() => {
-        document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('playing-now'));
-        document.querySelectorAll(`.step-${currentStep}`).forEach(c => c.classList.add('playing-now'));
-        currentSequence.filter(item => item.step === currentStep).forEach(item => {
-            if(item.isMelody && isMelodyMuted) return;
-            const type = item.isMelody ? 'square' : item.isArp ? 'sawtooth' : 'sawtooth';
-            const dur  = (60 / currentBPM / 4) * item.duration;
-            const vel  = item.velocity || 0.8;
-            playChordAudio(item.notes, 0, dur, type, vel);
-            highlightPiano(item.notes);
-        });
-        currentStep++;
-        if(currentStep > loopEnd) currentStep = loopStart;
-    }, stepTime);
-}
-
-function stopSequencer() {
-    if(seqInterval) clearInterval(seqInterval);
-    isPlayingSeq = false;
-    const btn = document.getElementById('play-seq-button');
-    if(btn){ btn.innerText = '▶ PLAY'; btn.classList.remove('active'); }
-    document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('playing-now'));
-}
-
-function clearSequencer() { currentSequence = []; drawSequenceOnGrid(); }
-
-function addToSequencer(chordNotes, offsetFromStart, duration, isSuggested=false) {
-    const rangeSize = Math.abs(loopEnd - loopStart) + 1;
-    const stepToPlace = loopStart + (Math.floor(offsetFromStart) % rangeSize);
-    currentSequence = currentSequence.filter(item => !(item.step === stepToPlace && !item.isMelody));
-    currentSequence.push({ step: stepToPlace, notes: [...chordNotes], duration, isSuggested, isMelody: false });
-    drawSequenceOnGrid();
-}
-
-// ─── AUDIO ────────────────────────────────────────────────────────────────────
-const audioCtx   = new (window.AudioContext||window.webkitAudioContext)();
-const masterGain = audioCtx.createGain();
-masterGain.gain.value = 0.25;
+// ═══════════════════════════════════════════════════
+// AUDIO ENGINE
+// ═══════════════════════════════════════════════════
+const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+const masterGain=audioCtx.createGain();
+masterGain.gain.value=0.25;
 masterGain.connect(audioCtx.destination);
 
-function noteToFreq(noteStr) {
-    let name, octave;
-    const m = noteStr.match(/^([A-G]#?)([2-7])$/);
-    if(m) { name = m[1]; octave = parseInt(m[2]); }
-    else if(noteStr.endsWith('2') && noteStr.length <= 3) { name = noteStr.slice(0,-1); octave = 5; }
-    else { name = noteStr; octave = 4; }
-    const baseFreq = freqs[name] || 440;
-    return baseFreq * Math.pow(2, octave - 4);
+function noteToFreq(noteStr){
+  let name,octave;
+  const m=noteStr.match(/^([A-G]#?)([2-7])$/);
+  if(m){name=m[1];octave=parseInt(m[2]);}
+  else if(noteStr.endsWith('2')&&noteStr.length<=3){name=noteStr.slice(0,-1);octave=5;}
+  else{name=noteStr;octave=4;}
+  return(freqs[name]||440)*Math.pow(2,octave-4);
 }
 
-function playChordAudio(chordNotes, timeOffset=0, duration=0.5, type='triangle', velocity=0.8) {
-    chordNotes.forEach(n => {
-        if(!n) return;
-        const osc = audioCtx.createOscillator();
-        const g   = audioCtx.createGain();
-        osc.type = type;
-        const freq = noteToFreq(n);
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + timeOffset);
-        const amp = 0.12 * velocity;
-        g.gain.setValueAtTime(amp, audioCtx.currentTime + timeOffset);
-        // Longer release for pad-like chords
-        const releaseTime = Math.max(duration * 0.9, 0.05);
-        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + timeOffset + releaseTime + 0.05);
-        osc.connect(g);
-        g.connect(masterGain);
-        osc.start(audioCtx.currentTime + timeOffset);
-        osc.stop(audioCtx.currentTime + timeOffset + releaseTime + 0.1);
+function playChordAudio(chordNotes,timeOffset=0,duration=0.5,type='triangle',velocity=0.8){
+  chordNotes.forEach(n=>{
+    if(!n) return;
+    const osc=audioCtx.createOscillator();
+    const g=audioCtx.createGain();
+    osc.type=type;
+    osc.frequency.setValueAtTime(noteToFreq(n),audioCtx.currentTime+timeOffset);
+    const amp=0.12*velocity;
+    g.gain.setValueAtTime(amp,audioCtx.currentTime+timeOffset);
+    const rel=Math.max(duration*0.9,0.05);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+timeOffset+rel+0.05);
+    osc.connect(g);g.connect(masterGain);
+    osc.start(audioCtx.currentTime+timeOffset);
+    osc.stop(audioCtx.currentTime+timeOffset+rel+0.1);
+  });
+}
+
+function highlightPiano(chord){
+  document.querySelectorAll('.key').forEach(k=>k.classList.remove('active','chord-tone'));
+  chord.forEach((n,i)=>{
+    const clean=n.replace(/\d/g,'');
+    const k=document.getElementById(`key-${clean}`);
+    if(k) k.classList.add(i===0?'active':'chord-tone');
+  });
+}
+
+function highlightCircleNotes(noteNames){
+  document.querySelectorAll('.note').forEach(el=>el.classList.remove('playing-note'));
+  noteNames.forEach(n=>{
+    const display=n.replace('F#','Gb').replace('C#','Db').replace('G#','Ab')
+                   .replace('D#','Eb').replace('A#','Bb');
+    document.querySelectorAll('.note').forEach(el=>{
+      if(el.innerText.replace('m','')=== display||el.innerText===display)
+        el.classList.add('playing-note');
     });
+  });
 }
 
-function highlightPiano(chord) {
-    document.querySelectorAll('.key').forEach(k => k.classList.remove('active','missing'));
-    chord.forEach((n,i) => {
-        const clean = n.replace(/\d/g,'');
-        const k = document.getElementById(`key-${clean}`);
-        if(k) k.classList.add(i===0 ? 'active' : 'missing');
+function clearAudioQueue(){activeTimeouts.forEach(t=>clearTimeout(t));activeTimeouts=[];}
+
+// ═══════════════════════════════════════════════════
+// PIANO KEYS
+// ═══════════════════════════════════════════════════
+const pContainer=document.getElementById('piano');
+for(let i=0;i<12;i++){
+  const k=document.createElement('div');
+  k.className=`key ${[1,3,6,8,10].includes(i)?'black':''}`;
+  k.id=`key-${notes[i]}`;pContainer.appendChild(k);
+  if(i===11){const k2=document.createElement('div');k2.className='key';k2.id=`key-${notes[0]}2`;pContainer.appendChild(k2);}
+}
+
+// ═══════════════════════════════════════════════════
+// CIRCLE OF FIFTHS
+// ═══════════════════════════════════════════════════
+const circle=document.getElementById('circle-wrapper');
+majors.forEach((n,i)=>{
+  const div=document.createElement('div');div.className='note';div.innerText=n;
+  const angle=(i*30-90)*(Math.PI/180);
+  div.style.left=(220+155*Math.cos(angle))+'px';
+  div.style.top=(220+155*Math.sin(angle))+'px';
+  div.onclick=()=>{
+    const cleanRoot=n.replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+    const rootIdx=notes.indexOf(cleanRoot);
+    const getN=off=>notes[(rootIdx+off)%12];
+    loadProgressionToSequencer({
+      label:n,
+      steps:[{n,min:false,degree:0},{n:getN(5),min:false,degree:3},{n:getN(7),min:false,degree:4},{n,min:false,degree:0}]
     });
-}
-
-function clearAudioQueue() { activeTimeouts.forEach(t => clearTimeout(t)); activeTimeouts = []; }
-
-// ─── PIANO KEYS ───────────────────────────────────────────────────────────────
-const pContainer = document.getElementById('piano');
-for(let i = 0; i < 12; i++){
-    const k = document.createElement('div');
-    k.className = `key ${[1,3,6,8,10].includes(i) ? 'black' : ''}`;
-    k.id = `key-${notes[i]}`;
-    pContainer.appendChild(k);
-    if(i===11){ const k2=document.createElement('div'); k2.className='key'; k2.id=`key-${notes[0]}2`; pContainer.appendChild(k2); }
-}
-
-// ─── CIRCLE OF FIFTHS ─────────────────────────────────────────────────────────
-const circle = document.getElementById('circle-wrapper');
-majors.forEach((n, i) => {
-    const div = document.createElement('div'); div.className = 'note'; div.innerText = n;
-    const angle = (i * 30 - 90) * (Math.PI / 180);
-    div.style.left = (220 + 155 * Math.cos(angle)) + 'px';
-    div.style.top  = (220 + 155 * Math.sin(angle)) + 'px';
-    div.onclick = () => {
-        const cleanRoot = n.replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-        const rootIdx = notes.indexOf(cleanRoot);
-        const getN = off => notes[(rootIdx+off)%12];
-        loadProgressionToSequencer({
-            label: n,
-            steps: [{n,min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n,min:false}]
-        });
-        updateUI(n, i, false);
-    };
-    circle.appendChild(div);
+    updateUI(n,i,false);
+  };
+  circle.appendChild(div);
 });
-minors.forEach((n, i) => {
-    const div = document.createElement('div'); div.className = 'note minor'; div.innerText = n;
-    const angle = (i * 30 - 90) * (Math.PI / 180);
-    div.style.left = (220 + 97 * Math.cos(angle)) + 'px';
-    div.style.top  = (220 + 97 * Math.sin(angle)) + 'px';
-    div.onclick = () => {
-        const cleanRoot = n.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-        const rootIdx = notes.indexOf(cleanRoot);
-        const getN = off => notes[(rootIdx+off)%12];
-        loadProgressionToSequencer({
-            label: n,
-            steps: [{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(7),min:false},{n:cleanRoot,min:true}]
-        });
-        updateUI(n, i, true);
-    };
-    circle.appendChild(div);
+minors.forEach((n,i)=>{
+  const div=document.createElement('div');div.className='note minor';div.innerText=n;
+  const angle=(i*30-90)*(Math.PI/180);
+  div.style.left=(220+97*Math.cos(angle))+'px';
+  div.style.top=(220+97*Math.sin(angle))+'px';
+  div.onclick=()=>{
+    const cleanRoot=n.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+    const rootIdx=notes.indexOf(cleanRoot);
+    const getN=off=>notes[(rootIdx+off)%12];
+    loadProgressionToSequencer({
+      label:n,
+      steps:[{n:cleanRoot,min:true,degree:0},{n:getN(5),min:true,degree:3},{n:getN(7),min:false,degree:4},{n:cleanRoot,min:true,degree:0}]
+    });
+    updateUI(n,i,true);
+  };
+  circle.appendChild(div);
 });
 
 initGrid();
 
-// ─── UI HELPERS ───────────────────────────────────────────────────────────────
-function highlightCircleFromMidi(noteName, isMinor){
-    let s = noteName.replace('F#','Gb').replace('C#','Db').replace('G#','Ab').replace('D#','Eb').replace('A#','Bb');
-    if(isMinor) s += 'm';
-    document.querySelectorAll('.note').forEach(div => {
-        div.classList.remove('active','active-minor','neighbor');
-        if(div.innerText === s) div.classList.add(isMinor ? 'active-minor' : 'active');
+// ═══════════════════════════════════════════════════
+// UI STATE
+// ═══════════════════════════════════════════════════
+function toggleMidiMode(){
+  onlyMinorsMode=!onlyMinorsMode;
+  const btn=document.getElementById('mode-toggle-btn');
+  if(onlyMinorsMode){btn.classList.add('minor-active');btn.innerHTML='MODO:<br>MENOR';}
+  else{btn.classList.remove('minor-active');btn.innerHTML='MODO:<br>MAYOR';}
+}
+function toggleMelodyMute(){
+  isMelodyMuted=!isMelodyMuted;
+  const btn=document.getElementById('melody-mute-btn');
+  btn.innerText=isMelodyMuted?'MEL: OFF':'MEL: ON';
+  btn.classList.toggle('active',isMelodyMuted);
+  drawSequenceOnGrid();
+}
+function toggleArpMute(){
+  isArpMuted=!isArpMuted;
+  const btn=document.getElementById('arp-mute-btn');
+  btn.innerText=isArpMuted?'ARP: OFF':'ARP: ON';
+  btn.classList.toggle('active',isArpMuted);
+  drawSequenceOnGrid();
+}
+function setChordDuration(steps,btn){
+  chordDurationSteps=steps;
+  document.querySelectorAll('.chord-dur-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function setMelodyMode(mode,btn){
+  melodyMode=mode;
+  document.querySelectorAll('.melody-mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function setArpStyle(style,btn){
+  arpStyle=style;
+  document.querySelectorAll('.arp-style-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function setArpStack(level,btn){
+  arpStackLevel=level;
+  document.querySelectorAll('.stack-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // Update stack indicator dots
+  for(let i=0;i<4;i++){
+    const el=document.getElementById('sd'+i);
+    if(el) el.className='stack-dot'+(i<=level?' active':'');
+  }
+}
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();toggleSequencerPlay();}
+});
+
+// ═══════════════════════════════════════════════════
+// MIDI INPUT
+// ═══════════════════════════════════════════════════
+if(navigator.requestMIDIAccess)
+  navigator.requestMIDIAccess().then(onMIDISuccess,()=>{});
+
+function onMIDISuccess(midiAccess){
+  const status=document.getElementById('status-midi');
+  let hasInputs=false;
+  for(let input of midiAccess.inputs.values()){
+    input.onmidimessage=getMIDIMessage;
+    status.innerText=`MIDI: ${input.name}`;status.style.color='#2ecc71';hasInputs=true;
+  }
+  if(!hasInputs) status.innerText='No se detectó MIDI USB';
+}
+
+function getMIDIMessage(message){
+  const [command,note,velocity]=message.data;
+  if(command===144&&velocity>0){
+    const noteName=notes[note%12];
+    const fullNoteName=onlyMinorsMode?noteName+'m':noteName;
+    stopSequencer();clearAudioQueue();currentSequence=[];
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    const cleanRoot=noteName;
+    const rootIdx=notes.indexOf(cleanRoot);
+    const getN=off=>notes[(rootIdx+off)%12];
+    const isMin=onlyMinorsMode;
+    const progression=isMin
+      ?[{n:cleanRoot,min:true,degree:0},{n:getN(5),min:true,degree:3},{n:getN(7),min:false,degree:4},{n:cleanRoot,min:true,degree:0}]
+      :[{n:cleanRoot,min:false,degree:0},{n:getN(5),min:false,degree:3},{n:getN(7),min:false,degree:4},{n:cleanRoot,min:false,degree:0}];
+    const listToSearch=isMin?minors:majors;
+    let searchStr=fullNoteName.replace('F#','Gb').replace('C#','Db').replace('G#','Ab').replace('D#','Eb').replace('A#','Bb');
+    const noteIndex=listToSearch.indexOf(searchStr);
+    document.getElementById('chord-name').innerText=`TONO: ${fullNoteName}`;
+    updateUI(fullNoteName,noteIndex,isMin);
+    loadProgressionToSequencer({label:fullNoteName,steps:progression});
+    playChordAudio(getChordNotes(noteName,isMin),0,0.6,'sawtooth');
+    highlightPiano(getChordNotes(noteName,isMin));
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// LOAD PROGRESSION — unified entry point
+// ═══════════════════════════════════════════════════
+function loadProgressionToSequencer(prog){
+  stopSequencer();clearAudioQueue();
+  currentSequence=currentSequence.filter(item=>item.isMelody);
+  currentPresetSteps=prog.steps;
+  const firstStep=prog.steps[0];
+  const cleanRoot=firstStep.n.replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+  const isMin=firstStep.min;
+  currentRootForGrid=cleanRoot+(isMin?'m':'');
+  TONAL.update(cleanRoot,isMin);
+  const totalStepsInLoop=Math.abs(loopEnd-loopStart)+1;
+  loadChordsSmooth(prog.steps,totalStepsInLoop);
+  initGrid();
+  // Melody is generated AFTER chords exist (RULE 3)
+  generateTrancemelody();
+  document.getElementById('chord-name').innerText=`TONO: ${currentRootForGrid}`;
+  playChordAudio(getChordNotes(firstStep.n,firstStep.min,firstStep.type));
+}
+
+// ═══════════════════════════════════════════════════
+// UPDATE UI
+// ═══════════════════════════════════════════════════
+function updateUI(note,index,isMinor){
+  currentRootForGrid=note;
+  const cleanRoot=note.replace('m','').replace('Gb','F#').replace('Db','C#')
+                      .replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
+  TONAL.update(cleanRoot,isMinor);
+  initGrid();
+  document.querySelectorAll('.note').forEach(el=>el.classList.remove('active','active-minor','neighbor','playing-note'));
+  if(!isMinor){
+    if(index>=0) document.querySelectorAll('.note')[index]?.classList.add('active');
+    document.querySelectorAll('.note')[(index+11)%12]?.classList.add('neighbor');
+    document.querySelectorAll('.note')[(index+1)%12]?.classList.add('neighbor');
+  } else {
+    if(index>=0) document.querySelectorAll('.note')[index+12]?.classList.add('active-minor');
+  }
+  ['suggestion-list','psy-list','techno-list','trance-list','modes-list','ambient-list']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  const lists=buildAllPresets(cleanRoot,isMinor);
+  lists.classic.forEach(p=>renderProg(p,document.getElementById('suggestion-list')));
+  lists.psy.forEach(p=>renderProg(p,document.getElementById('psy-list')));
+  lists.techno.forEach(p=>renderProg(p,document.getElementById('techno-list')));
+  lists.trance.forEach(p=>renderProg(p,document.getElementById('trance-list')));
+  lists.modes.forEach(p=>renderProg(p,document.getElementById('modes-list')));
+  lists.ambient.forEach(p=>renderProg(p,document.getElementById('ambient-list')));
+}
+
+function renderProg(prog,container){
+  const item=document.createElement('div');item.className='suggestion-item';
+  const info=document.createElement('div');info.className='info-prog';
+  const notesText=prog.steps.slice(0,4).map(s=>`${s.n}${s.min?'m':''}${s.type?'/'+s.type.substring(0,3):''}`).join(' ')+(prog.steps.length>4?'…':'');
+  info.innerHTML=`<span style="font-size:0.72rem;font-weight:700;color:#ddd">${prog.label}</span><br><span class="notes-display">${notesText}</span>`;
+  const ctrl=document.createElement('div');ctrl.className='controls';
+  const pBtn=document.createElement('button');pBtn.className='play-btn';pBtn.innerText='PLAY';
+  pBtn.onclick=()=>loadProgressionToSequencer(prog);
+  const aBtn=document.createElement('button');aBtn.className='arp-btn';aBtn.innerText='ARP';
+  aBtn.onclick=()=>{
+    loadProgressionToSequencer(prog);
+    setTimeout(()=>generarArpTrance(),80);
+    document.getElementById('chord-name').innerText=`ARP ${arpStyle.toUpperCase()}: ${currentRootForGrid}`;
+  };
+  ctrl.append(pBtn,aBtn);item.append(info,ctrl);container.appendChild(item);
+}
+
+// ═══════════════════════════════════════════════════
+// PRESET ENGINE (scale-aware)
+// ═══════════════════════════════════════════════════
+function buildAllPresets(cleanRoot,isMinor){
+  const d  =makeScaleBuilder(cleanRoot,isMinor);
+  const dH =makeScaleBuilder(cleanRoot,isMinor,'harmonic');
+  const dPh=makeScaleBuilder(cleanRoot,isMinor,'phrygian_dom');
+
+  const classic=[
+    {label:'I - V - vi - IV (Pop)',steps:[d(1),d(5),d(6),d(4),d(1),d(5),d(6),d(4),d(1),d(5),d(6),d(4),d(1),d(5,'dom7'),d(4),d(1)]},
+    {label:'i - VII - VI - VII (Rock)',steps:[d(1),d(7),d(6),d(7),d(1),d(7),d(6),d(5),d(1),d(7),d(6),d(7),d(4),d(7),d(5),d(1)]},
+    {label:'I - IV - V - I (Cadencia)',steps:[d(1),d(1),d(4),d(4),d(5,'dom7'),d(5,'dom7'),d(1),d(1),d(1),d(4),d(4),d(5,'dom7'),d(2),d(6),d(5,'dom7'),d(1)]},
+    {label:'vi - IV - I - V (Canon)',steps:[d(6),d(4),d(1),d(5),d(6),d(4),d(1),d(5),d(6),d(4),d(2),d(5),d(6),d(7,'dim'),d(5,'dom7'),d(1)]},
+    {label:'i - iv - VII - III (Menor Rom.)',steps:[d(1),d(4),d(7),d(3),d(1),d(4),d(5),d(1),d(1),d(6),d(4),d(7),d(3),d(5),d(7),d(1)]},
+    {label:'I - III - IV - iv (Modal Mix)',steps:[d(1),d(3),d(4),d(4,'min7'),d(1),d(3),d(4),d(4,'min7'),d(1),d(5),d(4),d(3),d(2),d(5,'dom7'),d(4),d(1)]},
+    {label:'i - VI - III - VII (Dark Cin.)',steps:[d(1),d(6),d(3),d(7),d(1),d(6),d(3),d(7),d(4),d(6),d(3),d(7),d(1),d(6),d(5,'dom7'),d(1)]},
+    {label:'I - vi - ii - V (Jazz Turnaround)',steps:[d(1,'maj7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(4,'maj7'),d(2,'min7'),d(5,'dom7'),d(3,'min7'),d(6,'min7'),d(2,'min7'),d(1,'maj7')]},
+    {label:'i - iv - V - i (Harm. Minor)',steps:[dH(1),dH(4),dH(5),dH(1),dH(1),dH(4),dH(5),dH(1),dH(6),dH(7,'dim'),dH(5),dH(1),dH(4),dH(7,'dim'),dH(5),dH(1)]},
+    {label:'ii - V - I - VI (Bebop)',steps:[d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(3,'min7'),d(4,'maj7'),d(7,'dim'),d(3,'min7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(6,'min7'),d(1,'maj7')]},
+    {label:'i - III - VI - VII (Aeolian)',steps:[d(1),d(3),d(6),d(7),d(1),d(3),d(6),d(5),d(1),d(6),d(4),d(7),d(3),d(6),d(5),d(1)]},
+    {label:'I - V - vi - iii - IV (Pachelbel)',steps:[d(1),d(5),d(6),d(3),d(4),d(1),d(4),d(5),d(1),d(5),d(6),d(3),d(4),d(2),d(5,'dom7'),d(1)]},
+    {label:'i - VII - VI - V (Andaluza)',steps:[d(1),d(7),d(6),d(5,'dom7'),d(1),d(7),d(6),d(5,'dom7'),d(1),d(2,'dim'),d(6),d(7),d(6),d(5,'dom7'),d(7),d(1)]},
+    {label:'vi - ii - V - I (Circle 5ths)',steps:[d(6),d(2),d(5,'dom7'),d(1),d(6),d(2),d(5,'dom7'),d(1),d(3),d(6),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(4),d(5,'dom7'),d(1)]},
+    {label:'i - iv - i - V (Flamenco)',steps:[dH(1),dH(4),dH(1),dH(5),dH(1),dH(4),dH(1),dH(5),dH(6),dH(4),dH(7,'dim'),dH(5),dH(6),dH(5),dH(5),dH(1)]},
+    {label:'I - ♭VII - IV - I (Rock Anthem)',steps:[d(1),d(7),d(4),d(1),d(1),d(7),d(4),d(5),d(1),d(7),d(6),d(4),d(2),d(7),d(4),d(1)]},
+  ];
+
+  const psy=[
+    {label:'Psy Dark (i - ♭II - i - vii°)',steps:[dPh(1),dPh(2),dPh(1),dPh(7,'dim'),dPh(1),dPh(2),dPh(1),dPh(7,'dim'),dPh(1),dPh(2),dPh(4),dPh(2),dPh(1),dPh(2),dPh(7,'dim'),dPh(1)]},
+    {label:'Zenonesque (i - ♭II - ♭III - ♭II)',steps:[d(1),d(1),dPh(2),d(1),dPh(3),dPh(2),d(1),dPh(2),d(1),dPh(4,'dim'),dPh(2),dPh(3),dPh(2),dPh(1,'dim'),dPh(2),d(1)]},
+    {label:'Goa Spirit (sus2 Ostinato)',steps:[d(1,'sus2'),dPh(2,'sus2'),d(1,'sus2'),dPh(2,'sus4'),d(1,'sus2'),dPh(3,'sus2'),dPh(2,'sus2'),d(1,'sus2'),d(1,'sus4'),dPh(2,'sus2'),dPh(4,'dim'),dPh(2,'sus2'),d(1,'sus2'),dPh(3),dPh(2,'sus4'),d(1,'sus2')]},
+    {label:'Full-On Morning (i - III - VI - VII)',steps:[d(1),d(3),d(6),d(7),d(1),d(3),d(6),d(5),d(1),d(3),d(4),d(6),d(7),d(6),d(5),d(1)]},
+    {label:'Forest Night (dim Tension)',steps:[d(1,'dim'),d(7,'dim'),d(1,'dim'),d(4,'dim'),d(1,'dim'),d(6,'dim'),d(7,'dim'),d(1,'dim'),d(1,'dim'),dPh(2),d(7,'dim'),dPh(2,'dim'),dPh(3,'dim'),dPh(2),d(7,'dim'),d(1)]},
+    {label:'Dark Psy Phryg. Dom.',steps:[dPh(1),dPh(2),dPh(1),dPh(5,'dim'),dPh(2),dPh(7),dPh(2),dPh(5,'dim'),dPh(1),dPh(6),dPh(2),dPh(5,'dim'),dPh(4),dPh(2),dPh(7),dPh(1)]},
+    {label:'Psychic Melodic (i-VI-III-VII)',steps:[d(1),d(6),d(3),d(7),d(1),d(3),d(4),d(7),d(1),d(6),d(4),d(7),d(6),d(7),d(5),d(1)]},
+    {label:'Phrygian Descent',steps:[dPh(1),dPh(2),dPh(1),dPh(6),dPh(5),dPh(2),dPh(4,'dim'),dPh(3),dPh(1),dPh(3),dPh(2),dPh(7),dPh(6),dPh(4,'dim'),dPh(2),dPh(1)]},
+  ];
+
+  const techno=[
+    {label:'Melodic Detroit (i-VII-VI)',steps:[d(1),d(7),d(6),d(5),d(1),d(7),d(6),d(5,'dom7'),d(1),d(6),d(3),d(7),d(6),d(7),dPh(2),d(1)]},
+    {label:'Dub Techno Pads (i-iv-III)',steps:[d(1,'sus2'),d(1),d(4),d(1),d(4),d(3),d(7),d(4),d(1),d(7),d(3),dPh(2),d(4),d(7),d(3,'dim'),d(1)]},
+    {label:'Berlin Basement (Phryg. Ostinato)',steps:[d(1),d(1),dPh(2),d(1),d(5,'dim'),d(1),d(4),d(5),d(1),d(4),d(3,'dim'),d(1),d(7),d(6),dPh(2),d(1)]},
+    {label:'Deep House (min7-dom7 Vamp)',steps:[d(1,'min7'),d(5,'dom7'),d(6,'min7'),d(3,'min7'),d(1,'min7'),d(5,'dom7'),d(6,'min7'),d(2,'min7'),d(7,'dom7'),d(3,'min7'),d(6,'min7'),d(5,'dom7'),d(2,'min7'),d(7,'dom7'),d(3,'min7'),d(1,'min7')]},
+    {label:'ARTBAT Gravity (i-VII-VI)',steps:[d(1),d(1),d(3),d(1),d(7),d(1),d(6),d(7),d(7),d(7),d(5),d(7),d(4),d(3),dPh(2),d(1)]},
+    {label:'Peak Time (i-♭II-v-i)',steps:[d(1),dPh(2),d(3),d(1),d(4),d(7),d(6),d(7),d(1),dPh(2),d(1),d(5,'dim'),d(4),d(3),dPh(2),d(1)]},
+  ];
+
+  const trance=[
+    {label:'Uplifting (vi-IV-I-V)',steps:[d(6),d(4),d(1),d(5),d(6),d(4),d(1),d(5),d(6),d(7),d(4),d(5),d(2),d(4),d(5,'dom7'),d(1)]},
+    {label:'Classic Gate (i-VI-III-VII)',steps:[d(1),d(6),d(3),d(7),d(4),dPh(2),d(6),d(5),d(1),d(3),d(7),d(4),d(6),d(5),d(7,'dim'),d(1)]},
+    {label:'Anjuna Deep (I-vi-ii-V)',steps:[d(1,'maj7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(2,'min7'),d(5,'sus4'),d(5,'dom7'),d(1,'maj7'),d(6,'min7'),d(7,'dom7'),d(4,'maj7'),d(2,'min7'),d(4,'min7'),d(5,'maj7'),d(5,'dom7')]},
+    {label:'Solarstone Pure (I-V-IV-V)',steps:[d(1),d(5),d(4),d(5),d(6),d(4),d(5),d(2),d(1),d(4),d(4),d(5),d(6),d(7,'dim'),d(5,'sus4'),d(1)]},
+    {label:'Euphoric Acid (i-♭II-iv-VII)',steps:[d(1),dPh(2),d(1),d(7),d(6),d(7),d(1),d(3),d(4),d(5),d(6),d(7),d(5),d(7),d(5,'dom7'),d(1)]},
+    {label:'Armada Energy (vi-IV-I-V epic)',steps:[d(6),d(6),d(4),d(5),d(1),d(1),d(2),d(4),d(4),d(5),d(6),d(7,'dim'),d(4),d(5),d(2),d(5,'sus4')]},
+    {label:'Progressive Flow (maj7 Sweep)',steps:[d(1,'maj7'),d(2,'min7'),d(5,'dom7'),d(4,'maj7'),d(1,'maj7'),d(6,'min7'),d(4,'maj7'),d(5,'dom7'),d(1,'maj7'),d(2,'min7'),d(4,'maj7'),d(5,'dom7'),d(6,'min7'),d(7,'dim'),d(5,'dom7'),d(1,'maj7')]},
+    {label:'Tiesto Classic (I-vi-IV-V)',steps:[d(1),d(6),d(4),d(5),d(1),d(5),d(4),d(6),d(4),d(6),d(4),d(5),d(2),d(4),d(5,'dom7'),d(1)]},
+    {label:'Vocal Trance Build (I-IV-vi-V)',steps:[d(1),d(4),d(6),d(4,'min7'),d(1),d(4),d(2),d(5),d(1),d(4),d(6),d(4,'min7'),d(4),d(5,'dom7'),d(2),d(1)]},
+    {label:'Ibiza Midnight (i-VII-VI-V)',steps:[d(1,'min7'),d(5),d(4),d(6),d(1,'min7'),d(7),d(6),d(4),d(3),d(4),d(6),d(7),d(5),d(4),d(6,'sus4'),d(1,'min7')]},
+  ];
+
+  const modes=[
+    {label:'Ionian (I-IV-V-I)',steps:[d(1),d(2),d(4),d(5),d(1),d(4),d(5),d(1),d(4),d(5),d(6),d(4),d(2),d(5,'dom7'),d(7,'dim'),d(1)]},
+    {label:'Aeolian (i-VII-VI-V)',steps:[d(1),d(7),d(6),d(5),d(1),d(7),d(6),d(7),d(4),d(6),d(7),d(5),d(3),d(7),d(5,'dom7'),d(1)]},
+    {label:'Phrygian (i-♭II-v-i)',steps:[dPh(1),dPh(2),dPh(3),dPh(4),dPh(5,'dim'),dPh(6),dPh(7),dPh(1),dPh(1),dPh(2),dPh(5,'dim'),dPh(4),dPh(3),dPh(2),dPh(2),dPh(1)]},
+    {label:'Harmonic Minor (i-iv-V-i)',steps:[dH(1),dH(4),dH(5),dH(1),dH(1),dH(4),dH(5),dH(1),dH(6),dH(7,'dim'),dH(5),dH(1),dH(4),dH(7,'dim'),dH(5,'dom7'),dH(1)]},
+    {label:'Phryg. Dominant (Spanish)',steps:[dPh(1),dPh(2),dPh(1),dPh(4),dPh(5,'dim'),dPh(2),dPh(4),dPh(5,'dim'),dPh(1),dPh(2),dPh(3),dPh(2),dPh(1),dPh(7),dPh(2),dPh(1)]},
+  ];
+
+  const ambient=[
+    {label:'Floating Pads (I-V-vi-IV maj7)',steps:[d(1,'maj7'),d(1,'maj7'),d(1,'maj7'),d(1,'maj7'),d(4,'maj7'),d(4,'maj7'),d(4,'maj7'),d(4,'maj7'),d(6,'min7'),d(6,'min7'),d(6,'min7'),d(6,'min7'),d(5,'dom7'),d(5,'dom7'),d(5,'dom7'),d(1,'maj7')]},
+    {label:'Dream Sequence (sus2 drift)',steps:[d(1,'sus2'),d(5,'sus2'),d(4,'sus2'),d(6,'sus2'),d(1,'sus4'),d(5,'sus4'),d(4,'sus2'),d(2,'sus2'),d(1,'sus2'),d(4,'sus2'),d(6,'sus4'),d(5,'sus2'),d(4,'sus2'),d(2,'sus4'),d(5,'sus2'),d(1,'sus2')]},
+    {label:'Hans Zimmer Build (i slow)',steps:[d(1),d(1),d(1),d(7),d(6),d(6),d(6),d(4),d(3),d(3),d(5),d(5),d(5,'dom7'),d(5,'dom7'),d(7,'dim'),d(1)]},
+    {label:'Dark Atmosphere (i-VI-III)',steps:[d(1),d(1),d(6),d(6),d(4),d(4),d(3),d(3),d(1),d(7),d(6),d(4),d(3),dPh(2),d(5,'dom7'),d(1)]},
+    {label:'Zen Garden (sus2 loop)',steps:[d(1,'sus2'),d(1,'sus2'),d(5,'sus2'),d(5,'sus2'),d(4,'sus2'),d(4,'sus2'),d(2,'sus2'),d(2,'sus2'),d(1,'sus4'),d(1,'sus4'),d(5,'sus4'),d(5,'sus4'),d(4,'sus4'),d(2,'sus2'),d(5,'sus2'),d(1,'sus2')]},
+    {label:'Lo-Fi Chill (maj7 cycle)',steps:[d(1,'maj7'),d(6,'min7'),d(4,'maj7'),d(1,'maj7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(6,'min7'),d(4,'maj7'),d(6,'min7'),d(4,'dom7'),d(2,'min7'),d(5,'dom7'),d(4,'maj7'),d(4,'dom7'),d(1,'maj7')]},
+  ];
+
+  return{classic,psy,techno,trance,modes,ambient};
+}
+
+// ═══════════════════════════════════════════════════
+// MIDI EXPORT
+// ═══════════════════════════════════════════════════
+function exportToMidiFile(type){
+  let filteredSeq=currentSequence;
+  let filename='nykro_v7_harmony.mid';
+  if(type==='melody'){filteredSeq=currentSequence.filter(i=>i.isMelody);filename='nykro_v7_melody.mid';}
+  if(type==='chords'){filteredSeq=currentSequence.filter(i=>!i.isMelody);filename='nykro_v7_chords.mid';}
+  let bytes=[0x4D,0x54,0x68,0x64,0x00,0x00,0x00,0x06,0x00,0x01,0x00,0x01,0x01,0xE0];
+  let trackData=[],events=[];
+  filteredSeq.forEach(item=>{
+    item.notes.forEach(n=>{
+      if(!n) return;
+      let midiNote;
+      const mOct=n.match(/^([A-G]#?)([2-7])$/);
+      if(mOct){const baseMidi=midiMap[mOct[1]]||60;const octDiff=parseInt(mOct[2])-4;midiNote=baseMidi+octDiff*12;}
+      else if(n.endsWith('2')&&n.length<=3){midiNote=(midiMap[n.slice(0,-1)]||60)+12;}
+      else{midiNote=midiMap[n]||60;}
+      midiNote=Math.max(0,Math.min(127,midiNote));
+      const vel=Math.round((item.velocity||0.8)*100);
+      events.push({tick:item.step*120,type:0x90,note:midiNote,vel});
+      events.push({tick:(item.step+item.duration)*120,type:0x80,note:midiNote,vel:0});
     });
-}
-
-function loadProgressionToSequencer(prog) {
-    stopSequencer(); clearAudioQueue();
-    currentSequence = currentSequence.filter(item => item.isMelody);
-    currentPresetSteps = prog.steps;
-    currentRootForGrid = prog.steps[0].n + (prog.steps[0].min ? 'm' : '');
-    const totalStepsInLoop = Math.abs(loopEnd - loopStart) + 1;
-    loadChordsSmooth(prog.steps, totalStepsInLoop);
-    initGrid();
-    generateTrancemelody();
-    document.getElementById('chord-name').innerText = `TONO: ${currentRootForGrid}`;
-    playChordAudio(getChordNotes(prog.steps[0].n, prog.steps[0].min, prog.steps[0].type));
-}
-
-function renderProg(prog, container) {
-    const item = document.createElement('div'); item.className = 'suggestion-item';
-    const info = document.createElement('div'); info.className = 'info-prog';
-    let notesText = prog.steps.slice(0,4).map(s => `${s.n}${s.min?'m':''}${s.type?'/'+s.type.substring(0,3):''}`).join(' ') + (prog.steps.length>4 ? '…' : '');
-    info.innerHTML = `<span style="font-size:0.72rem;font-weight:700;color:#ddd">${prog.label}</span><br><span class="notes-display">${notesText}</span>`;
-    const ctrl = document.createElement('div'); ctrl.className = 'controls';
-    const pBtn = document.createElement('button'); pBtn.className = 'play-btn'; pBtn.innerText = 'PLAY';
-    pBtn.onclick = () => loadProgressionToSequencer(prog);
-    const aBtn = document.createElement('button'); aBtn.className = 'arp-btn'; aBtn.innerText = 'ARP';
-    aBtn.onclick = () => {
-        stopSequencer(); clearAudioQueue();
-        currentSequence = currentSequence.filter(item => item.isMelody);
-        currentPresetSteps = prog.steps;
-        const totalStepsInLoop = Math.abs(loopEnd - loopStart) + 1;
-        loadChordsSmooth(prog.steps, totalStepsInLoop);
-        currentRootForGrid = prog.steps[0].n + (prog.steps[0].min ? 'm' : '');
-        initGrid();
-        generarArpTrance();
-        generateTrancemelody();
-        document.getElementById('chord-name').innerText = `ARP ${arpStyle.toUpperCase()}: ${currentRootForGrid}`;
-        drawSequenceOnGrid();
-    };
-    ctrl.append(pBtn, aBtn); item.append(info, ctrl); container.appendChild(item);
-}
-
-// ─── SCALE-AWARE PRESET ENGINE ────────────────────────────────────────────────
-function buildAllPresets(cleanRoot, isMinor) {
-    const d   = makeScaleBuilder(cleanRoot, isMinor);
-    const dH  = makeScaleBuilder(cleanRoot, isMinor, 'harmonic');
-    const dPh = makeScaleBuilder(cleanRoot, isMinor, 'phrygian_dom');
-
-    const classic = [
-        { label:'I - V - vi - IV (Pop)', steps:[d(1),d(5),d(6),d(4),d(1),d(5),d(6),d(4),d(1),d(5),d(6),d(4),d(1),d(5,'dom7'),d(4),d(1)] },
-        { label:'i - VII - VI - VII (Rock)', steps:[d(1),d(7),d(6),d(7),d(1),d(7),d(6),d(5),d(1),d(7),d(6),d(7),d(4),d(7),d(5),d(1)] },
-        { label:'I - IV - V - I (Cadencia)', steps:[d(1),d(1),d(4),d(4),d(5,'dom7'),d(5,'dom7'),d(1),d(1),d(1),d(4),d(4),d(5,'dom7'),d(2),d(6),d(5,'dom7'),d(1)] },
-        { label:'vi - IV - I - V (Canon)', steps:[d(6),d(4),d(1),d(5),d(6),d(4),d(1),d(5),d(6),d(4),d(2),d(5),d(6),d(7,'dim'),d(5,'dom7'),d(1)] },
-        { label:'i - iv - VII - III (Menor Rom.)', steps:[d(1),d(4),d(7),d(3),d(1),d(4),d(5),d(1),d(1),d(6),d(4),d(7),d(3),d(5),d(7),d(1)] },
-        { label:'I - III - IV - iv (Modal Mix)', steps:[d(1),d(3),d(4),d(4,'min7'),d(1),d(3),d(4),d(4,'min7'),d(1),d(5),d(4),d(3),d(2),d(5,'dom7'),d(4),d(1)] },
-        { label:'i - VI - III - VII (Dark Cin.)', steps:[d(1),d(6),d(3),d(7),d(1),d(6),d(3),d(7),d(4),d(6),d(3),d(7),d(1),d(6),d(5,'dom7'),d(1)] },
-        { label:'I - vi - ii - V (Jazz Turnaround)', steps:[d(1,'maj7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(4,'maj7'),d(2,'min7'),d(5,'dom7'),d(3,'min7'),d(6,'min7'),d(2,'min7'),d(1,'maj7')] },
-        { label:'i - iv - V - i (Harm. Minor)', steps:[dH(1),dH(4),dH(5),dH(1),dH(1),dH(4),dH(5),dH(1),dH(6),dH(7,'dim'),dH(5),dH(1),dH(4),dH(7,'dim'),dH(5),dH(1)] },
-        { label:'ii - V - I - VI (Bebop)', steps:[d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(3,'min7'),d(4,'maj7'),d(7,'dim'),d(3,'min7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(6,'min7'),d(1,'maj7')] },
-        { label:'I - IV - I - V (Gospel Pump)', steps:[d(1,'maj7'),d(4,'maj7'),d(1,'maj7'),d(5,'dom7'),d(1,'maj7'),d(4,'maj7'),d(1,'maj7'),d(5,'dom7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(4,'maj7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7')] },
-        { label:'i - III - VI - VII (Aeolian)', steps:[d(1),d(3),d(6),d(7),d(1),d(3),d(6),d(5),d(1),d(6),d(4),d(7),d(3),d(6),d(5),d(1)] },
-        { label:'I - V - vi - iii - IV (Pachelbel)', steps:[d(1),d(5),d(6),d(3),d(4),d(1),d(4),d(5),d(1),d(5),d(6),d(3),d(4),d(2),d(5,'dom7'),d(1)] },
-        { label:'i - VII - VI - V (Andaluza)', steps:[d(1),d(7),d(6),d(5,'dom7'),d(1),d(7),d(6),d(5,'dom7'),d(1),d(2,'dim'),d(6),d(7),d(6),d(5,'dom7'),d(7),d(1)] },
-        { label:'vi - ii - V - I (Circle of 5ths)', steps:[d(6),d(2),d(5,'dom7'),d(1),d(6),d(2),d(5,'dom7'),d(1),d(3),d(6),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(4),d(5,'dom7'),d(1)] },
-        { label:'i - iv - i - V (Flamenco)', steps:[dH(1),dH(4),dH(1),dH(5),dH(1),dH(4),dH(1),dH(5),dH(6),dH(4),dH(7,'dim'),dH(5),dH(6),dH(5),dH(5),dH(1)] },
-        { label:'i - VI - III - iv (Neo-Classical)', steps:[d(1),d(6),d(3),d(4),d(1),d(6),d(3),d(7),d(4),d(6),d(7,'dim'),d(5,'dom7'),d(3),d(6),d(5),d(1)] },
-        { label:'I - ♭VII - IV - I (Rock Anthem)', steps:[d(1),d(7),d(4),d(1),d(1),d(7),d(4),d(5),d(1),d(7),d(6),d(4),d(2),d(7),d(4),d(1)] },
-    ];
-
-    const psy = [
-        { label:'Psy Dark (i - ♭II - i - vii°)', steps:[dPh(1),dPh(2),dPh(1),dPh(7,'dim'),dPh(1),dPh(2),dPh(1),dPh(7,'dim'),dPh(1),dPh(2),dPh(4),dPh(2),dPh(1),dPh(2),dPh(7,'dim'),dPh(1)] },
-        { label:'Zenonesque (i - ♭II - ♭III - ♭II)', steps:[d(1),d(1),dPh(2),d(1),dPh(3),dPh(2),d(1),dPh(2),d(1),dPh(4,'dim'),dPh(2),dPh(3),dPh(2),dPh(1,'dim'),dPh(2),d(1)] },
-        { label:'Goa Spirit (sus2 Ostinato)', steps:[d(1,'sus2'),dPh(2,'sus2'),d(1,'sus2'),dPh(2,'sus4'),d(1,'sus2'),dPh(3,'sus2'),dPh(2,'sus2'),d(1,'sus2'),d(1,'sus4'),dPh(2,'sus2'),dPh(4,'dim'),dPh(2,'sus2'),d(1,'sus2'),dPh(3),dPh(2,'sus4'),d(1,'sus2')] },
-        { label:'Full-On Morning (i - III - VI - VII)', steps:[d(1),d(3),d(6),d(7),d(1),d(3),d(6),d(5),d(1),d(3),d(4),d(6),d(7),d(6),d(5),d(1)] },
-        { label:'Forest Night (dim Tension)', steps:[d(1,'dim'),d(7,'dim'),d(1,'dim'),d(4,'dim'),d(1,'dim'),d(6,'dim'),d(7,'dim'),d(1,'dim'),d(1,'dim'),dPh(2),d(7,'dim'),dPh(2,'dim'),dPh(3,'dim'),dPh(2),d(7,'dim'),d(1)] },
-        { label:'Alien Hypno (sus2 Vortex)', steps:[d(1,'sus2'),d(1,'sus4'),dPh(2,'sus2'),d(1,'sus2'),d(5,'sus2'),dPh(2,'sus4'),d(4,'sus2'),dPh(2,'sus2'),d(1,'sus4'),d(3,'sus2'),dPh(2,'sus2'),d(6,'sus2'),d(5,'sus2'),d(4,'sus4'),dPh(2,'sus2'),d(1,'sus2')] },
-        { label:'Prog-Psy Flow (i - iv - i - VII)', steps:[d(1),d(1),d(4),d(1),d(4),d(4),d(7),d(4),d(1),d(7),d(6),d(4),d(3),d(7),d(7),d(1)] },
-        { label:'Dark Psy Phryg. Dom.', steps:[dPh(1),dPh(2),dPh(1),dPh(5,'dim'),dPh(2),dPh(7),dPh(2),dPh(5,'dim'),dPh(1),dPh(6),dPh(2),dPh(5,'dim'),dPh(4),dPh(2),dPh(7),dPh(1)] },
-        { label:'Tribal Stomp (i-i-♭II-i)', steps:[d(1),d(1),dPh(2),d(1),d(1),dPh(2),d(7),d(4),d(1),d(7),dPh(2),d(7),d(4),d(3),dPh(2),d(1)] },
-        { label:'Psychic Melodic (i-VI-III-VII)', steps:[d(1),d(6),d(3),d(7),d(1),d(3),d(4),d(7),d(1),d(6),d(4),d(7),d(6),d(7),d(5),d(1)] },
-        { label:'Astral Voyage (i-iv-♭II-VII)', steps:[d(1,'sus2'),d(4),d(6),dPh(2),d(1),d(3),d(5,'dim'),d(6),d(1,'sus2'),d(7),dPh(2),d(6),d(4),d(3,'dim'),dPh(2),d(1)] },
-        { label:'Phrygian Descent', steps:[dPh(1),dPh(2),dPh(1),dPh(6),dPh(5),dPh(2),dPh(4,'dim'),dPh(3),dPh(1),dPh(3),dPh(2),dPh(7),dPh(6),dPh(4,'dim'),dPh(2),dPh(1)] },
-    ];
-
-    const techno = [
-        { label:'Industrial Abyss (i - ♭II - i)', steps:[d(1),d(1),dPh(2),d(1),d(5,'dim'),d(1),d(4),dPh(2),d(1),d(7),d(6),d(5),d(4),d(3,'dim'),dPh(2),d(1)] },
-        { label:'Melodic Detroit (i-VII-VI)', steps:[d(1),d(7),d(6),d(5),d(1),d(7),d(6),d(5,'dom7'),d(1),d(6),d(3),d(7),d(6),d(7),dPh(2),d(1)] },
-        { label:'Dub Techno Pads (i-iv-III)', steps:[d(1,'sus2'),d(1),d(4),d(1),d(4),d(3),d(7),d(4),d(1),d(7),d(3),dPh(2),d(4),d(7),d(3,'dim'),d(1)] },
-        { label:'Berlin Basement (Phryg. Ostinato)', steps:[d(1),d(1),dPh(2),d(1),d(5,'dim'),d(1),d(4),d(5),d(1),d(4),d(3,'dim'),d(1),d(7),d(6),dPh(2),d(1)] },
-        { label:'Acid Riff (i-iv-VII-III)', steps:[d(1),d(7),d(1),d(7),d(3),d(1),d(4),d(7),d(7),d(5),d(6),d(4),d(7),d(4),d(3),d(1)] },
-        { label:'Deep House (min7-dom7 Vamp)', steps:[d(1,'min7'),d(5,'dom7'),d(6,'min7'),d(3,'min7'),d(1,'min7'),d(5,'dom7'),d(6,'min7'),d(2,'min7'),d(7,'dom7'),d(3,'min7'),d(6,'min7'),d(5,'dom7'),d(2,'min7'),d(7,'dom7'),d(3,'min7'),d(1,'min7')] },
-        { label:'Chicago House (I-IV-V)', steps:[d(1),d(4),d(6),d(4),d(1),d(7),d(4),d(7),d(1),d(6),d(4),d(7),d(2),d(4),d(5,'dom7'),d(1)] },
-        { label:'Club Hypno Loop (i-iv-i)', steps:[d(1),d(1),d(1),d(7),d(1),d(1),d(4),d(7),d(1),d(4),d(1),d(3),d(1),dPh(2),d(7),d(1)] },
-        { label:'Peak Time (i-♭II-v-i)', steps:[d(1),dPh(2),d(3),d(1),d(4),d(7),d(6),d(7),d(1),dPh(2),d(1),d(5,'dim'),d(4),d(3),dPh(2),d(1)] },
-        { label:'ARTBAT Gravity (i-VII-VI)', steps:[d(1),d(1),d(3),d(1),d(7),d(1),d(6),d(7),d(7),d(7),d(5),d(7),d(4),d(3),dPh(2),d(1)] },
-        { label:'Funk Groove (dom7 Shuffle)', steps:[d(1,'dom7'),d(4,'dom7'),d(1,'dom7'),d(4,'dom7'),d(6,'min7'),d(4,'dom7'),d(2,'min7'),d(5,'dom7'),d(1,'dom7'),d(3,'min7'),d(4,'dom7'),d(5,'dom7'),d(6,'min7'),d(4,'dom7'),d(5,'dom7'),d(1,'dom7')] },
-    ];
-
-    const trance = [
-        { label:'Uplifting (vi-IV-I-V)', steps:[d(6),d(4),d(1),d(5),d(6),d(4),d(1),d(5),d(6),d(7),d(4),d(5),d(2),d(4),d(5,'dom7'),d(1)] },
-        { label:'Classic Gate (i-VI-III-VII)', steps:[d(1),d(6),d(3),d(7),d(4),dPh(2),d(6),d(5),d(1),d(3),d(7),d(4),d(6),d(5),d(7,'dim'),d(1)] },
-        { label:'Anjuna Deep (I-vi-ii-V)', steps:[d(1,'maj7'),d(6,'min7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(2,'min7'),d(5,'sus4'),d(5,'dom7'),d(1,'maj7'),d(6,'min7'),d(7,'dom7'),d(4,'maj7'),d(2,'min7'),d(4,'min7'),d(5,'maj7'),d(5,'dom7')] },
-        { label:'Solarstone Pure (I-V-IV-V)', steps:[d(1),d(5),d(4),d(5),d(6),d(4),d(5),d(2),d(1),d(4),d(4),d(5),d(6),d(7,'dim'),d(5,'sus4'),d(1)] },
-        { label:'90s Dreamscape (i-V-VI-III)', steps:[d(1),d(5),d(6),d(3),d(1),d(5),d(6),d(5),d(4),d(3),dPh(2),d(7),d(6),d(5),d(7,'dim'),d(1)] },
-        { label:'Euphoric Acid (i-♭II-iv-VII)', steps:[d(1),dPh(2),d(1),d(7),d(6),d(7),d(1),d(3),d(4),d(5),d(6),d(7),d(5),d(7),d(5,'dom7'),d(1)] },
-        { label:'Armada Energy (vi-IV-I-V epic)', steps:[d(6),d(6),d(4),d(5),d(1),d(1),d(2),d(4),d(4),d(5),d(6),d(7,'dim'),d(4),d(5),d(2),d(5,'sus4')] },
-        { label:'Progressive Flow (maj7 Sweep)', steps:[d(1,'maj7'),d(2,'min7'),d(5,'dom7'),d(4,'maj7'),d(1,'maj7'),d(6,'min7'),d(4,'maj7'),d(5,'dom7'),d(1,'maj7'),d(2,'min7'),d(4,'maj7'),d(5,'dom7'),d(6,'min7'),d(7,'dim'),d(5,'dom7'),d(1,'maj7')] },
-        { label:'Tiesto Classic (I-vi-IV-V)', steps:[d(1),d(6),d(4),d(5),d(1),d(5),d(4),d(6),d(4),d(6),d(4),d(5),d(2),d(4),d(5,'dom7'),d(1)] },
-        { label:'Ferry Corsten Run (I-V-ii-IV)', steps:[d(1),d(5),d(4,'min7'),d(6),d(4),d(2),d(5),d(7,'dim'),d(1),d(5),d(4,'min7'),d(6),d(4),d(5,'dom7'),d(2),d(1)] },
-        { label:'Vocal Trance Build (I-IV-vi-V)', steps:[d(1),d(4),d(6),d(4,'min7'),d(1),d(4),d(2),d(5),d(1),d(4),d(6),d(4,'min7'),d(4),d(5,'dom7'),d(2),d(1)] },
-        { label:'ATB Flow State (I-vi-V-IV)', steps:[d(1),d(6),d(5),d(4),d(2),d(4),d(4),d(5),d(1),d(5),d(4),d(6),d(7,'dim'),d(5,'dom7'),d(4),d(1)] },
-        { label:'Ibiza Midnight (i-VII-VI-V)', steps:[d(1,'min7'),d(5),d(4),d(6),d(1,'min7'),d(7),d(6),d(4),d(3),d(4),d(6),d(7),d(5),d(4),d(6,'sus4'),d(1,'min7')] },
-        { label:'Psy-Trance Bliss (i-♭II-III-VII)', steps:[d(1),dPh(2),d(3),dPh(2),d(6),d(6),d(7),d(5),d(1),d(3),d(4),d(5),d(6),d(7),d(7,'dim'),dPh(2)] },
-    ];
-
-    const modes = [
-        { label:'Ionian (I-IV-V-I)', steps:[d(1),d(2),d(4),d(5),d(1),d(4),d(5),d(1),d(4),d(5),d(6),d(4),d(2),d(5,'dom7'),d(7,'dim'),d(1)] },
-        { label:'Aeolian (i-VII-VI-V)', steps:[d(1),d(7),d(6),d(5),d(1),d(7),d(6),d(7),d(4),d(6),d(7),d(5),d(3),d(7),d(5,'dom7'),d(1)] },
-        { label:'Phrygian (i-♭II-v-i)', steps:[dPh(1),dPh(2),dPh(3),dPh(4),dPh(5,'dim'),dPh(6),dPh(7),dPh(1),dPh(1),dPh(2),dPh(5,'dim'),dPh(4),dPh(3),dPh(2),dPh(2),dPh(1)] },
-        { label:'Harmonic Minor (i-iv-V-i)', steps:[dH(1),dH(4),dH(5),dH(1),dH(1),dH(4),dH(5),dH(1),dH(6),dH(7,'dim'),dH(5),dH(1),dH(4),dH(7,'dim'),dH(5,'dom7'),dH(1)] },
-        { label:'Phryg. Dominant (Spanish)', steps:[dPh(1),dPh(2),dPh(1),dPh(4),dPh(5,'dim'),dPh(2),dPh(4),dPh(5,'dim'),dPh(1),dPh(2),dPh(3),dPh(2),dPh(1),dPh(7),dPh(2),dPh(1)] },
-    ];
-
-    const ambient = [
-        { label:'Floating Pads (I-V-vi-IV maj7)', steps:[d(1,'maj7'),d(1,'maj7'),d(1,'maj7'),d(1,'maj7'),d(4,'maj7'),d(4,'maj7'),d(4,'maj7'),d(4,'maj7'),d(6,'min7'),d(6,'min7'),d(6,'min7'),d(6,'min7'),d(5,'dom7'),d(5,'dom7'),d(5,'dom7'),d(1,'maj7')] },
-        { label:'Dream Sequence (sus2 drift)', steps:[d(1,'sus2'),d(5,'sus2'),d(4,'sus2'),d(6,'sus2'),d(1,'sus4'),d(5,'sus4'),d(4,'sus2'),d(2,'sus2'),d(1,'sus2'),d(4,'sus2'),d(6,'sus4'),d(5,'sus2'),d(4,'sus2'),d(2,'sus4'),d(5,'sus2'),d(1,'sus2')] },
-        { label:'Hans Zimmer Build (i slow)', steps:[d(1),d(1),d(1),d(7),d(6),d(6),d(6),d(4),d(3),d(3),d(5),d(5),d(5,'dom7'),d(5,'dom7'),d(7,'dim'),d(1)] },
-        { label:'Dark Atmosphere (i-VI-III)', steps:[d(1),d(1),d(6),d(6),d(4),d(4),d(3),d(3),d(1),d(7),d(6),d(4),d(3),dPh(2),d(5,'dom7'),d(1)] },
-        { label:'Zen Garden (sus2 loop)', steps:[d(1,'sus2'),d(1,'sus2'),d(5,'sus2'),d(5,'sus2'),d(4,'sus2'),d(4,'sus2'),d(2,'sus2'),d(2,'sus2'),d(1,'sus4'),d(1,'sus4'),d(5,'sus4'),d(5,'sus4'),d(4,'sus4'),d(2,'sus2'),d(5,'sus2'),d(1,'sus2')] },
-        { label:'Cinematic Swell (I-V-vi-IV)', steps:[d(1),d(1,'maj7'),d(5),d(5,'maj7'),d(6,'min7'),d(6,'min7'),d(4),d(4,'min7'),d(1),d(5),d(4),d(6),d(7,'dim'),d(5,'dom7'),d(4),d(1)] },
-        { label:'Neon Rain (min7 / maj7)', steps:[d(1,'min7'),d(7,'maj7'),d(6,'maj7'),d(5,'dom7'),d(1,'min7'),d(3,'maj7'),d(6,'maj7'),d(5,'dom7'),d(1,'min7'),d(7,'maj7'),d(4,'min7'),d(5,'dom7'),d(3,'maj7'),d(6,'maj7'),d(5,'dom7'),d(1,'min7')] },
-        { label:'Lo-Fi Chill (maj7 cycle)', steps:[d(1,'maj7'),d(6,'min7'),d(4,'maj7'),d(1,'maj7'),d(2,'min7'),d(5,'dom7'),d(1,'maj7'),d(6,'min7'),d(4,'maj7'),d(6,'min7'),d(4,'dom7'),d(2,'min7'),d(5,'dom7'),d(4,'maj7'),d(4,'dom7'),d(1,'maj7')] },
-        { label:'Post-Rock Rise (I-V-vi-IV)', steps:[d(1),d(5),d(4,'min7'),d(6),d(1),d(5),d(4),d(5),d(6),d(4,'min7'),d(5),d(4),d(2,'min7'),d(5,'dom7'),d(4),d(1)] },
-        { label:'Midnight Voyager (ii-V-I cycle)', steps:[d(1,'min7'),d(4,'min7'),d(6,'maj7'),d(3,'maj7'),d(7,'dom7'),d(4,'dom7'),d(1,'min7'),d(5,'dom7'),d(1,'min7'),d(7,'maj7'),d(6,'maj7'),d(4,'dom7'),d(3,'maj7'),d(7,'min7'),d(5,'dom7'),d(1,'min7')] },
-    ];
-
-    return { classic, psy, techno, trance, modes, ambient };
-}
-
-function updateUI(note, index, isMinor) {
-    currentRootForGrid = note;
-    initGrid();
-    const allNotes = document.querySelectorAll('.note');
-    allNotes.forEach(el => el.classList.remove('active','active-minor','neighbor'));
-    if(!isMinor){
-        if(index >= 0) allNotes[index].classList.add('active');
-        allNotes[(index+11)%12].classList.add('neighbor');
-        allNotes[(index+1)%12].classList.add('neighbor');
-    } else {
-        if(index >= 0) allNotes[index+12].classList.add('active-minor');
-    }
-
-    const cleanRoot = note.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-
-    ['suggestion-list','psy-list','techno-list','trance-list','modes-list','ambient-list'].forEach(id => {
-        const el = document.getElementById(id); if(el) el.innerHTML = '';
-    });
-
-    const lists = buildAllPresets(cleanRoot, isMinor);
-    lists.classic.forEach(p  => renderProg(p, document.getElementById('suggestion-list')));
-    lists.psy.forEach(p      => renderProg(p, document.getElementById('psy-list')));
-    lists.techno.forEach(p   => renderProg(p, document.getElementById('techno-list')));
-    lists.trance.forEach(p   => renderProg(p, document.getElementById('trance-list')));
-    lists.modes.forEach(p    => renderProg(p, document.getElementById('modes-list')));
-    lists.ambient.forEach(p  => renderProg(p, document.getElementById('ambient-list')));
-}
-
-// ─── MIDI EXPORT ──────────────────────────────────────────────────────────────
-function exportToMidiFile(type) {
-    let filteredSeq = currentSequence;
-    let filename = 'nykro_harmony.mid';
-    if(type==='melody'){ filteredSeq=currentSequence.filter(i=>i.isMelody); filename='nykro_melody.mid'; }
-    if(type==='chords'){ filteredSeq=currentSequence.filter(i=>!i.isMelody); filename='nykro_chords.mid'; }
-    let bytes = [0x4D,0x54,0x68,0x64,0x00,0x00,0x00,0x06,0x00,0x01,0x00,0x01,0x01,0xE0];
-    let trackData = [], events = [];
-    filteredSeq.forEach(item => {
-        item.notes.forEach(n => {
-            if(!n) return;
-            let midiNote;
-            const mOct = n.match(/^([A-G]#?)([2-7])$/);
-            if(mOct) {
-                const baseMidi = midiMap[mOct[1]] || 60;
-                const octDiff = parseInt(mOct[2]) - 4;
-                midiNote = baseMidi + octDiff * 12;
-            } else if(n.endsWith('2') && n.length <= 3) {
-                midiNote = (midiMap[n.slice(0,-1)] || 60) + 12;
-            } else { midiNote = midiMap[n] || 60; }
-            midiNote = Math.max(0, Math.min(127, midiNote));
-            const vel = Math.round((item.velocity || 0.8) * 100);
-            events.push({tick: item.step*120, type:0x90, note:midiNote, vel});
-            events.push({tick: (item.step+item.duration)*120, type:0x80, note:midiNote, vel:0});
-        });
-    });
-    events.sort((a,b) => a.tick-b.tick);
-    let lastTick = 0;
-    events.forEach(ev => {
-        let delta = ev.tick - lastTick; lastTick = ev.tick;
-        let buffer = []; let v = delta; buffer.push(v & 0x7F);
-        while(v >>= 7) buffer.push((v & 0x7F) | 0x80);
-        trackData.push(...buffer.reverse());
-        trackData.push(ev.type, ev.note, ev.vel !== undefined ? ev.vel : 100);
-    });
-    trackData.push(0x00,0xFF,0x2F,0x00);
-    bytes.push(0x4D,0x54,0x72,0x6B);
-    const len = trackData.length;
-    bytes.push((len>>24)&0xFF,(len>>16)&0xFF,(len>>8)&0xFF,len&0xFF);
-    bytes = bytes.concat(trackData);
-    const blob = new Blob([new Uint8Array(bytes)], {type:'audio/midi'});
-    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = filename; link.click();
+  });
+  events.sort((a,b)=>a.tick-b.tick);
+  let lastTick=0;
+  events.forEach(ev=>{
+    let delta=ev.tick-lastTick;lastTick=ev.tick;
+    let buffer=[];let v=delta;buffer.push(v&0x7F);
+    while(v>>=7) buffer.push((v&0x7F)|0x80);
+    trackData.push(...buffer.reverse());
+    trackData.push(ev.type,ev.note,ev.vel!==undefined?ev.vel:100);
+  });
+  trackData.push(0x00,0xFF,0x2F,0x00);
+  bytes.push(0x4D,0x54,0x72,0x6B);
+  const len=trackData.length;
+  bytes.push((len>>24)&0xFF,(len>>16)&0xFF,(len>>8)&0xFF,len&0xFF);
+  bytes=bytes.concat(trackData);
+  const blob=new Blob([new Uint8Array(bytes)],{type:'audio/midi'});
+  const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=filename;link.click();
 }
 </script>
 </body>
