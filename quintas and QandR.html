@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nykro-Arpodelic Engine Pro v8.0</title>
+<title>Nykro-Arpodelic Engine Pro v7.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
 :root {
@@ -30,6 +30,7 @@ h1{color:var(--gold);margin:0;font-size:1.2rem;white-space:nowrap;letter-spacing
 #coherence-bar{height:4px;border-radius:2px;background:var(--border);flex:1;overflow:hidden}
 #coherence-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--gold),var(--green));width:0%;transition:width 0.5s}
 #coherence-pct{font-size:0.65rem;font-family:'Share Tech Mono',monospace;color:var(--gold);min-width:32px}
+/* ARP STACK INDICATOR */
 #arp-stack-indicator{display:flex;gap:4px;align-items:center;padding:4px 8px;background:#0a0a14;border:1px solid #222;border-radius:4px}
 .stack-dot{width:6px;height:6px;border-radius:50%;background:#222;transition:background 0.2s}
 .stack-dot.active{background:var(--cyan)}
@@ -59,32 +60,12 @@ h1{color:var(--gold);margin:0;font-size:1.2rem;white-space:nowrap;letter-spacing
 .midi-block.chord-misc {background:#00d4ff}
 .midi-block.melody     {background:#ff00ff}
 .midi-block.melody.muted{opacity:0.15;filter:grayscale(1)}
+/* ARP layers — different alpha per stack level */
 .midi-block.arp        {background:#00a8ff;border-color:rgba(255,255,255,0.4)}
 .midi-block.arp.muted  {opacity:0.12}
 .midi-block.arp.stack1 {background:#00d4ff}
 .midi-block.arp.stack2 {background:#aa00ff}
 .midi-block.arp.stack3 {background:#ff6600}
-
-/* ── CHORD FX VISUAL MODIFIERS (non-destructive CSS only) ── */
-/* Trance Gate: even pulses visible, odd pulses invisible */
-.midi-block.fx-trance-gate-on  { opacity: 1 !important; }
-.midi-block.fx-trance-gate-off { opacity: 0.04 !important; border-style: dashed; }
-/* Psy-Stab: visually compressed to a tiny pluck marker */
-.midi-block.fx-psy-stab {
-  height: 70% !important; top: 15% !important;
-  border-radius: 2px !important;
-  width: 40% !important; left: 6% !important;
-  border-top: 2px solid rgba(255,255,255,0.8) !important;
-}
-/* Syncopated: dim the downbeat visually, brighten off-beats */
-.midi-block.fx-synco-muted  { opacity: 0.07 !important; }
-.midi-block.fx-synco-accent { filter: brightness(1.4) saturate(1.3); box-shadow: 0 0 6px currentColor; }
-/* Strum: tilt via skew to suggest stagger */
-.midi-block.fx-strum {
-  transform: skewX(-4deg);
-  border-left: 2px solid rgba(255,255,255,0.6) !important;
-}
-
 #circle-wrapper{position:relative;width:440px;height:440px;background:radial-gradient(circle,#141420 0%,#07070f 70%);border-radius:50%;border:1px solid var(--border);flex-shrink:0}
 .note{position:absolute;width:44px;height:44px;margin-left:-22px;margin-top:-22px;display:flex;align-items:center;justify-content:center;background:#1a1a28;border:2px solid #333;border-radius:50%;cursor:pointer;font-weight:700;transition:all 0.28s;z-index:2;color:#fff;font-size:0.85rem}
 .note.minor{width:38px;height:38px;margin-left:-19px;margin-top:-19px;font-size:0.72rem}
@@ -128,25 +109,9 @@ h1{color:var(--gold);margin:0;font-size:1.2rem;white-space:nowrap;letter-spacing
 .arp-style-btn.active{background:#00a8cc;color:#000;border-color:var(--cyan)}
 .chord-dur-btn{background:#1a1a28;border:1px solid #333;color:#888;padding:4px 7px;border-radius:3px;cursor:pointer;font-size:0.55rem;font-weight:700;font-family:'Share Tech Mono',monospace}
 .chord-dur-btn.active{background:#6600cc;color:#fff;border-color:#aa44ff}
+/* STACK BUTTON */
 .stack-btn{background:#1a1a28;border:1px solid #333;color:#888;padding:4px 7px;border-radius:3px;cursor:pointer;font-size:0.55rem;font-weight:700}
 .stack-btn.active{background:#004466;color:var(--cyan);border-color:var(--cyan)}
-
-/* ── CHORD FX BUTTONS ── */
-.chordfx-btn{background:#1a1a28;border:1px solid #333;color:#888;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:0.55rem;font-weight:700;font-family:'Share Tech Mono',monospace;transition:all 0.2s}
-.chordfx-btn:hover{border-color:#555;color:#bbb}
-.chordfx-btn.active-off   {background:#222;color:#ccc;border-color:#555}
-.chordfx-btn.active-gate  {background:#003344;color:#00d4ff;border-color:#00d4ff;box-shadow:0 0 6px rgba(0,212,255,0.4)}
-.chordfx-btn.active-stab  {background:#330022;color:#ff00ff;border-color:#ff00ff;box-shadow:0 0 6px rgba(255,0,255,0.4)}
-.chordfx-btn.active-synco {background:#332200;color:#ffcc00;border-color:#ffcc00;box-shadow:0 0 6px rgba(255,204,0,0.4)}
-.chordfx-btn.active-strum {background:#003322;color:#2ecc71;border-color:#2ecc71;box-shadow:0 0 6px rgba(46,204,113,0.4)}
-
-/* FX status badge */
-#chordfx-badge{font-size:0.6rem;font-family:'Share Tech Mono',monospace;padding:3px 8px;border-radius:10px;background:#111;border:1px solid #333;color:#555;transition:all 0.3s}
-#chordfx-badge.badge-gate  {background:#001a22;color:#00d4ff;border-color:#00d4ff}
-#chordfx-badge.badge-stab  {background:#1a0011;color:#ff00ff;border-color:#ff00ff}
-#chordfx-badge.badge-synco {background:#1a1100;color:#ffcc00;border-color:#ffcc00}
-#chordfx-badge.badge-strum {background:#001a11;color:#2ecc71;border-color:#2ecc71}
-
 .social-float{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:1000;align-items:flex-end}
 .social-btn{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;color:white;font-weight:bold;font-size:0.65rem;transition:all 0.3s;box-shadow:0 4px 15px rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.1);overflow:hidden;white-space:nowrap}
 .social-btn:hover{width:120px;border-radius:22px;padding:0 14px}
@@ -161,7 +126,7 @@ h1{color:var(--gold);margin:0;font-size:1.2rem;white-space:nowrap;letter-spacing
 <body>
 
 <header class="main-header">
-  <h1>Nykro-Arpodelic Engine Pro <span style="font-size:0.65rem;opacity:0.5">V8.0 · ZERO-LOSS ARP CORE · CHORD FX</span></h1>
+  <h1>Nykro-Arpodelic Engine Pro <span style="font-size:0.65rem;opacity:0.5">V7.0 · ZERO-LOSS ARP CORE</span></h1>
   <div style="display:flex;gap:12px;align-items:center">
     <div id="status-midi">Buscando teclado MIDI…</div>
     <div id="tonal-key-display" style="font-size:0.75rem;color:var(--gold);font-family:'Share Tech Mono',monospace;padding:5px 10px;background:#0a0800;border:1px solid #3a3000;border-radius:4px">KEY: —</div>
@@ -216,11 +181,6 @@ h1{color:var(--gold);margin:0;font-size:1.2rem;white-space:nowrap;letter-spacing
       <div class="stack-dot" id="sd3"></div>
     </div>
   </div>
-  <div class="tm-divider"></div>
-  <div class="tm-item">
-    <div class="tm-label">Chord FX activo</div>
-    <div id="chordfx-badge">BYPASS</div>
-  </div>
 </div>
 
 <div class="social-float">
@@ -263,37 +223,6 @@ h1{color:var(--gold);margin:0;font-size:1.2rem;white-space:nowrap;letter-spacing
           <button class="chord-dur-btn" id="cdur-16" onclick="setChordDuration(16,this)">4 BAR</button>
         </div>
       </div>
-
-      <!-- ══════════════════════════════════════════
-           CHORD FX — NEW MODULE (non-destructive)
-           ══════════════════════════════════════════ -->
-      <div style="display:flex;flex-direction:column;gap:3px">
-        <span style="font-size:0.55rem;color:#e67e22;font-weight:700;letter-spacing:1px">CHORD FX (non-destructive):</span>
-        <div style="display:flex;gap:4px">
-          <button class="chordfx-btn active-off" id="chordfx-off"
-                  onclick="setChordFX('off',this)" title="Bypass — acorde sostenido normal">
-            ◼ OFF
-          </button>
-          <button class="chordfx-btn" id="chordfx-gate"
-                  onclick="setChordFX('gate',this)" title="Corta el acorde en pulsos 1/16 — duty 50%">
-            ⚡ T.GATE
-          </button>
-          <button class="chordfx-btn" id="chordfx-stab"
-                  onclick="setChordFX('stab',this)" title="Pluck percusivo 1/32 — Psytrance / Techno">
-            🗡 PSY-STAB
-          </button>
-          <button class="chordfx-btn" id="chordfx-synco"
-                  onclick="setChordFX('synco',this)" title="Acentúa contratiempos — House / Techno groove">
-            ⇌ SYNCO
-          </button>
-          <button class="chordfx-btn" id="chordfx-strum"
-                  onclick="setChordFX('strum',this)" title="Rasgueo humanizado — escalonado grave → agudo">
-            〰 STRUM
-          </button>
-        </div>
-      </div>
-      <!-- ═══════════════════════════════════════════ -->
-
       <div style="display:flex;flex-direction:column;gap:3px">
         <span style="font-size:0.55rem;color:#666">MELODÍA IA:</span>
         <div style="display:flex;gap:4px">
@@ -420,6 +349,7 @@ const TONAL = {
     return this.scaleNotes.includes(clean);
   },
 
+  // Snap a semitone to the nearest scale semitone within the same octave range
   snapToScale(semi) {
     const oct = Math.floor(semi / 12);
     const pitch = semi % 12;
@@ -470,100 +400,9 @@ let isMelodyMuted      = false;
 let isArpMuted         = false;
 let melodyMode         = 'euphoric';
 let arpStyle           = 'classic';
-let arpStackLevel      = 0;
+let arpStackLevel      = 0; // 0=BASE, 1=+OCT, 2=+GROOVE, 3=+CHROMATIC
 let currentPresetSteps = null;
 let chordDurationSteps = 4;
-
-// ══════════════════════════════════════════════════════════════
-// CHORD FX STATE — Non-destructive rhythmic effect on chords
-// Possible values: 'off' | 'gate' | 'stab' | 'synco' | 'strum'
-// INVARIANT: currentSequence is NEVER modified by Chord FX.
-//            The effect only changes HOW notes are sent to audio
-//            and HOW blocks are styled during drawSequenceOnGrid().
-// ══════════════════════════════════════════════════════════════
-let currentChordFX = 'off';
-
-// STRUM delay in seconds per semitone rank (index 0 = lowest note)
-const STRUM_DELAY_PER_NOTE_SEC = 0.018; // 18ms between each chord note
-
-/**
- * setChordFX(fx, btn)
- * Called by the UI buttons. Updates state and refreshes grid visuals.
- * Does NOT modify currentSequence.
- */
-function setChordFX(fx, btn) {
-  currentChordFX = fx;
-  // Reset all button styles
-  document.querySelectorAll('.chordfx-btn').forEach(b => {
-    b.className = 'chordfx-btn';
-  });
-  // Apply active class to the chosen button
-  const classMap = { off:'active-off', gate:'active-gate', stab:'active-stab', synco:'active-synco', strum:'active-strum' };
-  btn.className = 'chordfx-btn ' + (classMap[fx] || 'active-off');
-  // Update tonal monitor badge
-  const badge = document.getElementById('chordfx-badge');
-  badge.className = 'badge-' + fx;
-  const labelMap = { off:'BYPASS', gate:'T.GATE', stab:'PSY-STAB', synco:'SYNCO', strum:'STRUM' };
-  badge.textContent = labelMap[fx] || 'BYPASS';
-  if(fx === 'off') badge.className = '';
-  // Redraw grid to apply/remove CSS FX classes (no sequence data changed)
-  drawSequenceOnGrid();
-}
-
-/**
- * shouldSilenceChordFX(step, noteIndex, totalNotes)
- * Called by startSequencer() BEFORE sending a chord block to playChordAudio.
- * Returns true  → skip audio for this chord at this step (silence it)
- * Returns false → send audio normally
- * 'noteIndex' is the 0-based index within the chord notes array (for strum sorting)
- */
-function shouldSilenceChordFX(step) {
-  const pulseInLoop = (step - loopStart);
-  switch(currentChordFX) {
-    case 'gate':
-      // Trance Gate: silence odd 1/16 pulses (duty cycle 50%)
-      return (pulseInLoop % 2 === 1);
-    case 'stab':
-      // PSY-STAB: only play on beat positions 0 and 8 of each 16-step bar
-      // (every 8 steps), silence everything else
-      return (pulseInLoop % 8 !== 0);
-    case 'synco':
-      // Syncopated: silence downbeats (pulse 0 of each 4-step beat),
-      // allow off-beats (pulses 2, off-sixteenths)
-      return (pulseInLoop % 4 === 0);
-    case 'off':
-    default:
-      return false;
-  }
-}
-
-/**
- * getChordFXAudioDuration(baseDuration)
- * Returns a modified note duration in seconds for audio envelope.
- * PSY-STAB crushes it to a very short pluck.
- * Other FX use the base duration.
- */
-function getChordFXAudioDuration(baseDuration) {
-  if(currentChordFX === 'stab') return 0.045; // ~45ms pluck
-  if(currentChordFX === 'gate') return baseDuration * 0.45; // short gate
-  return baseDuration;
-}
-
-/**
- * getChordFXStrum(chordNotes, timeOffset, duration, type, velocity)
- * For STRUM mode: fires each note with an ascending delay instead of
- * sending all at once. Returns true if it handled the playback itself.
- */
-function handleStrumPlayback(chordNotes, baseTimeOffset, duration, type, velocity) {
-  if(currentChordFX !== 'strum') return false;
-  // Sort notes by pitch (ascending = low to high strum)
-  const sorted = [...chordNotes].sort((a,b) => noteToFreq(a) - noteToFreq(b));
-  sorted.forEach((n, i) => {
-    const delay = baseTimeOffset + i * STRUM_DELAY_PER_NOTE_SEC;
-    playChordAudio([n], delay, duration * 0.9, type, velocity * (1 - i * 0.05));
-  });
-  return true;
-}
 
 // ═══════════════════════════════════════════════════
 // TONAL MONITOR UI
@@ -582,6 +421,7 @@ function updateTonalMonitor() {
       dotsEl.appendChild(d);
     });
   }
+  // Stack indicator
   for(let i=0;i<4;i++) {
     const el = document.getElementById('sd'+i);
     if(el) el.className = 'stack-dot' + (i <= arpStackLevel ? ' active' : '');
@@ -624,8 +464,10 @@ function computeCoherence() {
 }
 
 // ═══════════════════════════════════════════════════
-// CHORD BLOCK LOOKUP
+// CHORD BLOCK LOOKUP — reads the piano roll directly
 // ═══════════════════════════════════════════════════
+// Returns sorted semitones of the chord active at a given global step.
+// This is the GROUND TRUTH that both ARP and melody must reference.
 function getChordSemitonesAtStep(step) {
   const block = currentSequence
     .filter(i => i.isChordBlock && !i.isMelody)
@@ -750,13 +592,18 @@ function loadChordsSmooth(progression, totalSteps) {
 }
 
 // ═══════════════════════════════════════════════════
-// ZERO-LOSS ARP GENERATOR
+// ▶▶▶ RULE 1: ZERO-LOSS ARP GENERATOR ◀◀◀
+// Reads chord tones directly from the piano roll.
+// Applies mathematical transformations: RISE / FALL /
+// PING-P / GATE / CLASSIC — NO notes created from scratch.
 // ═══════════════════════════════════════════════════
 function generarArpTrance() {
+  // Remove previous ARP notes only (preserve melody + chords)
   currentSequence = currentSequence.filter(item => !item.isArp);
 
   const totalSteps = Math.abs(loopEnd - loopStart) + 1;
 
+  // If no chord progression loaded yet, build default and load it
   if(!currentPresetSteps || !currentPresetSteps.length) {
     const getN = off => notes[(TONAL.rootIdx+off)%12];
     const prog = TONAL.isMinor
@@ -766,24 +613,29 @@ function generarArpTrance() {
     loadChordsSmooth(prog,totalSteps);
   }
 
+  // CRITICAL INVARIANT: ensure there are chord blocks to read from
   const chordBlocks = currentSequence.filter(i=>i.isChordBlock);
   if(!chordBlocks.length) {
-    document.getElementById('melody-info').textContent='ERROR: No hay acordes en el piano roll.';
+    document.getElementById('melody-info').textContent='ERROR: No hay acordes en el piano roll. Carga una progresión primero.';
     return;
   }
 
   let totalArpNotes = 0;
 
   for(let gs = loopStart; gs <= loopEnd; gs++) {
-    const chordSemis = getChordSemitonesAtStep(gs);
-    if(!chordSemis || !chordSemis.length) continue;
+    // ── RULE 1: Read chord tones from sequencer at this exact step
+    const chordSemis = getChordSemitonesAtStep(gs); // sorted ascending
+    if(!chordSemis || !chordSemis.length) continue; // no chord → no arp (silence is correct)
 
+    // ── RULE 2: Apply stack modifications (additive, NOT destructive)
     const expandedSemis = applyArpStack(chordSemis, gs);
+
+    // ── RULE 3: Apply style pattern — determines which tone at each 1/16 step
     const patStep = (gs - loopStart) % 16;
     const notesToPlay = applyArpStyle(expandedSemis, patStep);
 
     notesToPlay.forEach(semi => {
-      if(semi === null) return;
+      if(semi === null) return; // GATE silences represented as null
       const clamped = Math.max(36, Math.min(84, semi));
       currentSequence.push({
         step: gs, notes: [semitoneToNoteName(clamped)],
@@ -802,30 +654,62 @@ function generarArpTrance() {
     ' · ' + totalArpNotes + ' notas · ' + TONAL.root + (TONAL.isMinor?'m':'') + ' [zero-loss]';
 }
 
+// ── RULE 2: ADDITIVE STACK TRANSFORMATIONS ──────────────────
+// Each level ADDS behavior without removing previous behavior.
+// Level 0 = base chord tones only
+// Level 1 = + octave doubles on downbeats
+// Level 2 = + groove velocity + syncopation positions
+// Level 3 = + scale-snapped chromatic approach notes
 function applyArpStack(sortedSemis, globalStep) {
-  const expanded = [...sortedSemis];
-  if(arpStackLevel >= 1) expanded.push(sortedSemis[0] + 12);
-  if(arpStackLevel >= 2) { if(sortedSemis.length >= 3) expanded.push(sortedSemis[2] + 12); }
+  const expanded = [...sortedSemis]; // always start with original chord tones
+
+  if(arpStackLevel >= 1) {
+    // Add octave doubles: every chord root note gets an octave-up version
+    const rootSemi = sortedSemis[0];
+    expanded.push(rootSemi + 12);
+  }
+
+  if(arpStackLevel >= 2) {
+    // Add the 5th an octave up for rhythmic emphasis
+    if(sortedSemis.length >= 3) {
+      expanded.push(sortedSemis[2] + 12);
+    }
+  }
+
   if(arpStackLevel >= 3) {
-    const approachSnapped = TONAL.snapToScale(sortedSemis[0] - 1);
+    // Add chromatic approach note below root — snapped to scale
+    const approachRaw = sortedSemis[0] - 1;
+    const approachSnapped = TONAL.snapToScale(approachRaw);
     if(!expanded.includes(approachSnapped)) expanded.push(approachSnapped);
   }
+
   return expanded.sort((a,b)=>a-b);
 }
 
+// ── RULE 1 CORE: ARP STYLE PATTERN FUNCTIONS ──────────────────
+// Returns an array of semitones to play at this 1/16 step.
+// NEVER returns empty on base mode. null = intentional GATE silence.
 function applyArpStyle(sortedSemis, patStep) {
   const n = sortedSemis.length;
   if(!n) return [];
+
   switch(arpStyle) {
     case 'rise': {
+      // Ascending order, cycling through all chord tones + octave
       const allNotes = [...sortedSemis, sortedSemis[0]+12];
-      return [allNotes[patStep % allNotes.length]];
+      const idx = patStep % allNotes.length;
+      return [allNotes[idx]];
     }
+
     case 'fall': {
+      // Descending order
       const allNotes = [sortedSemis[0]+12, ...sortedSemis].reverse();
-      return [allNotes[patStep % allNotes.length]];
+      const idx = patStep % allNotes.length;
+      return [allNotes[idx]];
     }
+
     case 'ping': {
+      // Ping-pong: 0,1,2,1,0,1,2... no repeated extremes mid-bounce
       const allNotes = [...sortedSemis];
       const period = (allNotes.length - 1) * 2;
       let pos = patStep % Math.max(period, 1);
@@ -833,12 +717,16 @@ function applyArpStyle(sortedSemis, patStep) {
       pos = Math.max(0, Math.min(pos, allNotes.length-1));
       return [allNotes[pos]];
     }
+
     case 'gate': {
-      if(patStep % 2 === 1) return [null];
-      return sortedSemis;
+      // All chord tones simultaneously, but every other 1/16 is silenced (50% duty cycle)
+      if(patStep % 2 === 1) return [null]; // silent pulse
+      return sortedSemis; // full chord on even pulses
     }
+
     case 'classic':
     default: {
+      // Root → 5th → root+oct → 3rd → root → 5th+oct → root → 3rd
       const seq = [0, Math.min(2,n-1), 0, Math.min(1,n-1), 0, Math.min(2,n-1), 0, Math.min(1,n-1)];
       const octSeq = [0,0,1,0,0,1,0,0];
       const idx = patStep % seq.length;
@@ -847,27 +735,47 @@ function applyArpStyle(sortedSemis, patStep) {
   }
 }
 
+// ── RULE 2: Groove velocity per stack level ─────────────────
 function computeVelocityGroove(globalStep, patStep, stackLevel) {
+  // Base velocity grid (16-step accents: downbeat, off-beat, weak)
   const baseGrid = [1.0, 0.5, 0.75, 0.5, 0.9, 0.5, 0.7, 0.45,
                     0.95, 0.5, 0.75, 0.5, 0.85, 0.5, 0.7, 0.4];
   let vel = baseGrid[patStep % 16];
+
   if(stackLevel >= 2) {
+    // Add groove: boost 2nd and 4th beats (1/16 positions 4, 12)
     if(patStep === 4 || patStep === 12) vel = Math.min(1.0, vel + 0.15);
+    // Slight swing on 8th-note off-beats
     if([2,6,10,14].includes(patStep)) vel = Math.min(1.0, vel + 0.08);
   }
-  if(stackLevel >= 3) vel *= 0.85;
+
+  if(stackLevel >= 3) {
+    // Approach note gets quieter velocity
+    vel *= 0.85;
+  }
+
   return Math.round(vel * 100) / 100;
 }
 
 // ═══════════════════════════════════════════════════
-// MELODÍA IA
+// ▶▶▶ RULE 3: MELODÍA IA — Chord-Aware & Preset-Aware ◀◀◀
+// Melody adapts intervals based on preset character:
+// Dark/technical → minor 2nds & tritones
+// Euphoric/uplifting → perfect 4ths, 5ths, octaves
+// All notes restricted to TONAL.scaleNotes
+// Downbeats ALWAYS anchor to active chord tone
 // ═══════════════════════════════════════════════════
 function generateTrancemelody() {
   currentSequence = currentSequence.filter(item => !item.isMelody);
   const totalSteps = Math.abs(loopEnd - loopStart) + 1;
+
+  // Detect preset character from active progression label
   const presetChar = detectPresetCharacter();
   const scalePool = TONAL.getScalePool(3,5);
 
+  // Choose interval palette based on character (RULE 3)
+  // dark/technical: small intervals (semitones 1-3)
+  // euphoric/uplifting: large intervals (5,7,12)
   const INTERVAL_PALETTES = {
     dark:    { leaps:[1,2,3,-1,-2,-3,6,-6], step:[-1,1,-2,2], skipChance:0.3 },
     euphoric:{ leaps:[7,5,12,-7,-5,-12,4,-4], step:[-2,-1,1,2], skipChance:0.20 },
@@ -882,13 +790,17 @@ function generateTrancemelody() {
   function pickMelodyNote(cur, step, direction, forceChordTone) {
     if(!cur) return scalePool[Math.floor(scalePool.length/2)];
     const curSemi = cur.semitone;
+
+    // RULE 3 CRITICAL: on downbeats (step%4===0), anchor to active chord tone
     if(forceChordTone) {
       const cs = getChordSemitonesAtStep(loopStart + step);
       if(cs && cs.length) {
+        // Closest chord semitone to current melody position
         const closestCS = cs.reduce((b,s)=>Math.abs(s-curSemi)<Math.abs(b-curSemi)?s:b);
         return nearestInPool(closestCS);
       }
     }
+
     const r = Math.random();
     if(r < 0.30) {
       const leap = palette.leaps[Math.floor(Math.random()*palette.leaps.length)];
@@ -898,6 +810,7 @@ function generateTrancemelody() {
       const stepIv = palette.step[Math.floor(Math.random()*palette.step.length)];
       return nearestInPool(curSemi + stepIv * dir);
     } else {
+      // Chord tone approach (read live from piano roll)
       const cs = getChordSemitonesAtStep(loopStart + step);
       const pool = cs && cs.length ? cs.map(s=>nearestInPool(s)) : scalePool;
       return pool.reduce((b,c)=>Math.abs(c.semitone-curSemi)<Math.abs(b.semitone-curSemi)?c:b);
@@ -908,6 +821,7 @@ function generateTrancemelody() {
   const fifthName = notes[(TONAL.rootIdx+7)%12];
   const fifthNote4 = scalePool.find(p=>p.name===fifthName&&p.octave===4)||nearestInPool(rootNote4.semitone+7);
   const octNote   = scalePool.find(p=>p.name===TONAL.root&&p.octave===5)||nearestInPool(rootNote4.semitone+12);
+  function nearestInPool(semi) { return scalePool.reduce((b,c)=>Math.abs(c.semitone-semi)<Math.abs(b.semitone-semi)?c:b); }
 
   const midPoint = Math.floor(totalSteps/2);
   const skipChance = {
@@ -916,6 +830,7 @@ function generateTrancemelody() {
 
   let cur = rootNote4;
 
+  // QUESTION phrase
   for(let s=0;s<midPoint;s++) {
     if(s>0 && Math.random()<skipChance) continue;
     const isDownbeat = (s%4===0);
@@ -932,6 +847,7 @@ function generateTrancemelody() {
     if(chosen){ addMelodyNote(chosen.name,chosen.octave,s,1); cur=chosen; }
   }
 
+  // ANSWER phrase (resolution)
   cur = fifthNote4;
   for(let s=midPoint;s<totalSteps;s++) {
     if(s>midPoint && Math.random()<skipChance) continue;
@@ -950,13 +866,15 @@ function generateTrancemelody() {
 
   document.getElementById('melody-info').textContent =
     TONAL.root+(TONAL.isMinor?'m':'')+' · '+melodyMode.toUpperCase()+
-    ' · char:'+presetChar+' · v8';
+    ' · char:'+presetChar+' · v7';
   computeCoherence();
   drawSequenceOnGrid();
 }
 
+// RULE 3: detect preset character from active chord label or progression
 function detectPresetCharacter() {
   if(!currentPresetSteps) return 'neutral';
+  // Count minor chords and dim chords vs major
   let minorCount=0, dimCount=0, total=currentPresetSteps.length;
   currentPresetSteps.forEach(s=>{
     if(s.min) minorCount++;
@@ -975,7 +893,7 @@ function addMelodyNote(noteName, octave, step, duration) {
 }
 
 // ═══════════════════════════════════════════════════
-// GRID RENDERING — with non-destructive Chord FX CSS classes
+// GRID RENDERING
 // ═══════════════════════════════════════════════════
 function noteRowId(noteName,octave){ return `${noteName}${octave}`; }
 
@@ -1029,60 +947,20 @@ function parseNoteStr(n){
   return{name:n,octave:4};
 }
 
-/**
- * drawSequenceOnGrid()
- * Renders all sequence items onto the grid.
- *
- * CHORD FX VISUAL RULES (non-destructive — item.duration is never changed):
- *   'off'   → normal sustained block (unchanged)
- *   'gate'  → chord blocks get fx-trance-gate-on / fx-trance-gate-off per step
- *   'stab'  → all chord blocks get fx-psy-stab class (visual compression)
- *   'synco' → downbeat steps get fx-synco-muted, off-beats get fx-synco-accent
- *   'strum' → all chord blocks get fx-strum class (skew hint)
- *
- * The original item object is never modified. CSS classes are applied only to
- * the DOM element (block div), which is ephemeral and recreated on each draw.
- */
 function drawSequenceOnGrid(){
   document.querySelectorAll('.midi-block').forEach(b=>b.remove());
-
   currentSequence.forEach(item=>{
     item.notes.forEach(n=>{
       const {name,octave}=parseNoteStr(n);
       const startCell=document.getElementById(`cell-${item.step}-${noteRowId(name,octave)}`);
       if(!startCell) return;
-
       const block=document.createElement('div');
       let cn='midi-block ';
-      if(item.isMelody)        cn+='melody'+(isMelodyMuted?' muted':'');
-      else if(item.isArp)      cn+='arp '+(item.stackClass||'stack0')+(isArpMuted?' muted':'');
+      if(item.isMelody)       cn+='melody'+(isMelodyMuted?' muted':'');
+      else if(item.isArp)     cn+='arp '+(item.stackClass||'stack0')+(isArpMuted?' muted':'');
       else if(item.isChordBlock) cn+=(item.colorClass||'chord-misc');
-      else                     cn+='chord-misc';
+      else                    cn+='chord-misc';
       block.className=cn;
-
-      // ── CHORD FX: apply visual modifier classes (non-destructive) ──
-      if(item.isChordBlock && currentChordFX !== 'off') {
-        const pulseInLoop = item.step - loopStart;
-        switch(currentChordFX) {
-          case 'gate':
-            // Even pulses visible, odd pulses dimmed (simulates gated cut)
-            block.classList.add(pulseInLoop % 2 === 0 ? 'fx-trance-gate-on' : 'fx-trance-gate-off');
-            break;
-          case 'stab':
-            // All chord blocks shrunk visually to a stab marker
-            block.classList.add('fx-psy-stab');
-            break;
-          case 'synco':
-            // Downbeat = dimmed, off-beat = accented
-            block.classList.add(pulseInLoop % 4 === 0 ? 'fx-synco-muted' : 'fx-synco-accent');
-            break;
-          case 'strum':
-            // All chord blocks get strum indicator (skew)
-            block.classList.add('fx-strum');
-            break;
-        }
-      }
-
       if(item.isChordBlock&&item.duration>1){
         const cellRect=startCell.getBoundingClientRect();
         const cellW=cellRect.width||20;
@@ -1103,7 +981,7 @@ function drawSequenceOnGrid(){
 }
 
 // ═══════════════════════════════════════════════════
-// SEQUENCER PLAYBACK — with Chord FX audio interception
+// SEQUENCER PLAYBACK
 // ═══════════════════════════════════════════════════
 function updateBPM(val){
   currentBPM=parseFloat(val);
@@ -1142,41 +1020,12 @@ function startSequencer(){
     currentSequence.filter(item=>item.step===currentStep).forEach(item=>{
       if(item.isMelody&&isMelodyMuted) return;
       if(item.isArp&&isArpMuted) return;
-
-      const baseDur=(60/currentBPM/4)*item.duration;
+      const type=item.isMelody?'square':'sawtooth';
+      const dur=(60/currentBPM/4)*item.duration;
       const vel=item.velocity||0.8;
-
-      // ══════════════════════════════════════════════
-      // CHORD FX AUDIO INTERCEPTION (non-destructive)
-      // Only chord blocks are affected. Melody + ARP
-      // always play through normally.
-      // ══════════════════════════════════════════════
-      if(item.isChordBlock && currentChordFX !== 'off') {
-
-        // STRUM: handle separately (staggered note onset)
-        if(currentChordFX === 'strum') {
-          handleStrumPlayback(item.notes, 0, baseDur, 'sawtooth', vel);
-          item.notes.forEach(n=>activeNotes.push(n.replace(/\d/g,'')));
-          return;
-        }
-
-        // All other FX: check silence gate first
-        if(shouldSilenceChordFX(currentStep)) return; // skip audio
-
-        // Not silenced — play with FX-modified duration
-        const fxDur = getChordFXAudioDuration(baseDur);
-        const type = item.isMelody ? 'square' : 'sawtooth';
-        playChordAudio(item.notes, 0, fxDur, type, vel);
-        item.notes.forEach(n=>activeNotes.push(n.replace(/\d/g,'')));
-
-      } else {
-        // Normal playback (off mode or non-chord items)
-        const type=item.isMelody?'square':'sawtooth';
-        playChordAudio(item.notes,0,baseDur,type,vel);
-        item.notes.forEach(n=>activeNotes.push(n.replace(/\d/g,'')));
-      }
+      playChordAudio(item.notes,0,dur,type,vel);
+      item.notes.forEach(n=>activeNotes.push(n.replace(/\d/g,'')));
     });
-
     highlightCircleNotes(activeNotes);
     if(activeNotes.length) highlightPiano(activeNotes.map(n=>n+'4'));
 
@@ -1347,6 +1196,7 @@ function setArpStack(level,btn){
   arpStackLevel=level;
   document.querySelectorAll('.stack-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  // Update stack indicator dots
   for(let i=0;i<4;i++){
     const el=document.getElementById('sd'+i);
     if(el) el.className='stack-dot'+(i<=level?' active':'');
@@ -1399,7 +1249,7 @@ function getMIDIMessage(message){
 }
 
 // ═══════════════════════════════════════════════════
-// LOAD PROGRESSION
+// LOAD PROGRESSION — unified entry point
 // ═══════════════════════════════════════════════════
 function loadProgressionToSequencer(prog){
   stopSequencer();clearAudioQueue();
@@ -1413,6 +1263,7 @@ function loadProgressionToSequencer(prog){
   const totalStepsInLoop=Math.abs(loopEnd-loopStart)+1;
   loadChordsSmooth(prog.steps,totalStepsInLoop);
   initGrid();
+  // Melody is generated AFTER chords exist (RULE 3)
   generateTrancemelody();
   document.getElementById('chord-name').innerText=`TONO: ${currentRootForGrid}`;
   playChordAudio(getChordNotes(firstStep.n,firstStep.min,firstStep.type));
@@ -1464,7 +1315,7 @@ function renderProg(prog,container){
 }
 
 // ═══════════════════════════════════════════════════
-// PRESET ENGINE
+// PRESET ENGINE (scale-aware)
 // ═══════════════════════════════════════════════════
 function buildAllPresets(cleanRoot,isMinor){
   const d  =makeScaleBuilder(cleanRoot,isMinor);
@@ -1548,9 +1399,9 @@ function buildAllPresets(cleanRoot,isMinor){
 // ═══════════════════════════════════════════════════
 function exportToMidiFile(type){
   let filteredSeq=currentSequence;
-  let filename='nykro_v8_harmony.mid';
-  if(type==='melody'){filteredSeq=currentSequence.filter(i=>i.isMelody);filename='nykro_v8_melody.mid';}
-  if(type==='chords'){filteredSeq=currentSequence.filter(i=>!i.isMelody);filename='nykro_v8_chords.mid';}
+  let filename='nykro_v7_harmony.mid';
+  if(type==='melody'){filteredSeq=currentSequence.filter(i=>i.isMelody);filename='nykro_v7_melody.mid';}
+  if(type==='chords'){filteredSeq=currentSequence.filter(i=>!i.isMelody);filename='nykro_v7_chords.mid';}
   let bytes=[0x4D,0x54,0x68,0x64,0x00,0x00,0x00,0x06,0x00,0x01,0x00,0x01,0x01,0xE0];
   let trackData=[],events=[];
   filteredSeq.forEach(item=>{
@@ -1584,9 +1435,6 @@ function exportToMidiFile(type){
   const blob=new Blob([new Uint8Array(bytes)],{type:'audio/midi'});
   const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=filename;link.click();
 }
-
-// Initialize the OFF button as active on load
-document.getElementById('chordfx-off').className = 'chordfx-btn active-off';
 </script>
 </body>
 </html>
