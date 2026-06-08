@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nykro-Arpodelic Engine Pro v4.0</title>
+    <title>Nykro-Arpodelic Engine Pro v4.1</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
 
@@ -36,13 +36,11 @@
 
         .container { display: flex; gap: 20px; align-items: flex-start; justify-content: center; width: 95vw; max-width: 1600px; }
 
-        /* SEQUENCER */
         #sequencer-container { width: 95vw; max-width: 1600px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden; display: flex; flex-direction: column; }
         .seq-header { background: #0e0e18; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
         #midi-grid-scroll { width: 100%; background: #060610; cursor: crosshair; position: relative; overflow-y: auto; max-height: 320px; scrollbar-width: thin; scrollbar-color: #333 #0a0a14; }
         #midi-grid-scroll::-webkit-scrollbar { width: 6px; } #midi-grid-scroll::-webkit-scrollbar-track { background: #0a0a14; } #midi-grid-scroll::-webkit-scrollbar-thumb { background: #2a2a44; border-radius: 3px; }
         #midi-grid { display: grid; grid-template-columns: 60px repeat(32, 1fr); grid-auto-rows: 22px; position: relative; user-select: none; min-width: 100%; }
-
 
         .grid-cell.playing-now { background: rgba(255,204,0,0.35) !important; z-index: 1; border-left: 2px solid var(--gold); }
         .grid-cell.out-of-loop { opacity: 0.08; background: #000 !important; }
@@ -60,7 +58,6 @@
         .midi-block.melody { background: var(--green); box-shadow: 0 0 10px rgba(46,204,113,0.7); }
         .midi-block.melody.muted { opacity: 0.15; box-shadow: none; filter: grayscale(1); }
 
-        /* CIRCLE */
         #circle-wrapper { position: relative; width: 440px; height: 440px; background: radial-gradient(circle, #141420 0%, #07070f 70%); border-radius: 50%; border: 1px solid var(--border); flex-shrink: 0; box-shadow: 0 0 40px rgba(0,212,255,0.08); }
         .note { position: absolute; width: 44px; height: 44px; margin-left: -22px; margin-top: -22px; display: flex; align-items: center; justify-content: center; background: #1a1a28; border: 2px solid #333; border-radius: 50%; cursor: pointer; font-weight: 700; transition: all 0.28s cubic-bezier(0.175,0.885,0.32,1.275); z-index: 2; color: #fff; font-size: 0.85rem; letter-spacing: 0.5px; }
         .note.minor { width: 38px; height: 38px; margin-left: -19px; margin-top: -19px; font-size: 0.72rem; }
@@ -78,7 +75,6 @@
         }
         #mode-toggle-btn.minor-active { background: var(--magenta); color: #fff; border-color: #fff; box-shadow: 0 0 20px rgba(255,0,255,0.5); }
 
-        /* SIDEBAR */
         #sidebar { display: flex; flex-direction: column; gap: 12px; flex: 1; max-width: 620px; }
         .suggestion-box { background: var(--bg2); padding: 10px; border-radius: 8px; max-height: 185px; overflow-y: auto; border-top: 2px solid #333; scrollbar-width: thin; scrollbar-color: #333 #111; }
         .suggestion-box::-webkit-scrollbar { width: 4px; } .suggestion-box::-webkit-scrollbar-track { background: #111; } .suggestion-box::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
@@ -120,12 +116,10 @@
         .social-btn:hover span { opacity: 1; }
         .fb { background: #1877F2; } .gr { background: #111; } .sc { background: #ff5500; }
 
-        /* MELODY MODE SELECTOR */
         .melody-mode-group { display: flex; gap: 4px; align-items: center; }
         .melody-mode-btn { background: #1a1a28; border: 1px solid #333; color: #888; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.5px; transition: all 0.2s; font-family: 'Rajdhani', sans-serif; }
         .melody-mode-btn.active { background: var(--green); color: #000; border-color: var(--green); }
 
-        /* ARP STYLE SELECTOR */
         .arp-style-group { display: flex; gap: 4px; align-items: center; }
         .arp-style-btn { background: #1a1a28; border: 1px solid #333; color: #888; padding: 4px 7px; border-radius: 3px; cursor: pointer; font-size: 0.55rem; font-weight: 700; transition: all 0.2s; font-family: 'Rajdhani', sans-serif; }
         .arp-style-btn.active { background: #00a8cc; color: #000; border-color: var(--cyan); }
@@ -134,7 +128,7 @@
 <body>
 
 <header class="main-header">
-    <h1>Nykro-Arpodelic Engine Pro <span style="font-size:0.65rem;opacity:0.5;">V4.0</span></h1>
+    <h1>Nykro-Arpodelic Engine Pro <span style="font-size:0.65rem;opacity:0.5;">V4.1</span></h1>
     <div id="status-midi">Buscando teclado MIDI...</div>
 </header>
 
@@ -234,9 +228,8 @@
 
 <script>
     // ─── CONSTANTS ────────────────────────────────────────────────────────────
-    const VISIBLE_ROWS = 36;   // 3 octavas completas en el grid
-    const BLACK_KEYS = [1,3,6,8,10]; // indices de notas negras en octava
-    let vScrollOffset = 0;  // row offset from top (C8 = 0)
+    const VISIBLE_ROWS = 36;
+    const BLACK_KEYS = [1,3,6,8,10];
     const majors = ['C','G','D','A','E','B','Gb','Db','Ab','Eb','Bb','F'];
     const minors = ['Am','Em','Bm','F#m','C#m','G#m','Ebm','Bbm','Fm','Cm','Gm','Dm'];
     const notes  = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -257,9 +250,9 @@
     let isDraggingLoop     = false;
     let onlyMinorsMode     = false;
     let isMelodyMuted      = false;
-    let melodyMode         = 'balanced'; // balanced | ascending | descending | chromatic | sparse
-    let arpStyle           = 'trance';   // trance | rising | bouncy | gate
-    let currentPresetSteps = null;       // stores active preset steps for chord-aware melody
+    let melodyMode         = 'balanced';
+    let arpStyle           = 'trance';
+    let currentPresetSteps = null;
 
     // ─── MELODY / ARP MODE SELECTORS ─────────────────────────────────────────
     function setMelodyMode(mode, btn) {
@@ -273,10 +266,8 @@
         btn.classList.add('active');
     }
 
-    // ─── KEYBOARD ─────────────────────────────────────────────────────────────
     window.addEventListener('keydown', e => { if(e.code==='Space'){ e.preventDefault(); toggleSequencerPlay(); }});
 
-    // ─── MIDI MODE ────────────────────────────────────────────────────────────
     function toggleMidiMode() {
         onlyMinorsMode = !onlyMinorsMode;
         const btn = document.getElementById('mode-toggle-btn');
@@ -292,7 +283,6 @@
         drawSequenceOnGrid();
     }
 
-    // ─── MIDI ACCESS ──────────────────────────────────────────────────────────
     if(navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(onMIDISuccess, ()=>{});
 
     function onMIDISuccess(midiAccess) {
@@ -336,10 +326,11 @@
     }
 
     // ─── CHORD NOTES ─────────────────────────────────────────────────────────
-    function getChordNotes(root, isMinor, type='triad') {
+    function getChordNotes(root, isMinor, type) {
         let r = root.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
         let rootIdx = notes.indexOf(r);
         if(rootIdx < 0) rootIdx = 0;
+        // Default: major/minor triad
         let intervals = isMinor ? [0,3,7] : [0,4,7];
         if(type==='phrygian')  intervals = [0,1,7];
         if(type==='sus2')      intervals = [0,2,7];
@@ -353,39 +344,105 @@
         if(type==='half-dim')  intervals = [0,3,6,10];
         if(type==='add9')      intervals = [0,4,7,14%12];
         if(type==='minmaj7')   intervals = [0,3,7,11];
+        if(type==='min7')      intervals = [0,3,7,10];
         return intervals.map(v => {
             let idx = (rootIdx+v)%12;
             return (rootIdx+v)<12 ? notes[idx] : notes[idx]+'2';
         });
     }
 
+    // ─── SCALE-AWARE DEGREE SYSTEM ───────────────────────────────────────────
+    // Degrees for major scale: I ii iii IV V vi vii°
+    // Degrees for minor scale (natural): i ii° III iv v VI VII
+    // Returns a step object {n, min, type} using actual scale degrees
+    // scaleDegrees: 1-based index (1=tonic, 2=supertonic, etc.)
+
+    const MAJOR_SCALE_INTERVALS = [0,2,4,5,7,9,11];
+    const MINOR_SCALE_INTERVALS = [0,2,3,5,7,8,10];
+    // Chord qualities for each degree in major: maj, min, min, maj, maj, min, dim
+    const MAJOR_DEGREE_QUALITIES = [
+        {min:false},        // I   - major
+        {min:true},         // ii  - minor
+        {min:true},         // iii - minor
+        {min:false},        // IV  - major
+        {min:false},        // V   - major
+        {min:true},         // vi  - minor
+        {type:'dim'}        // vii°- diminished
+    ];
+    // Chord qualities for each degree in natural minor: min, dim, maj, min, min, maj, maj
+    const MINOR_DEGREE_QUALITIES = [
+        {min:true},         // i   - minor
+        {type:'dim'},       // ii° - diminished
+        {min:false},        // III - major
+        {min:true},         // iv  - minor
+        {min:true},         // v   - minor (natural minor)
+        {min:false},        // VI  - major
+        {min:false}         // VII - major
+    ];
+    // Harmonic minor: same but V is dominant (major), vii° is dim7
+    const HARM_MINOR_DEGREE_QUALITIES = [
+        {min:true},         // i
+        {type:'dim'},       // ii°
+        {min:false, type:'aug'}, // III+
+        {min:true},         // iv
+        {min:false},        // V (harmonic - major!)
+        {min:false},        // VI
+        {type:'dim'}        // vii°
+    ];
+
+    // Build a step object from a scale degree (1-7) and current root/mode
+    // mode: 'major' | 'minor' | 'harmonic' | 'phrygian_dom'
+    // overrideType: optional chord type override (e.g. 'dom7', 'sus4')
+    function scaleDeg(degree, rootIdx, mode, overrideType) {
+        const deg = ((degree - 1) % 7 + 7) % 7; // 0-based safe
+        let scaleIntervals, qualities;
+        if(mode === 'harmonic') {
+            scaleIntervals = [0,2,3,5,7,8,11];
+            qualities = HARM_MINOR_DEGREE_QUALITIES;
+        } else if(mode === 'phrygian_dom') {
+            scaleIntervals = [0,1,4,5,7,8,10];
+            qualities = [
+                {min:false},{min:false},{min:false},{min:true},
+                {type:'dim'},{min:false},{min:true}
+            ];
+        } else if(mode === 'minor') {
+            scaleIntervals = MINOR_SCALE_INTERVALS;
+            qualities = MINOR_DEGREE_QUALITIES;
+        } else {
+            scaleIntervals = MAJOR_SCALE_INTERVALS;
+            qualities = MAJOR_DEGREE_QUALITIES;
+        }
+        const interval = scaleIntervals[deg];
+        const noteIdx = (rootIdx + interval) % 12;
+        const noteName = notes[noteIdx];
+        const q = qualities[deg];
+        if(overrideType) return {n: noteName, min: q.min || false, type: overrideType};
+        if(q.type) return {n: noteName, min: false, type: q.type};
+        return {n: noteName, min: q.min};
+    }
+
+    // Shorthand builder: given root string and isMinor, return a function deg(n, overrideType)
+    function makeScaleBuilder(cleanRoot, isMinor, forceMode) {
+        const rootIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
+        const mode = forceMode || (isMinor ? 'minor' : 'major');
+        return (degree, overrideType) => scaleDeg(degree, rootIdx, mode, overrideType);
+    }
+
     // ─── SCALE HELPERS ────────────────────────────────────────────────────────
-    // Returns scale notes array for the current root, supporting multiple scale types
     function getScaleNotes(rootNote, scaleName) {
         const r = rootNote.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
         const rootIdx = notes.indexOf(r) >= 0 ? notes.indexOf(r) : 0;
         const scaleMap = {
-            'major':        [0,2,4,5,7,9,11],
-            'minor':        [0,2,3,5,7,8,10],
-            'harmonic':     [0,2,3,5,7,8,11],
-            'melodic':      [0,2,3,5,7,9,11],
-            'dorian':       [0,2,3,5,7,9,10],
-            'phrygian':     [0,1,3,5,7,8,10],
-            'lydian':       [0,2,4,6,7,9,11],
-            'mixolydian':   [0,2,4,5,7,9,10],
-            'locrian':      [0,1,3,5,6,8,10],
-            'phrygdom':     [0,1,4,5,7,8,10],
-            'pentatonic':   [0,2,4,7,9],
-            'pentaminor':   [0,3,5,7,10],
-            'blues':        [0,3,5,6,7,10],
-            'wholetone':    [0,2,4,6,8,10],
-            'diminished':   [0,2,3,5,6,8,9,11],
+            'major':[0,2,4,5,7,9,11],'minor':[0,2,3,5,7,8,10],'harmonic':[0,2,3,5,7,8,11],
+            'melodic':[0,2,3,5,7,9,11],'dorian':[0,2,3,5,7,9,10],'phrygian':[0,1,3,5,7,8,10],
+            'lydian':[0,2,4,6,7,9,11],'mixolydian':[0,2,4,5,7,9,10],'locrian':[0,1,3,5,6,8,10],
+            'phrygdom':[0,1,4,5,7,8,10],'pentatonic':[0,2,4,7,9],'pentaminor':[0,3,5,7,10],
+            'blues':[0,3,5,6,7,10],'wholetone':[0,2,4,6,8,10],'diminished':[0,2,3,5,6,8,9,11],
         };
         const intervals = scaleMap[scaleName] || scaleMap['major'];
         return intervals.map(v => notes[(rootIdx+v)%12]);
     }
 
-    // Detect scale from root note and minor flag
     function getCurrentScaleNotes() {
         const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
         const isMinor = currentRootForGrid.includes('m');
@@ -393,51 +450,36 @@
     }
 
     // ─── BEAUTIFUL MELODY GENERATOR v2 ──────────────────────────────────────
-    // Sistema de frases musicales con contorno natural, chord-aware
-    // Siempre usa el tono activo del círculo de quintas
     function generateQuestionAnswer() {
         currentSequence = currentSequence.filter(item => !item.isMelody);
         const totalSteps = Math.abs(loopEnd-loopStart)+1;
         const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
         const rootIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
         const isMinor = currentRootForGrid.includes('m');
-
-        // ── Escala en múltiples octavas para movimiento real ──
-        // Construimos pool cromático con octava: [{name, octave, semitone}]
         const scaleIntervals = isMinor ? [0,2,3,5,7,8,10] : [0,2,4,5,7,9,11];
 
-        // Construir escala en octavas 3, 4, 5
         function buildScalePool(octaves) {
             const pool = [];
             octaves.forEach(oct => {
                 scaleIntervals.forEach(interval => {
                     const noteIdx = (rootIdx + interval) % 12;
-                    const actualOct = interval < 0 ? oct - 1 : (noteIdx < rootIdx ? oct + 1 : oct);
-                    const semitone = actualOct * 12 + noteIdx;
+                    const semitone = oct * 12 + noteIdx;
                     pool.push({ name: notes[noteIdx], octave: oct, semitone });
                 });
             });
-            // Dedup y ordenar por semitone
             const seen = new Set();
-            return pool
-                .filter(p => { const k = `${p.name}${p.octave}`; if(seen.has(k)) return false; seen.add(k); return true; })
-                .sort((a,b) => a.semitone - b.semitone);
+            return pool.filter(p => { const k = `${p.name}${p.octave}`; if(seen.has(k)) return false; seen.add(k); return true; }).sort((a,b) => a.semitone - b.semitone);
         }
 
         const scalePool = buildScalePool([3,4,5]);
 
-        // ── Chord tones en el paso s (con octava) ──
         function getChordTonesAt(s) {
             if (!currentPresetSteps || currentPresetSteps.length === 0) {
                 return scalePool.filter((_,i) => [0,2,4].includes(i % scaleIntervals.length));
             }
-            const idx = Math.min(
-                Math.floor(s * currentPresetSteps.length / totalSteps),
-                currentPresetSteps.length - 1
-            );
+            const idx = Math.min(Math.floor(s * currentPresetSteps.length / totalSteps), currentPresetSteps.length - 1);
             const st = currentPresetSteps[idx];
             const rawNotes = getChordNotes(st.n, st.min, st.type).map(n => n.replace('2',''));
-            // Dar cada chord tone en octavas 4 y 5
             const pool = [];
             rawNotes.forEach(rn => {
                 [4,5].forEach(oct => {
@@ -448,15 +490,11 @@
             return pool.sort((a,b) => a.semitone - b.semitone);
         }
 
-        // ── Encontrar nota más cercana en pool dado un semitone ──
         function nearestInPool(pool, semitone) {
             if(!pool.length) return scalePool[Math.floor(scalePool.length/2)];
-            return pool.reduce((best, cur) =>
-                Math.abs(cur.semitone - semitone) < Math.abs(best.semitone - semitone) ? cur : best
-            );
+            return pool.reduce((best, cur) => Math.abs(cur.semitone - semitone) < Math.abs(best.semitone - semitone) ? cur : best);
         }
 
-        // ── Movimiento por grado con contorno dirigido ──
         function nextNote(current, pool, direction, bias) {
             if(!pool.length || !current) return pool[Math.floor(pool.length/2)] || scalePool[0];
             const curSemitone = current.semitone;
@@ -464,26 +502,21 @@
             const curIdx = sorted.findIndex(p => p.semitone === curSemitone);
             const idx = curIdx >= 0 ? curIdx : sorted.findIndex(p => p.semitone >= curSemitone);
             const safeIdx = idx >= 0 ? idx : Math.floor(sorted.length/2);
-
             const r = Math.random();
             if(r < 0.45) {
-                // Step motion (±1 grado de escala) con bias de dirección
                 const stepDir = (Math.random() < (direction === 'up' ? 0.65 : 0.35)) ? 1 : -1;
                 const newIdx = Math.max(0, Math.min(sorted.length-1, safeIdx + stepDir));
                 return sorted[newIdx];
             } else if(r < 0.72) {
-                // Salto consonante (3a o 5a = 2 o 4 grados de escala)
                 const leapSize = Math.random() < 0.6 ? 2 : 3;
                 const leapDir = (Math.random() < (direction === 'up' ? 0.6 : 0.4)) ? leapSize : -leapSize;
                 const newIdx = Math.max(0, Math.min(sorted.length-1, safeIdx + leapDir));
                 return sorted[newIdx];
             } else if(r < 0.88) {
-                // Chord tone aleatorio cercano
                 const ct = getChordTonesAt(bias);
                 if(ct.length) return nearestInPool(ct, curSemitone + (direction === 'up' ? 3 : -3));
                 return sorted[safeIdx];
             } else {
-                // Nota de escala aleatoria del rango actual
                 const mid = Math.floor(sorted.length/2);
                 const rangeStart = direction === 'up' ? mid : 0;
                 const rangeEnd = direction === 'up' ? sorted.length-1 : mid;
@@ -492,59 +525,38 @@
             }
         }
 
-        // ── FRASE con estructura natural Q&A ──
         const midPoint = Math.floor(totalSteps/2);
         const density = melodyMode === 'sparse' ? 0.6 : (melodyMode === 'chromatic' ? 0.25 : 0.32);
-
-        // Punto de partida: tónica en octava 4
         const rootNote4 = scalePool.find(p => p.name === cleanRoot && p.octave === 4) || scalePool[0];
-
-        // ── PREGUNTA: sube hacia la 5ª (tensión) ──
         let cur = rootNote4;
         const fifthName = notes[(rootIdx + 7) % 12];
-        const fifthTarget = scalePool.find(p => p.name === fifthName && p.octave === 4) ||
-                            scalePool.find(p => p.name === fifthName) || scalePool[Math.floor(scalePool.length/2)+2];
+        const fifthTarget = scalePool.find(p => p.name === fifthName && p.octave === 4) || scalePool[Math.floor(scalePool.length/2)+2];
 
         for(let s=0; s<midPoint; s++) {
             if(s > 0 && Math.random() < density) continue;
-
             let chosen;
             if(melodyMode === 'sparse') {
                 const ct = getChordTonesAt(s);
                 chosen = ct[Math.floor(Math.random() * Math.min(2, ct.length))] || cur;
             } else if(melodyMode === 'chromatic') {
-                // notas cromáticas de paso + escala
                 const chromOct = [[3,4,5].map(o => notes.map((n,i) => ({name:n,octave:o,semitone:o*12+i})))].flat(2);
                 const near = chromOct.filter(p => Math.abs(p.semitone - cur.semitone) <= 2);
                 chosen = near[Math.floor(Math.random()*near.length)] || cur;
             } else {
-                // Mezclar chord tones (60%) + escala (40%)
                 const ct = getChordTonesAt(s);
                 const useChord = Math.random() < 0.6;
                 const pool = useChord && ct.length ? ct : scalePool;
-                // Dirección: ascendente en la primera mitad de la pregunta
                 const progress = s / midPoint;
                 const dir = progress < 0.6 ? 'up' : 'down';
                 chosen = nextNote(cur, pool, dir, s);
             }
-
-            // Último paso de pregunta → resolver a 5ª (tensión)
-            if(s === midPoint - 1) {
-                chosen = fifthTarget;
-            }
-
-            if(chosen) {
-                addNoteToSeqOct(chosen.name, chosen.octave, s, 1);
-                cur = chosen;
-            }
+            if(s === midPoint - 1) chosen = fifthTarget;
+            if(chosen) { addNoteToSeqOct(chosen.name, chosen.octave, s, 1); cur = chosen; }
         }
 
-        // ── RESPUESTA: baja y resuelve a tónica ──
-        cur = fifthTarget; // empieza donde terminó la pregunta
-
+        cur = fifthTarget;
         for(let s=midPoint; s<totalSteps; s++) {
             if(s > midPoint && Math.random() < density) continue;
-
             let chosen;
             if(melodyMode === 'sparse') {
                 const ct = getChordTonesAt(s);
@@ -556,40 +568,24 @@
                 const ct = getChordTonesAt(s);
                 const useChord = Math.random() < 0.65;
                 const pool = useChord && ct.length ? ct : scalePool;
-                // Dirección: descendente en la segunda mitad (resuelve)
-                const progress = (s - midPoint) / (totalSteps - midPoint);
-                const dir = progress < 0.7 ? 'down' : 'down';
-                chosen = nextNote(cur, pool, dir, s);
+                chosen = nextNote(cur, pool, 'down', s);
             }
-
-            // Últimos 2 pasos: resolver a tónica en oct 4
-            if(s >= totalSteps - 2) {
-                chosen = rootNote4;
-            }
-
-            if(chosen) {
-                addNoteToSeqOct(chosen.name, chosen.octave, s, 1);
-                cur = chosen;
-            }
+            if(s >= totalSteps - 2) chosen = rootNote4;
+            if(chosen) { addNoteToSeqOct(chosen.name, chosen.octave, s, 1); cur = chosen; }
         }
 
         if(document.getElementById('melody-info'))
-            document.getElementById('melody-info').innerText =
-                `${currentRootForGrid} · ${melodyMode.toUpperCase()} · CHORD-AWARE`;
+            document.getElementById('melody-info').innerText = `${currentRootForGrid} · ${melodyMode.toUpperCase()} · CHORD-AWARE`;
         drawSequenceOnGrid();
     }
 
-    // Agrega nota con octava explícita
     function addNoteToSeqOct(noteName, octave, step, duration) {
         const rangeSize = Math.abs(loopEnd-loopStart)+1;
         const stepToPlace = loopStart+(step%rangeSize);
         currentSequence.push({ step:stepToPlace, notes:[`${noteName}${octave}`], duration, isMelody:true });
     }
 
-    // Legacy compatibility
-    function addNoteToSeq(noteName, step, duration) {
-        addNoteToSeqOct(noteName, 4, step, duration);
-    }
+    function addNoteToSeq(noteName, step, duration) { addNoteToSeqOct(noteName, 4, step, duration); }
 
     // ─── IMPROVED ARP TRANCE GENERATOR ───────────────────────────────────────
     function generarArpegioTranceIA() {
@@ -600,17 +596,13 @@
         const rootIdx = notes.indexOf(cleanRoot);
         const getN = (off) => notes[(rootIdx+off)%12];
 
-        // Build prog from scale-aware degrees
         let prog = isMinor ?
             [{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(3),min:true},{n:getN(10),min:false}] :
             [{n:cleanRoot,min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),min:false}];
 
-        // Guardar como presetSteps para que IA melody sea chord-aware
         currentPresetSteps = prog.map(p => ({n:p.n, min:p.min, type:undefined}));
-
         const pasosPorAcorde = Math.floor(totalSteps/prog.length);
 
-        // ARP PATTERNS — usar octavas reales (t4=oct4, t5=oct5)
         const arpPatterns = {
             trance: (t,q,c) => [
                 {n:[t+'4'],d:1},{n:[c+'4'],d:1},{n:[t+'5'],d:1},{n:[q+'4'],d:1},
@@ -635,13 +627,11 @@
             const cn = getChordNotes(acorde.n, acorde.min);
             const t = cn[0], c = cn[1], q = cn[2];
             const pattern = (arpPatterns[arpStyle] || arpPatterns.trance)(t,q,c);
-
             for(let i=0; i<pasosPorAcorde; i++) {
                 const p = pattern[i%8];
                 const actualStep = loopStart+stepGlobal+i;
-                if(actualStep<=loopEnd && p.n.length>0) {
+                if(actualStep<=loopEnd && p.n.length>0)
                     currentSequence.push({ step:actualStep, notes:p.n, duration:p.d, isMelody:false, isSuggested:true });
-                }
             }
             stepGlobal += pasosPorAcorde;
         });
@@ -652,33 +642,24 @@
     }
 
     // ─── GRID ─────────────────────────────────────────────────────────────────
-    // Grid cromático: 3 octavas completas (C5→B3), scroll vertical
-    // Cada celda tiene ID: cell-{step}-{note}{octave}  e.g. cell-0-C4
-    const GRID_OCTAVES = [5,4,3]; // de arriba a abajo
-    const CHROMATIC_ORDER = ['B','A#','A','G#','G','F#','F','E','D#','D','C#','C']; // de agudo a grave
+    const GRID_OCTAVES = [5,4,3];
+    const CHROMATIC_ORDER = ['B','A#','A','G#','G','F#','F','E','D#','D','C#','C'];
 
-    function noteRowId(noteName, octave) {
-        return `${noteName}${octave}`;
-    }
+    function noteRowId(noteName, octave) { return `${noteName}${octave}`; }
 
     function initGrid() {
         const grid = document.getElementById('midi-grid');
         grid.innerHTML = '';
-        const cleanRoot = currentRootForGrid.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-
-        // Build 36 rows: octaves 5, 4, 3 (each 12 semitones, top=B, bottom=C)
         GRID_OCTAVES.forEach(oct => {
             CHROMATIC_ORDER.forEach(noteName => {
                 const isBlack = [1,3,6,8,10].includes(notes.indexOf(noteName));
                 const isC = noteName === 'C';
                 const rowId = noteRowId(noteName, oct);
-
                 const label = document.createElement('div');
                 label.className = 'note-label' + (isBlack ? ' black-key' : '') + (isC ? ' octave-marker' : '');
                 label.innerText = isC ? `C${oct}` : (isBlack ? '♭' : noteName[0]);
                 label.title = `${noteName}${oct}`;
                 grid.appendChild(label);
-
                 for(let s=0; s<TOTAL_STEPS; s++) {
                     const cell = document.createElement('div');
                     cell.className = `grid-cell step-${s}` + (isBlack ? ' black-key-row' : '');
@@ -689,13 +670,9 @@
                 }
             });
         });
-
         window.addEventListener('mouseup', () => { if(isDraggingLoop){ isDraggingLoop=false; finalizeLoopSelection(); }});
-
-        // Scroll to show octave 4 (middle) initially
         const scroll = document.getElementById('midi-grid-scroll');
-        scroll.scrollTop = 12 * 22; // one octave down from top
-
+        scroll.scrollTop = 12 * 22;
         updateLoopVisuals(); drawSequenceOnGrid();
     }
 
@@ -714,17 +691,10 @@
         }
     }
 
-    // Parse note string to {name, octave}
-    // Supports: "C", "C2", "C4", "C#4", "A#3" etc.
     function parseNoteStr(n) {
-        // Legacy format: note+"2" means one octave up (octave 5), else octave 4
-        if(n.endsWith('2') && n.length <= 3) {
-            return { name: n.slice(0,-1), octave: 5 };
-        }
-        // New format with explicit octave: "C4", "G#3", "A#5"
+        if(n.endsWith('2') && n.length <= 3) return { name: n.slice(0,-1), octave: 5 };
         const m = n.match(/^([A-G]#?)(\d)$/);
         if(m) return { name: m[1], octave: parseInt(m[2]) };
-        // bare note name: default octave 4
         return { name: n, octave: 4 };
     }
 
@@ -798,17 +768,13 @@
     const audioCtx   = new (window.AudioContext||window.webkitAudioContext)();
     const masterGain = audioCtx.createGain(); masterGain.gain.value=0.28; masterGain.connect(audioCtx.destination);
 
-    // Calcula frecuencia dado noteName+octave
     function noteToFreq(noteStr) {
-        // Formats: "C", "C2"(legacy=oct5), "C4", "G#3", "A#5"
         let name, octave;
-        // New format with explicit digit octave
         const m = noteStr.match(/^([A-G]#?)([3-6])$/);
         if(m) { name = m[1]; octave = parseInt(m[2]); }
         else if(noteStr.endsWith('2') && noteStr.length <= 3) { name = noteStr.slice(0,-1); octave = 5; }
         else { name = noteStr; octave = 4; }
-        const baseFreq = freqs[name] || 440; // C4 = 261.63
-        // freqs[] are defined at oct 4, adjust by octave
+        const baseFreq = freqs[name] || 440;
         return baseFreq * Math.pow(2, octave - 4);
     }
 
@@ -883,8 +849,7 @@
     function loadProgressionToSequencer(prog) {
         stopSequencer(); clearAudioQueue();
         currentSequence=currentSequence.filter(item=>item.isMelody);
-        currentPresetSteps = prog.steps; // guardar pasos para melodía chord-aware
-        // Actualizar root ANTES de generarMelodía para chord-awareness correcta
+        currentPresetSteps = prog.steps;
         currentRootForGrid = prog.steps[0].n + (prog.steps[0].min ? 'm' : '');
         const totalStepsInLoop=Math.abs(loopEnd-loopStart)+1;
         const stepsPerChord=totalStepsInLoop/prog.steps.length;
@@ -892,7 +857,7 @@
             const chord=getChordNotes(step.n,step.min,step.type);
             addToSequencer(chord,i*stepsPerChord,stepsPerChord,true);
         });
-        initGrid(); // reiniciar grid con nuevo root
+        initGrid();
         generateQuestionAnswer();
         document.getElementById('chord-name').innerText=`TONO: ${currentRootForGrid}`;
         playChord(getChordNotes(prog.steps[0].n,prog.steps[0].min,prog.steps[0].type));
@@ -901,7 +866,7 @@
     function renderProg(prog, container) {
         const item=document.createElement('div'); item.className='suggestion-item';
         const info=document.createElement('div'); info.className='info-prog';
-        let notesText=prog.steps.slice(0,4).map(s=>`${s.n}${s.min?'m':''}`).join(' ')+(prog.steps.length>4?'…':'');
+        let notesText=prog.steps.slice(0,4).map(s=>`${s.n}${s.min?'m':''}${s.type?'/'+s.type.substring(0,3):''}`).join(' ')+(prog.steps.length>4?'…':'');
         info.innerHTML=`<span style="font-size:0.72rem;font-weight:700;color:#ddd">${prog.label}</span><br><span class="notes-display">${notesText}</span>`;
         const ctrl=document.createElement('div'); ctrl.className='controls';
         const pBtn=document.createElement('button'); pBtn.className='play-btn'; pBtn.innerText='PLAY';
@@ -910,10 +875,8 @@
         aBtn.onclick=()=>{
             stopSequencer(); clearAudioQueue();
             currentSequence=currentSequence.filter(item=>item.isMelody);
-            currentPresetSteps = prog.steps; // chord-awareness para IA melody
+            currentPresetSteps = prog.steps;
             const totalStepsInLoop=Math.abs(loopEnd-loopStart)+1;
-
-            // ── Patrones ARP con octavas reales ──
             const arpPats = {
                 trance: (t,q,c) => [
                     {n:[t+'4'],d:1},{n:[c+'4'],d:1},{n:[t+'5'],d:1},{n:[q+'4'],d:1},
@@ -932,34 +895,25 @@
                     {n:[c+'4'],d:1},{n:[],d:1},{n:[t+'5'],d:1},{n:[q+'4'],d:1}
                 ]
             };
-
-            // ── Agrupar los steps del preset en 4 bloques ──
             const numBlocks = 4;
             const stepsPerBlock = Math.floor(totalStepsInLoop / numBlocks);
             const remainder = totalStepsInLoop - stepsPerBlock * numBlocks;
-
             for(let block=0; block<numBlocks; block++) {
-                // Tomar el acorde representativo del bloque desde los steps del preset
                 const progStepIdx = Math.floor(block * prog.steps.length / numBlocks);
                 const st = prog.steps[progStepIdx];
                 const chord = getChordNotes(st.n, st.min, st.type);
-                const t = chord[0] || 'C';
-                const c = chord[1] || chord[0];
-                const q = chord[2] || chord[0];
+                const t = chord[0] || 'C', c = chord[1] || chord[0], q = chord[2] || chord[0];
                 const pattern = (arpPats[arpStyle] || arpPats.trance)(t, q, c);
-
                 const blockSize = stepsPerBlock + (block < remainder ? 1 : 0);
                 for(let i=0; i<blockSize; i++) {
                     const p = pattern[i % 8];
                     const actualStep = loopStart + block*stepsPerBlock + i;
-                    if(actualStep<=loopEnd && p.n.length>0) {
+                    if(actualStep<=loopEnd && p.n.length>0)
                         currentSequence.push({ step:actualStep, notes:p.n, duration:p.d, isMelody:false, isSuggested:true });
-                    }
                 }
             }
-
             currentRootForGrid=prog.steps[0].n+(prog.steps[0].min?'m':'');
-            initGrid(); // rebuild grid para el nuevo root
+            initGrid();
             generateQuestionAnswer();
             document.getElementById('chord-name').innerText=`ARP ${arpStyle.toUpperCase()}: ${currentRootForGrid}`;
             drawSequenceOnGrid();
@@ -967,10 +921,613 @@
         ctrl.append(pBtn,aBtn); item.append(info,ctrl); container.appendChild(item);
     }
 
-    function updateUI(note,index,isMinor) {
-        currentRootForGrid=note; initGrid();
-        const allNotes=document.querySelectorAll('.note');
-        allNotes.forEach(el=>el.classList.remove('active','active-minor','neighbor'));
+    // ════════════════════════════════════════════════════════════════════════
+    // SCALE-AWARE PRESET ENGINE
+    // All presets are now FUNCTIONS that receive (cleanRoot, isMinor) and
+    // return steps using the scaleDeg() system — fully transposable to any key
+    // ════════════════════════════════════════════════════════════════════════
+
+    function buildAllPresets(cleanRoot, isMinor) {
+        // deg() returns a {n, min, type} step using actual scale degrees
+        const d = makeScaleBuilder(cleanRoot, isMinor);
+        const dH = makeScaleBuilder(cleanRoot, isMinor, 'harmonic');
+        const dPh = makeScaleBuilder(cleanRoot, isMinor, 'phrygian_dom');
+
+        // ── CLASSIC & THEORY ──────────────────────────────────────────────
+        // Uses proper diatonic harmony: I/ii/iii/IV/V/vi/vii° in the selected key
+        const classic = [
+            {
+                label: 'I - V - vi - IV (Pop)',
+                steps: [ d(1), d(5), d(6), d(4), d(1), d(5), d(6), d(4),
+                         d(1), d(5), d(6), d(4), d(1), d(5,'dom7'), d(4), d(1) ]
+            },
+            {
+                label: 'i - VII - VI - VII (Rock)',
+                steps: [ d(1), d(7), d(6), d(7), d(1), d(7), d(6), d(5),
+                         d(1), d(7), d(6), d(7), d(4), d(7), d(5), d(1) ]
+            },
+            {
+                label: 'I - IV - V - I (Cadencia)',
+                steps: [ d(1), d(1), d(4), d(4), d(5,'dom7'), d(5,'dom7'), d(1), d(1),
+                         d(1), d(4), d(4), d(5,'dom7'), d(2), d(6), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'vi - IV - I - V (Canon)',
+                steps: [ d(6), d(4), d(1), d(5), d(6), d(4), d(1), d(5),
+                         d(6), d(4), d(2), d(5), d(6), d(7,'dim'), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'i - iv - VII - III (Menor Rom.)',
+                steps: [ d(1), d(4), d(7), d(3), d(1), d(4), d(5), d(1),
+                         d(1), d(6), d(4), d(7), d(3), d(5), d(7), d(1) ]
+            },
+            {
+                label: 'I - III - IV - iv (Modal Mix)',
+                steps: [ d(1), d(3), d(4), d(4,'min7'), d(1), d(3), d(4), d(4,'min7'),
+                         d(1), d(5), d(4), d(3), d(2), d(5,'dom7'), d(4), d(1) ]
+            },
+            {
+                label: 'i - VI - III - VII (Dark Cin.)',
+                steps: [ d(1), d(6), d(3), d(7), d(1), d(6), d(3), d(7),
+                         d(4), d(6), d(3), d(7), d(1), d(6), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'I - vi - ii - V (Jazz Turnaround)',
+                steps: [ d(1,'maj7'), d(6,'min7'), d(2,'min7'), d(5,'dom7'),
+                         d(1,'maj7'), d(6,'min7'), d(2,'min7'), d(5,'dom7'),
+                         d(1,'maj7'), d(4,'maj7'), d(2,'min7'), d(5,'dom7'),
+                         d(3,'min7'), d(6,'min7'), d(2,'min7'), d(1,'maj7') ]
+            },
+            {
+                label: 'i - iv - V - i (Harm. Minor)',
+                steps: [ dH(1), dH(4), dH(5), dH(1), dH(1), dH(4), dH(5), dH(1),
+                         dH(6), dH(7,'dim'), dH(5), dH(1), dH(4), dH(7,'dim'), dH(5), dH(1) ]
+            },
+            {
+                label: 'ii - V - I - VI (Bebop)',
+                steps: [ d(2,'min7'), d(5,'dom7'), d(1,'maj7'), d(6,'min7'),
+                         d(2,'min7'), d(5,'dom7'), d(1,'maj7'), d(3,'min7'),
+                         d(4,'maj7'), d(7,'dim'), d(3,'min7'), d(6,'min7'),
+                         d(2,'min7'), d(5,'dom7'), d(6,'min7'), d(1,'maj7') ]
+            },
+            {
+                label: 'I - IV - I - V (Gospel Pump)',
+                steps: [ d(1,'maj7'), d(4,'maj7'), d(1,'maj7'), d(5,'dom7'),
+                         d(1,'maj7'), d(4,'maj7'), d(1,'maj7'), d(5,'dom7'),
+                         d(6,'min7'), d(2,'min7'), d(5,'dom7'), d(1,'maj7'),
+                         d(4,'maj7'), d(2,'min7'), d(5,'dom7'), d(1,'maj7') ]
+            },
+            {
+                label: 'i - III - VI - VII (Aeolian)',
+                steps: [ d(1), d(3), d(6), d(7), d(1), d(3), d(6), d(5),
+                         d(1), d(6), d(4), d(7), d(3), d(6), d(5), d(1) ]
+            },
+            {
+                label: 'I - V - vi - iii - IV (Pachelbel)',
+                steps: [ d(1), d(5), d(6), d(3), d(4), d(1), d(4), d(5),
+                         d(1), d(5), d(6), d(3), d(4), d(2), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'i - VII - VI - V (Andaluza)',
+                steps: [ d(1), d(7), d(6), d(5,'dom7'), d(1), d(7), d(6), d(5,'dom7'),
+                         d(1), d(2,'dim'), d(6), d(7), d(6), d(5,'dom7'), d(7), d(1) ]
+            },
+            {
+                label: 'I - I/III - IV - V (Pedal)',
+                steps: [ d(1), d(3), d(4), d(5), d(1), d(3), d(4), d(5),
+                         d(1), d(6), d(2), d(5,'dom7'), d(4), d(5), d(1), d(1) ]
+            },
+            {
+                label: 'vi - ii - V - I (Circle of 5ths)',
+                steps: [ d(6), d(2), d(5,'dom7'), d(1), d(6), d(2), d(5,'dom7'), d(1),
+                         d(3), d(6), d(2,'min7'), d(5,'dom7'), d(1,'maj7'), d(4), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'i - iv - i - V (Flamenco)',
+                steps: [ dH(1), dH(4), dH(1), dH(5), dH(1), dH(4), dH(1), dH(5),
+                         dH(6), dH(4), dH(7,'dim'), dH(5), dH(6), dH(5), dH(5), dH(1) ]
+            },
+            {
+                label: 'I - II - IV - I (Mixo Side)',
+                steps: [ d(1), d(2), d(4), d(1), d(1), d(2), d(4), d(5),
+                         d(6), d(4), d(2), d(5,'dom7'), d(1), d(4), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'i - VI - III - iv (Neo-Classical)',
+                steps: [ d(1), d(6), d(3), d(4), d(1), d(6), d(3), d(7),
+                         d(4), d(6), d(7,'dim'), d(5,'dom7'), d(3), d(6), d(5), d(1) ]
+            },
+            {
+                label: 'I - ♭VII - IV - I (Rock Anthem)',
+                steps: [ d(1), d(7), d(4), d(1), d(1), d(7), d(4), d(5),
+                         d(1), d(7), d(6), d(4), d(2), d(7), d(4), d(1) ]
+            },
+        ];
+
+        // ── PSYTRANCE & GOA ───────────────────────────────────────────────
+        // Core sound: Phrygian/Phrygian-dominant, bII, dim, sus2, ostinato on i
+        // Presets always start/end on i and use characteristic psy tensions
+        const psy = [
+            {
+                label: 'Psy Dark (i - ♭II - i - vii°)',
+                steps: [ dPh(1), dPh(2), dPh(1), dPh(7,'dim'), dPh(1), dPh(2), dPh(1), dPh(7,'dim'),
+                         dPh(1), dPh(2), dPh(4), dPh(2), dPh(1), dPh(2), dPh(7,'dim'), dPh(1) ]
+            },
+            {
+                label: 'Zenonesque (i - ♭II - ♭III - ♭II)',
+                steps: [ d(1), d(1), dPh(2), d(1), dPh(3), dPh(2), d(1), dPh(2),
+                         d(1), dPh(4,'dim'), dPh(2), dPh(3), dPh(2), dPh(1,'dim'), dPh(2), d(1) ]
+            },
+            {
+                label: 'Goa Spirit (sus2 Ostinato)',
+                steps: [ d(1,'sus2'), dPh(2,'sus2'), d(1,'sus2'), dPh(2,'sus4'),
+                         d(1,'sus2'), dPh(3,'sus2'), dPh(2,'sus2'), d(1,'sus2'),
+                         d(1,'sus4'), dPh(2,'sus2'), dPh(4,'dim'), dPh(2,'sus2'),
+                         d(1,'sus2'), dPh(3), dPh(2,'sus4'), d(1,'sus2') ]
+            },
+            {
+                label: 'Full-On Morning (i - III - VI - VII)',
+                steps: [ d(1), d(3), d(6), d(7), d(1), d(3), d(6), d(5),
+                         d(1), d(3), d(4), d(6), d(7), d(6), d(5), d(1) ]
+            },
+            {
+                label: 'Forest Night (dim Tension)',
+                steps: [ d(1,'dim'), d(7,'dim'), d(1,'dim'), d(4,'dim'),
+                         d(1,'dim'), d(6,'dim'), d(7,'dim'), d(1,'dim'),
+                         d(1,'dim'), dPh(2), d(7,'dim'), dPh(2,'dim'),
+                         dPh(3,'dim'), dPh(2), d(7,'dim'), d(1) ]
+            },
+            {
+                label: 'Alien Hypno (sus2 Vortex)',
+                steps: [ d(1,'sus2'), d(1,'sus4'), dPh(2,'sus2'), d(1,'sus2'),
+                         d(5,'sus2'), dPh(2,'sus4'), d(4,'sus2'), dPh(2,'sus2'),
+                         d(1,'sus4'), d(3,'sus2'), dPh(2,'sus2'), d(6,'sus2'),
+                         d(5,'sus2'), d(4,'sus4'), dPh(2,'sus2'), d(1,'sus2') ]
+            },
+            {
+                label: 'Prog-Psy Flow (i - iv - i - VII)',
+                steps: [ d(1), d(1), d(4), d(1), d(4), d(4), d(7), d(4),
+                         d(1), d(7), d(6), d(4), d(3), d(7), d(7), d(1) ]
+            },
+            {
+                label: 'Dark Psy Phryg. Dom.',
+                steps: [ dPh(1), dPh(2), dPh(1), dPh(5,'dim'), dPh(2), dPh(7), dPh(2), dPh(5,'dim'),
+                         dPh(1), dPh(6), dPh(2), dPh(5,'dim'), dPh(4), dPh(2), dPh(7), dPh(1) ]
+            },
+            {
+                label: 'Hi-Tech Chaos (dim7 Grid)',
+                steps: [ d(1,'dim'), d(4,'dim'), d(7,'dim'), d(3,'dim'),
+                         d(6,'dim'), d(2,'dim'), d(5,'dim'), d(1,'dim'),
+                         d(1,'dim'), dPh(2), d(7,'dim'), d(4,'dim'),
+                         d(3), dPh(2,'dim'), dPh(1), d(1) ]
+            },
+            {
+                label: 'Tribal Stomp (i-i-♭II-i)',
+                steps: [ d(1), d(1), dPh(2), d(1), d(1), dPh(2), d(7), d(4),
+                         d(1), d(7), dPh(2), d(7), d(4), d(3), dPh(2), d(1) ]
+            },
+            {
+                label: 'Psychic Melodic (i-VI-III-VII)',
+                steps: [ d(1), d(6), d(3), d(7), d(1), d(3), d(4), d(7),
+                         d(1), d(6), d(4), d(7), d(6), d(7), d(5), d(1) ]
+            },
+            {
+                label: 'Deep Abyss (sus2/Phryg)',
+                steps: [ d(1,'sus2'), dPh(2), d(1,'sus2'), d(4,'dim'),
+                         dPh(2,'sus2'), d(3,'sus2'), dPh(2), d(4,'dim'),
+                         d(1,'sus2'), d(7,'sus2'), dPh(2), d(6,'sus2'),
+                         dPh(2,'sus2'), d(4,'dim'), dPh(2), d(1,'sus2') ]
+            },
+            {
+                label: 'Astral Voyage (i-iv-♭II-VII)',
+                steps: [ d(1,'sus2'), d(4), d(6), dPh(2), d(1), d(3), d(5,'dim'), d(6),
+                         d(1,'sus2'), d(7), dPh(2), d(6), d(4), d(3,'dim'), dPh(2), d(1) ]
+            },
+            {
+                label: 'Morning Ritual (i-III-VI-V)',
+                steps: [ d(1), d(3), d(6), d(5), d(1), dPh(2), d(7), d(6),
+                         d(4), d(3), dPh(2), d(7), d(6), d(4), d(5), d(1) ]
+            },
+            {
+                label: 'Nano Corrupt (dim Spiral)',
+                steps: [ d(1,'dim'), d(4,'dim'), dPh(2), d(1,'dim'), d(3),
+                         d(4,'dim'), d(1,'dim'), d(7), d(1,'dim'), d(6,'dim'),
+                         d(4,'dim'), d(3,'dim'), dPh(2), d(6), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'Phrygian Descent',
+                steps: [ dPh(1), dPh(2), dPh(1), dPh(6), dPh(5), dPh(2), dPh(4,'dim'), dPh(3),
+                         dPh(1), dPh(3), dPh(2), dPh(7), dPh(6), dPh(4,'dim'), dPh(2), dPh(1) ]
+            },
+        ];
+
+        // ── TECHNO & HOUSE ────────────────────────────────────────────────
+        // Techno: dark, hypnotic, often stays on i with chromatic neighbor moves
+        // House: iv-VII-III loop, dom7 resolutions, groove-oriented
+        const techno = [
+            {
+                label: 'Industrial Abyss (i - ♭II - i)',
+                steps: [ d(1), d(1), dPh(2), d(1), d(5,'dim'), d(1), d(4), dPh(2),
+                         d(1), d(7), d(6), d(5), d(4), d(3,'dim'), dPh(2), d(1) ]
+            },
+            {
+                label: 'Melodic Detroit (i-VII-VI)',
+                steps: [ d(1), d(7), d(6), d(5), d(1), d(7), d(6), d(5,'dom7'),
+                         d(1), d(6), d(3), d(7), d(6), d(7), dPh(2), d(1) ]
+            },
+            {
+                label: 'Dub Techno Pads (i-iv-III)',
+                steps: [ d(1,'sus2'), d(1), d(4), d(1), d(4), d(3), d(7), d(4),
+                         d(1), d(7), d(3), dPh(2), d(4), d(7), d(3,'dim'), d(1) ]
+            },
+            {
+                label: 'Berlin Basement (Phryg. Ostinato)',
+                steps: [ d(1), d(1), dPh(2), d(1), d(5,'dim'), d(1), d(4), d(5),
+                         d(1), d(4), d(3,'dim'), d(1), d(7), d(6), dPh(2), d(1) ]
+            },
+            {
+                label: 'Acid Riff (i-iv-VII-III)',
+                steps: [ d(1), d(7), d(1), d(7), d(3), d(1), d(4), d(7),
+                         d(7), d(5), d(6), d(4), d(7), d(4), d(3), d(1) ]
+            },
+            {
+                label: 'Robotic Funk (i-VII-IV)',
+                steps: [ d(1), d(5), d(7), d(1), d(4), d(7), d(7), d(5),
+                         d(1), d(3,'dim'), d(7), d(5), d(4), d(3), dPh(2), d(1) ]
+            },
+            {
+                label: 'Cybercity (i-iii-iv-VII)',
+                steps: [ d(1), d(3), d(4), dPh(2), d(1), d(7), d(7), d(5),
+                         d(6), d(7), d(4), d(3), d(4), d(3,'dim'), dPh(2), d(1) ]
+            },
+            {
+                label: 'Brejcha Minimal (i-IV-i)',
+                steps: [ d(1), dPh(2), d(5), d(1), d(3), dPh(2), d(7), d(7),
+                         d(1), d(6), d(5), dPh(2), d(4), d(3,'dim'), dPh(2), d(1) ]
+            },
+            {
+                label: 'ARTBAT Gravity (i-VII-VI)',
+                steps: [ d(1), d(1), d(3), d(1), d(7), d(1), d(6), d(7),
+                         d(7), d(7), d(5), d(7), d(4), d(3), dPh(2), d(1) ]
+            },
+            {
+                label: 'Deep House (min7-dom7 Vamp)',
+                steps: [ d(1,'min7'), d(5,'dom7'), d(6,'min7'), d(3,'min7'),
+                         d(1,'min7'), d(5,'dom7'), d(6,'min7'), d(2,'min7'),
+                         d(7,'dom7'), d(3,'min7'), d(6,'min7'), d(5,'dom7'),
+                         d(2,'min7'), d(7,'dom7'), d(3,'min7'), d(1,'min7') ]
+            },
+            {
+                label: 'Chicago House (I-IV-V)',
+                steps: [ d(1), d(4), d(6), d(4), d(1), d(7), d(4), d(7),
+                         d(1), d(6), d(4), d(7), d(2), d(4), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'Funk Groove (dom7 Shuffle)',
+                steps: [ d(1,'dom7'), d(4,'dom7'), d(1,'dom7'), d(4,'dom7'),
+                         d(6,'min7'), d(4,'dom7'), d(2,'min7'), d(5,'dom7'),
+                         d(1,'dom7'), d(3,'min7'), d(4,'dom7'), d(5,'dom7'),
+                         d(6,'min7'), d(4,'dom7'), d(5,'dom7'), d(1,'dom7') ]
+            },
+            {
+                label: 'Club Hypno Loop (i-iv-i)',
+                steps: [ d(1), d(1), d(1), d(7), d(1), d(1), d(4), d(7),
+                         d(1), d(4), d(1), d(3), d(1), dPh(2), d(7), d(1) ]
+            },
+            {
+                label: 'Peak Time (i-♭II-v-i)',
+                steps: [ d(1), dPh(2), d(3), d(1), d(4), d(7), d(6), d(7),
+                         d(1), dPh(2), d(1), d(5,'dim'), d(4), d(3), dPh(2), d(1) ]
+            },
+            {
+                label: 'Warehouse Ritual (i vamp)',
+                steps: [ d(1), d(1), d(6), d(1), d(5,'dim'), d(1), d(7), d(6),
+                         d(1), dPh(2), d(1), d(3), d(4), d(3), dPh(2), d(1) ]
+            },
+            {
+                label: 'Minimal Run (i - chromatic)',
+                steps: [ d(1), d(3,'dim'), d(1), d(4), d(1), d(7), d(1), d(7),
+                         d(1), d(6), d(1), d(4), d(3), dPh(2), d(7), d(1) ]
+            },
+        ];
+
+        // ── TRANCE & PROGRESSIVE ──────────────────────────────────────────
+        // Trance: epic I-V-vi-IV, uplifting vi-IV-I-V, minor hopeful arcs
+        // Progressive: extended maj7/dom7 textures, smooth voice-leading
+        const trance = [
+            {
+                label: 'Uplifting (vi-IV-I-V)',
+                steps: [ d(6), d(4), d(1), d(5), d(6), d(4), d(1), d(5),
+                         d(6), d(7), d(4), d(5), d(2), d(4), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'Classic Gate (i-VI-III-VII)',
+                steps: [ d(1), d(6), d(3), d(7), d(4), dPh(2), d(6), d(5),
+                         d(1), d(3), d(7), d(4), d(6), d(5), d(7,'dim'), d(1) ]
+            },
+            {
+                label: 'Anjuna Deep (I-vi-ii-V)',
+                steps: [ d(1,'maj7'), d(6,'min7'), d(2,'min7'), d(5,'dom7'),
+                         d(1,'maj7'), d(2,'min7'), d(5,'sus4'), d(5,'dom7'),
+                         d(1,'maj7'), d(6,'min7'), d(7,'dom7'), d(4,'maj7'),
+                         d(2,'min7'), d(4,'min7'), d(5,'maj7'), d(5,'dom7') ]
+            },
+            {
+                label: 'Solarstone Pure (I-V-IV-V)',
+                steps: [ d(1), d(5), d(4), d(5), d(6), d(4), d(5), d(2),
+                         d(1), d(4), d(4), d(5), d(6), d(7,'dim'), d(5,'sus4'), d(1) ]
+            },
+            {
+                label: 'Psy-Trance Bliss (i-♭II-III-VII)',
+                steps: [ d(1), dPh(2), d(3), dPh(2), d(6), d(6), d(7), d(5),
+                         d(1), d(3), d(4), d(5), d(6), d(7), d(7,'dim'), dPh(2) ]
+            },
+            {
+                label: '90s Dreamscape (i-V-VI-III)',
+                steps: [ d(1), d(5), d(6), d(3), d(1), d(5), d(6), d(5),
+                         d(4), d(3), dPh(2), d(7), d(6), d(5), d(7,'dim'), d(1) ]
+            },
+            {
+                label: 'Euphoric Acid (i-♭II-iv-VII)',
+                steps: [ d(1), dPh(2), d(1), d(7), d(6), d(7), d(1), d(3),
+                         d(4), d(5), d(6), d(7), d(5), d(7), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'Armada Energy (vi-IV-I-V epic)',
+                steps: [ d(6), d(6), d(4), d(5), d(1), d(1), d(2), d(4),
+                         d(4), d(5), d(6), d(7,'dim'), d(4), d(5), d(2), d(5,'sus4') ]
+            },
+            {
+                label: 'Progressive Flow (maj7 Sweep)',
+                steps: [ d(1,'maj7'), d(2,'min7'), d(5,'dom7'), d(4,'maj7'),
+                         d(1,'maj7'), d(6,'min7'), d(4,'maj7'), d(5,'dom7'),
+                         d(1,'maj7'), d(2,'min7'), d(4,'maj7'), d(5,'dom7'),
+                         d(6,'min7'), d(7,'dim'), d(5,'dom7'), d(1,'maj7') ]
+            },
+            {
+                label: 'Tiesto Classic (I-vi-IV-V)',
+                steps: [ d(1), d(6), d(4), d(5), d(1), d(5), d(4), d(6),
+                         d(4), d(6), d(4), d(5), d(2), d(4), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'Ferry Corsten Run (I-V-ii-IV)',
+                steps: [ d(1), d(5), d(4,'min7'), d(6), d(4), d(2), d(5), d(7,'dim'),
+                         d(1), d(5), d(4,'min7'), d(6), d(4), d(5,'dom7'), d(2), d(1) ]
+            },
+            {
+                label: 'Vocal Trance Build (I-IV-vi-V)',
+                steps: [ d(1), d(4), d(6), d(4,'min7'), d(1), d(4), d(2), d(5),
+                         d(1), d(4), d(6), d(4,'min7'), d(4), d(5,'dom7'), d(2), d(1) ]
+            },
+            {
+                label: 'Ibiza Midnight (i-VII-VI-V)',
+                steps: [ d(1,'min7'), d(5), d(4), d(6), d(1,'min7'), d(7), d(6), d(4),
+                         d(3), d(4), d(6), d(7), d(5), d(4), d(6,'sus4'), d(1,'min7') ]
+            },
+            {
+                label: 'ATB Flow State (I-vi-V-IV)',
+                steps: [ d(1), d(6), d(5), d(4), d(2), d(4), d(4), d(5),
+                         d(1), d(5), d(4), d(6), d(7,'dim'), d(5,'dom7'), d(4), d(1) ]
+            },
+        ];
+
+        // ── MODAL EXPLORATION ─────────────────────────────────────────────
+        // Each preset uses the actual modal scale degrees of the selected root
+        const modes = [
+            {
+                label: 'Ionian (I-IV-V-I)',
+                steps: [ d(1), d(2), d(4), d(5), d(1), d(4), d(5), d(1),
+                         d(4), d(5), d(6), d(4), d(2), d(5,'dom7'), d(7,'dim'), d(1) ]
+            },
+            {
+                label: 'Dorian (i-IV-i-VII)',
+                steps: (() => { const dD = makeScaleBuilder(cleanRoot, isMinor, 'dorian' ); // dorian-ish via minor + raised 6th feel
+                    return [ d(1), d(2), d(3), d(5), d(7), d(6), d(7), d(1),
+                             d(7), d(4), d(6), d(7), d(3), d(2), d(7), d(1) ]; })()
+            },
+            {
+                label: 'Phrygian (i-♭II-v-i)',
+                steps: [ dPh(1), dPh(2), dPh(3), dPh(4), dPh(5,'dim'), dPh(6), dPh(7), dPh(1),
+                         dPh(1), dPh(2), dPh(5,'dim'), dPh(4), dPh(3), dPh(2), dPh(2), dPh(1) ]
+            },
+            {
+                label: 'Lydian (I-II-V-I)',
+                steps: (() => {
+                    const rIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
+                    const lyd = [0,2,4,6,7,9,11];
+                    const lyQ = [{min:false},{min:false},{min:true},{type:'dim'},{min:false},{min:true},{min:true}];
+                    const lydDeg = (deg) => {
+                        const i = ((deg-1)%7+7)%7;
+                        const ni = (rIdx + lyd[i]) % 12;
+                        const q = lyQ[i];
+                        return q.type ? {n:notes[ni],min:false,type:q.type} : {n:notes[ni],min:q.min};
+                    };
+                    return [ lydDeg(1), lydDeg(2), lydDeg(5), lydDeg(4), lydDeg(1), lydDeg(2), lydDeg(3), lydDeg(5),
+                             lydDeg(1), lydDeg(4,'dim'), lydDeg(2), lydDeg(5), lydDeg(6), lydDeg(3), lydDeg(5), lydDeg(1) ];
+                })()
+            },
+            {
+                label: 'Mixolydian (I-♭VII-IV-I)',
+                steps: (() => {
+                    const rIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
+                    const mix = [0,2,4,5,7,9,10];
+                    const mixQ = [{min:false},{min:true},{type:'dim'},{min:false},{min:true},{min:true},{min:false}];
+                    const mixDeg = (deg) => {
+                        const i = ((deg-1)%7+7)%7;
+                        const ni = (rIdx + mix[i]) % 12;
+                        const q = mixQ[i];
+                        return q.type ? {n:notes[ni],min:false,type:q.type} : {n:notes[ni],min:q.min};
+                    };
+                    return [ mixDeg(1), mixDeg(7), mixDeg(4), mixDeg(1), mixDeg(1), mixDeg(7), mixDeg(5), mixDeg(4),
+                             mixDeg(1), mixDeg(6), mixDeg(7), mixDeg(4), mixDeg(2), mixDeg(7), mixDeg(4), mixDeg(1) ];
+                })()
+            },
+            {
+                label: 'Aeolian (i-VII-VI-V)',
+                steps: [ d(1), d(7), d(6), d(5), d(1), d(7), d(6), d(7),
+                         d(4), d(6), d(7), d(5), d(3), d(7), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'Locrian (i°-♭II-♭V)',
+                steps: (() => {
+                    const rIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
+                    const loc = [0,1,3,5,6,8,10];
+                    const locQ = [{type:'dim'},{min:false},{min:true},{min:false},{min:false},{min:true},{min:true}];
+                    const locDeg = (deg) => {
+                        const i = ((deg-1)%7+7)%7;
+                        const ni = (rIdx + loc[i]) % 12;
+                        const q = locQ[i];
+                        return q.type ? {n:notes[ni],min:false,type:q.type} : {n:notes[ni],min:q.min};
+                    };
+                    return [ locDeg(1), locDeg(2), locDeg(1), locDeg(5), locDeg(1), locDeg(4), locDeg(1), locDeg(7),
+                             locDeg(1), locDeg(2), locDeg(3), locDeg(4), locDeg(5), locDeg(6), locDeg(2), locDeg(1) ];
+                })()
+            },
+            {
+                label: 'Harmonic Minor (i-iv-V-i)',
+                steps: [ dH(1), dH(4), dH(5), dH(1), dH(1), dH(4), dH(5), dH(1),
+                         dH(6), dH(7,'dim'), dH(5), dH(1), dH(4), dH(7,'dim'), dH(5,'dom7'), dH(1) ]
+            },
+            {
+                label: 'Phryg. Dominant (Spanish)',
+                steps: [ dPh(1), dPh(2), dPh(1), dPh(4), dPh(5,'dim'), dPh(2), dPh(4), dPh(5,'dim'),
+                         dPh(1), dPh(2), dPh(3), dPh(2), dPh(1), dPh(7), dPh(2), dPh(1) ]
+            },
+            {
+                label: 'Melodic Minor (i-ii-V-i)',
+                steps: (() => {
+                    const rIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
+                    const mel = [0,2,3,5,7,9,11];
+                    const melQ = [{min:true},{type:'dim'},{min:false},{min:false},{min:false},{type:'half-dim'},{type:'half-dim'}];
+                    const melDeg = (deg) => {
+                        const i = ((deg-1)%7+7)%7;
+                        const ni = (rIdx + mel[i]) % 12;
+                        const q = melQ[i];
+                        return q.type ? {n:notes[ni],min:false,type:q.type} : {n:notes[ni],min:q.min};
+                    };
+                    return [ melDeg(1), melDeg(2), melDeg(5), melDeg(1), melDeg(4), melDeg(7), melDeg(6), melDeg(5),
+                             melDeg(1), melDeg(2), melDeg(4), melDeg(5), melDeg(6), melDeg(7), melDeg(5), melDeg(1) ];
+                })()
+            },
+            {
+                label: 'Double Harmonic (Byzantine)',
+                steps: (() => {
+                    const rIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
+                    const byz = [0,1,4,5,7,8,11];
+                    const byzN = byz.map(v => notes[(rIdx+v)%12]);
+                    const byzStep = (i, isM) => ({n: byzN[i%7], min: isM});
+                    return [ byzStep(0,false), byzStep(1,false), byzStep(2,false), byzStep(3,true),
+                             byzStep(4,false), byzStep(5,false), byzStep(6,false), byzStep(0,false),
+                             byzStep(4,false), byzStep(3,true), byzStep(2,false), byzStep(1,false),
+                             byzStep(2,false), byzStep(4,false), byzStep(6,false), byzStep(0,false) ];
+                })()
+            },
+            {
+                label: 'Whole Tone (aug drift)',
+                steps: (() => {
+                    const rIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
+                    const wt = [0,2,4,6,8,10];
+                    const wtN = wt.map(v => notes[(rIdx+v)%12]);
+                    const ws = (i) => ({n: wtN[i%6], min:false, type:'aug'});
+                    return [ ws(0), ws(1), ws(2), ws(3), ws(4), ws(5), ws(0), ws(2),
+                             ws(4), ws(3), ws(5), ws(1), ws(2), ws(3), ws(4), ws(0) ];
+                })()
+            },
+        ];
+
+        // ── AMBIENT & CINEMATIC ───────────────────────────────────────────
+        // Long pads, maj7, sus2, add9, slow voice-leading
+        const ambient = [
+            {
+                label: 'Floating Pads (I-V-vi-IV maj7)',
+                steps: [ d(1,'maj7'), d(1,'maj7'), d(1,'maj7'), d(1,'maj7'),
+                         d(4,'maj7'), d(4,'maj7'), d(4,'maj7'), d(4,'maj7'),
+                         d(6,'min7'), d(6,'min7'), d(6,'min7'), d(6,'min7'),
+                         d(5,'dom7'), d(5,'dom7'), d(5,'dom7'), d(1,'maj7') ]
+            },
+            {
+                label: 'Dream Sequence (sus2 drift)',
+                steps: [ d(1,'sus2'), d(5,'sus2'), d(4,'sus2'), d(6,'sus2'),
+                         d(1,'sus4'), d(5,'sus4'), d(4,'sus2'), d(2,'sus2'),
+                         d(1,'sus2'), d(4,'sus2'), d(6,'sus4'), d(5,'sus2'),
+                         d(4,'sus2'), d(2,'sus4'), d(5,'sus2'), d(1,'sus2') ]
+            },
+            {
+                label: 'Cinematic Swell (I-V-vi-IV)',
+                steps: [ d(1), d(1,'maj7'), d(5), d(5,'maj7'), d(6,'min7'), d(6,'min7'), d(4), d(4,'min7'),
+                         d(1), d(5), d(4), d(6), d(7,'dim'), d(5,'dom7'), d(4), d(1) ]
+            },
+            {
+                label: 'Hans Zimmer Build (i slow)',
+                steps: [ d(1), d(1), d(1), d(7), d(6), d(6), d(6), d(4),
+                         d(3), d(3), d(5), d(5), d(5,'dom7'), d(5,'dom7'), d(7,'dim'), d(1) ]
+            },
+            {
+                label: 'Space & Time (add9/sus)',
+                steps: [ d(1,'add9'), d(5,'sus2'), d(4,'add9'), d(6,'sus4'),
+                         d(1,'add9'), d(4,'sus2'), d(5,'add9'), d(2,'sus2'),
+                         d(1,'add9'), d(5,'sus2'), d(4,'add9'), d(2,'sus4'),
+                         d(4,'sus2'), d(6,'sus2'), d(5,'sus4'), d(1,'add9') ]
+            },
+            {
+                label: 'Dark Atmosphere (i-VI-III)',
+                steps: [ d(1), d(1), d(6), d(6), d(4), d(4), d(3), d(3),
+                         d(1), d(7), d(6), d(4), d(3), dPh(2), d(5,'dom7'), d(1) ]
+            },
+            {
+                label: 'Zen Garden (sus2 loop)',
+                steps: [ d(1,'sus2'), d(1,'sus2'), d(5,'sus2'), d(5,'sus2'),
+                         d(4,'sus2'), d(4,'sus2'), d(2,'sus2'), d(2,'sus2'),
+                         d(1,'sus4'), d(1,'sus4'), d(5,'sus4'), d(5,'sus4'),
+                         d(4,'sus4'), d(2,'sus2'), d(5,'sus2'), d(1,'sus2') ]
+            },
+            {
+                label: 'Arrival (long i vamp)',
+                steps: [ d(1), d(1), d(1), d(1), d(6), d(6), d(7), d(7),
+                         d(4), d(4), d(7), d(7), d(5,'dom7'), d(5,'dom7'), d(7,'dim'), d(1) ]
+            },
+            {
+                label: 'Neon Rain (min7 / maj7)',
+                steps: [ d(1,'min7'), d(7,'maj7'), d(6,'maj7'), d(5,'dom7'),
+                         d(1,'min7'), d(3,'maj7'), d(6,'maj7'), d(5,'dom7'),
+                         d(1,'min7'), d(7,'maj7'), d(4,'min7'), d(5,'dom7'),
+                         d(3,'maj7'), d(6,'maj7'), d(5,'dom7'), d(1,'min7') ]
+            },
+            {
+                label: 'Interstellar Drift (sus2)',
+                steps: [ d(1,'sus2'), d(6,'sus2'), d(4,'sus4'), d(5,'sus2'),
+                         d(1,'sus4'), d(4,'sus2'), d(2,'sus2'), d(6,'sus4'),
+                         d(1,'sus2'), d(5,'sus2'), d(4,'sus4'), d(2,'sus2'),
+                         d(6,'sus2'), d(4,'sus4'), d(5,'sus2'), d(1,'sus2') ]
+            },
+            {
+                label: 'Post-Rock Rise (I-V-vi-IV)',
+                steps: [ d(1), d(5), d(4,'min7'), d(6), d(1), d(5), d(4), d(5),
+                         d(6), d(4,'min7'), d(5), d(4), d(2,'min7'), d(5,'dom7'), d(4), d(1) ]
+            },
+            {
+                label: 'Lo-Fi Chill (maj7 cycle)',
+                steps: [ d(1,'maj7'), d(6,'min7'), d(4,'maj7'), d(1,'maj7'),
+                         d(2,'min7'), d(5,'dom7'), d(1,'maj7'), d(6,'min7'),
+                         d(4,'maj7'), d(6,'min7'), d(4,'dom7'), d(2,'min7'),
+                         d(5,'dom7'), d(4,'maj7'), d(4,'dom7'), d(1,'maj7') ]
+            },
+            {
+                label: 'Midnight Voyager (ii-V-I cycle)',
+                steps: [ d(1,'min7'), d(4,'min7'), d(6,'maj7'), d(3,'maj7'),
+                         d(7,'dom7'), d(4,'dom7'), d(1,'min7'), d(5,'dom7'),
+                         d(1,'min7'), d(7,'maj7'), d(6,'maj7'), d(4,'dom7'),
+                         d(3,'maj7'), d(7,'min7'), d(5,'dom7'), d(1,'min7') ]
+            },
+        ];
+
+        return { classic, psy, techno, trance, modes, ambient };
+    }
+
+    function updateUI(note, index, isMinor) {
+        currentRootForGrid = note; initGrid();
+        const allNotes = document.querySelectorAll('.note');
+        allNotes.forEach(el => el.classList.remove('active','active-minor','neighbor'));
         if(!isMinor){
             if(index>=0) allNotes[index].classList.add('active');
             allNotes[(index+11)%12].classList.add('neighbor');
@@ -979,149 +1536,27 @@
             if(index>=0) allNotes[index+12].classList.add('active-minor');
         }
 
-        const cleanRoot=note.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
-        const rootIdx=notes.indexOf(cleanRoot);
-        const getN=off=>notes[(rootIdx+off)%12];
+        const cleanRoot = note.replace('m','').replace('Gb','F#').replace('Db','C#').replace('Ab','G#').replace('Eb','D#').replace('Bb','A#');
 
-        // Clear lists
         ['suggestion-list','psy-list','techno-list','trance-list','modes-list','ambient-list'].forEach(id=>{
-            const el=document.getElementById(id); if(el) el.innerHTML='';
+            const el = document.getElementById(id); if(el) el.innerHTML='';
         });
-        const listSug=document.getElementById('suggestion-list');
-        const listPsy=document.getElementById('psy-list');
-        const listTech=document.getElementById('techno-list');
-        const listTrance=document.getElementById('trance-list');
-        const listModes=document.getElementById('modes-list');
-        const listAmbient=document.getElementById('ambient-list');
 
-        // ════════════════════════════════════════════════════════════════════
-        // PRESETS — ALL SCALE-AWARE (use getN offsets from current root)
-        // ════════════════════════════════════════════════════════════════════
-        const lists = {
+        const listSug    = document.getElementById('suggestion-list');
+        const listPsy    = document.getElementById('psy-list');
+        const listTech   = document.getElementById('techno-list');
+        const listTrance = document.getElementById('trance-list');
+        const listModes  = document.getElementById('modes-list');
+        const listAmbient= document.getElementById('ambient-list');
 
-        // ── CLASSIC & THEORY (20 presets) ────────────────────────────────────
-        classic: [
-            { label:'Epic Cinema 16', steps:[{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(7),min:false},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(3),min:false},{n:getN(8),min:false},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true}] },
-            { label:'Emotional Journey', steps:[{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(7),min:false},{n:cleanRoot,min:false},{n:getN(7),type:'dom7'},{n:getN(9),min:true},{n:getN(2),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(11),type:'dim'},{n:cleanRoot,min:false}] },
-            { label:'Soul & Gospel 16', steps:[{n:cleanRoot,type:'maj7'},{n:getN(5),type:'maj7'},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:getN(4),min:true},{n:getN(9),min:true},{n:getN(2),min:true},{n:getN(7),min:false},{n:cleanRoot,type:'maj7'},{n:getN(10),min:false},{n:getN(9),min:true},{n:getN(8),min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(7),type:'dom7'}] },
-            { label:'Baroque Cycle', steps:[{n:cleanRoot,min:true},{n:getN(5),min:false},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(6),min:false},{n:getN(2),min:true},{n:getN(7),min:false},{n:getN(11),type:'dim'},{n:cleanRoot,min:true},{n:getN(5),min:false},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(6),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true},{n:cleanRoot,min:true}] },
-            { label:'Spanish Passion', steps:[{n:cleanRoot,min:true},{n:getN(2),min:false},{n:getN(1),min:true},{n:getN(11),min:false},{n:cleanRoot,min:true},{n:getN(2),min:false},{n:getN(3),min:false},{n:getN(2),min:false},{n:cleanRoot,min:true},{n:getN(1),min:true},{n:getN(11),min:false},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(7),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Neo-Classical Dark', steps:[{n:cleanRoot,min:true},{n:getN(7),min:false},{n:getN(8),min:false},{n:getN(7),min:false},{n:cleanRoot,min:true},{n:getN(3),min:false},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(8),min:false},{n:getN(6),min:false},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(4),min:true},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Suspense Drama', steps:[{n:cleanRoot,min:true},{n:getN(2),type:'dim'},{n:getN(7),min:false},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(7),min:false},{n:getN(11),type:'dim'},{n:getN(7),min:false},{n:cleanRoot,min:true},{n:getN(2),type:'dim'},{n:getN(5),min:true},{n:getN(4),min:false},{n:getN(8),min:false},{n:getN(11),type:'dim'},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Starlight Waltz', steps:[{n:cleanRoot,min:false},{n:getN(2),min:true},{n:getN(5),min:false},{n:getN(1),min:false},{n:getN(4),min:true},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(2),min:true},{n:getN(5),min:false},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(6),min:false},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:cleanRoot,min:false}] },
-            { label:'Top 40 Anthemic', steps:[{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:cleanRoot,min:false}] },
-            { label:'Golden Era Pop', steps:[{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(4),min:true},{n:getN(2),min:true},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:false}] },
-            { label:'Disco Pop 16', steps:[{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(8),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(10),min:false},{n:getN(7),type:'dom7'}] },
-            { label:'Retro Synth Pop', steps:[{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(1),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(1),min:false},{n:getN(7),min:false},{n:getN(2),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(10),min:false},{n:getN(7),min:false},{n:cleanRoot,min:false}] },
-            { label:'Jazz-Blues Walk', steps:[{n:cleanRoot,type:'dom7'},{n:getN(5),type:'dom7'},{n:cleanRoot,type:'dom7'},{n:getN(1),type:'dom7'},{n:getN(5),type:'dom7'},{n:getN(5),type:'dom7'},{n:cleanRoot,type:'dom7'},{n:getN(9),min:true},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'dom7'},{n:getN(10),min:false},{n:getN(9),min:true},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:getN(1),type:'dom7'}] },
-            { label:'Urban Sophisticate', steps:[{n:cleanRoot,type:'maj7'},{n:getN(4),min:true},{n:getN(7),type:'dom7'},{n:getN(1),type:'maj7'},{n:getN(9),min:true},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:getN(10),type:'maj7'},{n:getN(6),type:'maj7'},{n:getN(2),min:true},{n:getN(5),type:'dom7'},{n:getN(3),min:true},{n:getN(9),type:'dom7'},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'maj7'}] },
-            { label:'Classic 90s Groove', steps:[{n:cleanRoot,min:false},{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(5),type:'dom7'},{n:getN(7),min:true},{n:getN(7),min:true},{n:getN(10),min:false},{n:getN(10),min:false},{n:getN(5),min:false},{n:getN(5),min:false},{n:getN(3),min:false},{n:getN(3),min:false},{n:getN(1),min:false},{n:getN(1),type:'sus4'},{n:getN(7),min:true},{n:cleanRoot,min:false}] },
-            { label:'Deep & Jazzy 16', steps:[{n:cleanRoot,min:true,type:'min7'},{n:getN(3),min:true},{n:getN(7),min:true},{n:getN(10),min:false},{n:getN(5),min:true},{n:getN(5),type:'dom7'},{n:getN(8),min:false},{n:getN(7),min:true},{n:getN(3),min:true},{n:getN(10),min:false},{n:getN(12),min:true},{n:getN(5),min:true},{n:getN(2),type:'dim'},{n:getN(7),min:true},{n:getN(1),min:false},{n:cleanRoot,min:true}] },
-            { label:'Anyma Eternity 16', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(7),min:true},{n:getN(7),min:true},{n:getN(12),min:true},{n:getN(12),min:true},{n:getN(10),min:false},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(8),min:false},{n:getN(7),min:true},{n:getN(7),min:true},{n:getN(5),min:true},{n:getN(5),min:true},{n:getN(3),min:true},{n:cleanRoot,min:true}] },
-            { label:'Afterlife Journey 16', steps:[{n:cleanRoot,min:true,type:'sus2'},{n:getN(7),min:true},{n:getN(3),min:true},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(12),min:true},{n:getN(7),min:true},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(12),min:true},{n:getN(15),min:true},{n:getN(14),min:true},{n:getN(10),min:false},{n:getN(7),min:true},{n:cleanRoot,min:true}] },
-            { label:'Cinematic Build', steps:[{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(2),min:true},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(11),type:'dim'},{n:getN(7),type:'dom7'},{n:getN(5),min:false},{n:cleanRoot,min:false}] },
-            { label:'Minor Tension Arc', steps:[{n:cleanRoot,min:true},{n:getN(3),min:false},{n:getN(8),min:false},{n:getN(5),min:true},{n:getN(10),min:false},{n:getN(7),type:'dom7'},{n:getN(8),min:false},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(2),type:'dim'},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(7),type:'dom7'},{n:getN(3),min:false},{n:getN(2),type:'dim'},{n:cleanRoot,min:true}] },
-        ],
-
-        // ── PSYTRANCE & GOA (16 presets) ─────────────────────────────────────
-        psy: [
-            { label:'Zenonesque Dark-16', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(1),min:false},{n:getN(3),min:true},{n:getN(1),min:false},{n:cleanRoot,min:true},{n:getN(6),type:'dim'},{n:getN(1),min:false},{n:getN(8),min:false},{n:getN(1),min:false},{n:getN(3),min:true},{n:getN(1),type:'phrygian'},{n:getN(7),type:'dom7'}] },
-            { label:'Alien Hypnosis', steps:[{n:cleanRoot,type:'sus2'},{n:cleanRoot,type:'sus4'},{n:getN(1),type:'sus2'},{n:cleanRoot,type:'sus2'},{n:getN(6),type:'sus2'},{n:getN(1),type:'sus4'},{n:getN(2),type:'sus2'},{n:getN(1),type:'sus2'},{n:cleanRoot,type:'sus2'},{n:getN(3),type:'sus4'},{n:getN(1),type:'sus2'},{n:getN(6),type:'sus2'},{n:getN(8),type:'sus2'},{n:getN(10),type:'sus2'},{n:getN(11),type:'sus2'},{n:getN(1),type:'sus4'}] },
-            { label:'Full-On Morning', steps:[{n:cleanRoot,min:true},{n:getN(3),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(3),min:false},{n:getN(5),min:true},{n:getN(10),min:false},{n:getN(11),min:false},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(10),min:false},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(10),min:false},{n:getN(11),min:false}] },
-            { label:'Goa Spirit Ritual', steps:[{n:cleanRoot,min:true},{n:getN(1),min:false},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(1),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(3),min:true},{n:getN(1),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(11),min:false},{n:getN(7),type:'dom7'}] },
-            { label:'Forest Night Tension', steps:[{n:cleanRoot,type:'dim'},{n:getN(1),min:true},{n:getN(6),type:'dim'},{n:getN(1),min:true},{n:getN(6),type:'dim'},{n:getN(7),type:'dim'},{n:getN(12),type:'dim'},{n:getN(1),type:'dim'},{n:cleanRoot,type:'dim'},{n:getN(3),type:'dim'},{n:getN(6),type:'dim'},{n:getN(9),type:'dim'},{n:getN(10),min:false},{n:getN(11),min:false},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true}] },
-            { label:'Cyber-Trance 16', steps:[{n:cleanRoot,type:'sus2'},{n:getN(1),type:'sus2'},{n:getN(3),type:'sus2'},{n:getN(1),type:'sus2'},{n:cleanRoot,type:'sus4'},{n:getN(6),type:'sus2'},{n:getN(1),type:'sus4'},{n:getN(1),type:'sus2'},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(3),min:false},{n:getN(1),type:'sus2'},{n:getN(11),min:false},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(7),type:'dom7'}] },
-            { label:'Prog-Psy Flow', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(3),min:false},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(5),min:true},{n:getN(6),min:false},{n:getN(5),min:true},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(7),min:false},{n:getN(3),min:false},{n:getN(1),min:false},{n:getN(1),min:false},{n:cleanRoot,min:true}] },
-            { label:'Dark Psy-Twist', steps:[{n:cleanRoot,type:'phrygian'},{n:getN(1),type:'phrygian'},{n:cleanRoot,type:'phrygian'},{n:getN(6),type:'dim'},{n:getN(1),type:'phrygian'},{n:getN(2),type:'dim'},{n:getN(1),type:'phrygian'},{n:getN(6),type:'dim'},{n:cleanRoot,type:'phrygian'},{n:getN(13),min:true},{n:getN(1),type:'phrygian'},{n:getN(6),type:'dim'},{n:getN(12),type:'dim'},{n:getN(11),min:false},{n:getN(1),type:'phrygian'},{n:getN(7),type:'dom7'}] },
-            { label:'Hi-Tech Glitch', steps:[{n:cleanRoot,type:'dim'},{n:getN(13),type:'dim'},{n:getN(1),type:'dim'},{n:getN(6),type:'dim'},{n:getN(12),type:'dim'},{n:getN(7),type:'dim'},{n:getN(1),type:'dim'},{n:getN(13),type:'dim'},{n:cleanRoot,type:'dim'},{n:getN(18%12),type:'dim'},{n:getN(6),type:'dim'},{n:getN(1),type:'dim'},{n:getN(3),min:true},{n:getN(4),type:'dim'},{n:getN(1),type:'phrygian'},{n:getN(6),type:'dim'}] },
-            { label:'Tribal Stomp', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(3),min:true},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(7),min:false},{n:getN(5),min:true},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(1),min:false},{n:getN(10),min:false},{n:getN(1),min:false},{n:getN(3),min:true},{n:getN(1),min:false},{n:getN(1),min:false}] },
-            { label:'Psychic Melodic', steps:[{n:cleanRoot,min:true},{n:getN(7),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(3),min:false},{n:getN(1),min:false},{n:getN(10),min:false},{n:getN(12),min:true},{n:cleanRoot,min:true},{n:getN(3),min:false},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(11),min:false},{n:getN(13%12),min:false}] },
-            { label:'Deep Abyss', steps:[{n:cleanRoot,type:'sus2'},{n:getN(1),type:'phrygian'},{n:cleanRoot,type:'sus2'},{n:getN(6),type:'dim'},{n:getN(1),type:'sus2'},{n:getN(3),type:'sus2'},{n:getN(1),type:'phrygian'},{n:getN(6),type:'dim'},{n:cleanRoot,type:'sus2'},{n:getN(8),type:'sus2'},{n:getN(1),type:'phrygian'},{n:getN(10),type:'sus2'},{n:getN(1),type:'sus2'},{n:getN(6),type:'dim'},{n:getN(1),type:'phrygian'},{n:getN(7),type:'dom7'}] },
-            { label:'Astral Voyage', steps:[{n:cleanRoot,type:'sus2'},{n:getN(5),min:true},{n:getN(8),min:false},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true},{n:getN(3),min:false},{n:getN(6),type:'dim'},{n:getN(8),min:false},{n:cleanRoot,type:'sus2'},{n:getN(10),min:false},{n:getN(1),type:'phrygian'},{n:getN(8),min:false},{n:getN(5),min:true},{n:getN(3),type:'dim'},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true}] },
-            { label:'Morning Ritual', steps:[{n:cleanRoot,min:true},{n:getN(5),min:false},{n:getN(8),min:false},{n:getN(3),min:false},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(5),min:false},{n:getN(3),min:false},{n:getN(1),min:false},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(5),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Nano Corrupted', steps:[{n:cleanRoot,type:'dim'},{n:getN(6),type:'dim'},{n:getN(1),min:false},{n:cleanRoot,type:'dim'},{n:getN(3),min:true},{n:getN(6),type:'dim'},{n:cleanRoot,type:'dim'},{n:getN(10),min:false},{n:cleanRoot,type:'dim'},{n:getN(9),type:'dim'},{n:getN(6),type:'dim'},{n:getN(3),type:'dim'},{n:getN(1),type:'phrygian'},{n:getN(8),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Phrygian Descent', steps:[{n:cleanRoot,type:'phrygian'},{n:getN(1),min:false},{n:cleanRoot,type:'phrygian'},{n:getN(8),min:false},{n:getN(7),min:false},{n:getN(1),type:'phrygian'},{n:getN(6),type:'dim'},{n:getN(5),min:true},{n:cleanRoot,type:'phrygian'},{n:getN(3),min:true},{n:getN(1),type:'phrygian'},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(6),type:'dim'},{n:getN(1),type:'phrygian'},{n:cleanRoot,type:'phrygian'}] },
-        ],
-
-        // ── TECHNO & HOUSE (16 presets) ──────────────────────────────────────
-        techno: [
-            { label:'Industrial Abyss', steps:[{n:cleanRoot,min:true},{n:cleanRoot,type:'phrygian'},{n:getN(1),type:'dim'},{n:cleanRoot,min:true},{n:getN(6),type:'dim'},{n:getN(7),min:true},{n:getN(1),min:false},{n:cleanRoot,type:'phrygian'},{n:cleanRoot,min:true},{n:getN(11),min:false},{n:getN(10),min:false},{n:getN(6),min:false},{n:getN(1),min:true},{n:getN(2),type:'dim'},{n:getN(3),min:true},{n:cleanRoot,min:true}] },
-            { label:'Melodic Detroit', steps:[{n:cleanRoot,min:true},{n:getN(7),min:true},{n:getN(8),min:false},{n:getN(5),min:true},{n:getN(10),min:false},{n:getN(3),min:false},{n:getN(7),min:true},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(10),min:false},{n:getN(5),min:true},{n:getN(7),min:true},{n:getN(1),min:false},{n:cleanRoot,min:true}] },
-            { label:'Dub Techno Chords', steps:[{n:cleanRoot,min:true,type:'sus2'},{n:cleanRoot,min:true},{n:getN(3),min:true},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(3),min:true},{n:getN(7),min:true},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(3),min:true},{n:getN(1),min:false},{n:getN(5),min:true},{n:getN(7),min:true},{n:getN(2),type:'dim'},{n:cleanRoot,min:true}] },
-            { label:'Berlin Basement', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true},{n:getN(6),type:'dim'},{n:cleanRoot,min:true},{n:getN(1),min:true},{n:getN(13%12),min:true},{n:cleanRoot,min:true},{n:getN(1),min:true},{n:getN(4),type:'dim'},{n:cleanRoot,min:true},{n:getN(7),min:true},{n:getN(6),min:true},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true}] },
-            { label:'Acid Riff 16', steps:[{n:cleanRoot,min:true},{n:getN(12%12),min:false},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:getN(3),min:false},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(7),min:true},{n:getN(10),min:false},{n:getN(12%12),min:false},{n:getN(13%12),min:false},{n:getN(10),min:false},{n:getN(7),min:true},{n:getN(5),min:true},{n:getN(3),min:false},{n:cleanRoot,min:true}] },
-            { label:'Robotic Funk', steps:[{n:cleanRoot,min:true},{n:getN(12%12),min:true},{n:getN(7),min:true},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(10),min:false},{n:getN(7),min:true},{n:getN(12%12),min:true},{n:cleanRoot,min:true},{n:getN(2),type:'dim'},{n:getN(10),min:false},{n:getN(7),min:true},{n:getN(5),min:true},{n:getN(3),min:true},{n:getN(1),min:false},{n:cleanRoot,min:true}] },
-            { label:'Cybercity 16', steps:[{n:cleanRoot,min:true},{n:getN(3),min:true},{n:getN(5),min:true},{n:getN(1),min:false},{n:cleanRoot,min:true},{n:getN(7),min:true},{n:getN(10),min:false},{n:getN(12%12),min:true},{n:getN(13%12),min:false},{n:getN(10),min:false},{n:getN(7),min:true},{n:getN(5),min:true},{n:getN(3),min:true},{n:getN(2),type:'dim'},{n:getN(1),min:false},{n:cleanRoot,min:true}] },
-            { label:'Brejcha Minimal', steps:[{n:cleanRoot,min:true},{n:getN(1),min:true},{n:getN(12%12),min:true},{n:cleanRoot,min:true},{n:getN(3),min:true},{n:getN(1),min:true},{n:getN(7),min:true},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(13%12),min:true},{n:getN(12%12),min:true},{n:getN(1),min:true},{n:getN(5),min:true},{n:getN(2),type:'dim'},{n:getN(1),min:true},{n:cleanRoot,min:true}] },
-            { label:'Artbat Gravity', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(3),min:true},{n:cleanRoot,min:true},{n:getN(7),min:true},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(7),min:true},{n:getN(10),min:false},{n:getN(10),min:false},{n:getN(12%12),min:true},{n:getN(7),min:true},{n:getN(5),min:true},{n:getN(3),min:true},{n:getN(1),min:true},{n:cleanRoot,min:true}] },
-            { label:'Deep House Vibe', steps:[{n:cleanRoot,type:'min7'},{n:getN(5),type:'dom7'},{n:getN(8),type:'maj7'},{n:getN(3),type:'maj7'},{n:cleanRoot,type:'min7'},{n:getN(5),type:'dom7'},{n:getN(8),type:'maj7'},{n:getN(2),type:'min7'},{n:getN(7),type:'dom7'},{n:getN(3),type:'maj7'},{n:getN(8),type:'maj7'},{n:getN(5),type:'dom7'},{n:getN(2),type:'min7'},{n:getN(7),type:'dom7'},{n:getN(3),type:'maj7'},{n:cleanRoot,type:'min7'}] },
-            { label:'Chicago House', steps:[{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:cleanRoot,min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(2),min:true},{n:getN(5),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:false}] },
-            { label:'Funk Groove 16', steps:[{n:cleanRoot,type:'dom7'},{n:getN(5),type:'dom7'},{n:cleanRoot,type:'dom7'},{n:getN(5),type:'dom7'},{n:getN(9),min:true},{n:getN(5),type:'dom7'},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'dom7'},{n:getN(3),min:true},{n:getN(5),type:'dom7'},{n:getN(7),type:'dom7'},{n:getN(9),min:true},{n:getN(5),type:'dom7'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'dom7'}] },
-            { label:'Club Hypno Loop', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(7),min:true},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:cleanRoot,min:true},{n:getN(3),min:true},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true}] },
-            { label:'Peak Time Techno', steps:[{n:cleanRoot,min:true},{n:getN(1),type:'phrygian'},{n:getN(3),min:true},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(7),min:true},{n:getN(8),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true},{n:getN(6),type:'dim'},{n:getN(5),min:true},{n:getN(3),min:true},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true}] },
-            { label:'Warehouse Ritual', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:cleanRoot,min:true},{n:getN(6),type:'dim'},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:getN(8),min:false},{n:cleanRoot,min:true},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true},{n:getN(3),min:true},{n:getN(5),min:true},{n:getN(3),min:true},{n:getN(1),type:'phrygian'},{n:cleanRoot,min:true}] },
-            { label:'Minimal Techno Run', steps:[{n:cleanRoot,min:true},{n:getN(2),type:'dim'},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:cleanRoot,min:true},{n:getN(7),min:true},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:cleanRoot,min:true},{n:getN(5),min:true},{n:getN(3),min:true},{n:getN(1),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true}] },
-        ],
-
-        // ── TRANCE & PROGRESSIVE (14 presets) ────────────────────────────────
-        trance: [
-            { label:'Uplifting Power 16', steps:[{n:getN(9),min:true},{n:getN(5),min:false},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(10),min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(2),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),min:false}] },
-            { label:'Classic Gate 16', steps:[{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(3),min:false},{n:getN(10),min:false},{n:getN(5),min:true},{n:getN(1),min:false},{n:getN(8),min:false},{n:getN(7),min:false},{n:cleanRoot,min:true},{n:getN(3),min:false},{n:getN(10),min:false},{n:getN(5),min:true},{n:getN(8),min:false},{n:getN(7),min:false},{n:getN(11),min:false},{n:cleanRoot,min:true}] },
-            { label:'Anjuna Deep 16', steps:[{n:cleanRoot,type:'maj7'},{n:getN(9),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:cleanRoot,type:'maj7'},{n:getN(2),min:true},{n:getN(7),min:false},{n:getN(7),type:'sus4'},{n:cleanRoot,type:'maj7'},{n:getN(9),min:true},{n:getN(11),min:false},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),min:false}] },
-            { label:'Solarstone Pure', steps:[{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(2),min:true},{n:cleanRoot,min:false},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(11),type:'dim'},{n:getN(7),type:'sus4'},{n:cleanRoot,min:false}] },
-            { label:'Psy-Trance Bliss', steps:[{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(3),min:true},{n:getN(1),min:false},{n:getN(6),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(7),min:false},{n:cleanRoot,min:true},{n:getN(3),min:true},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(11),min:false},{n:getN(1),type:'phrygian'}] },
-            { label:'90s Dreamscape', steps:[{n:cleanRoot,min:true},{n:getN(5),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(5),min:false},{n:getN(8),min:false},{n:getN(7),min:false},{n:getN(5),min:true},{n:getN(3),min:false},{n:getN(1),min:false},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(7),min:false},{n:getN(11),type:'dim'},{n:cleanRoot,min:true}] },
-            { label:'Euphoric Acid 16', steps:[{n:cleanRoot,min:true},{n:getN(1),min:false},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(3),min:true},{n:getN(5),min:true},{n:getN(7),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(12%12),min:true},{n:getN(10),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Armada Energy', steps:[{n:getN(9),min:true},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:cleanRoot,min:false},{n:cleanRoot,min:false},{n:getN(2),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(11),min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(2),min:true},{n:getN(7),type:'sus4'}] },
-            { label:'Progressive Flow', steps:[{n:cleanRoot,type:'maj7'},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:getN(5),min:false},{n:cleanRoot,type:'maj7'},{n:getN(9),min:true},{n:getN(4),min:true},{n:getN(7),min:false},{n:cleanRoot,type:'maj7'},{n:getN(2),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(11),type:'dim'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'maj7'}] },
-            { label:'Tiesto Classic', steps:[{n:cleanRoot,min:false},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(4),min:true},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(2),min:true},{n:getN(4),min:true},{n:getN(7),type:'dom7'},{n:cleanRoot,min:false}] },
-            { label:'Ferry Corsten Run', steps:[{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(4),min:true},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(7),min:false},{n:getN(11),type:'dim'},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(4),min:true},{n:getN(9),min:true},{n:getN(5),min:false},{n:getN(7),type:'dom7'},{n:getN(2),min:true},{n:cleanRoot,min:false}] },
-            { label:'Vocal Trance Build', steps:[{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(4),min:true},{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(7),min:false},{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),type:'dom7'},{n:getN(2),min:true},{n:cleanRoot,min:false}] },
-            { label:'Ibiza Midnight', steps:[{n:cleanRoot,type:'min7'},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(8),min:false},{n:cleanRoot,type:'min7'},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(5),min:false},{n:getN(3),min:false},{n:getN(5),min:false},{n:getN(8),min:false},{n:getN(10),min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(8),type:'sus4'},{n:cleanRoot,type:'min7'}] },
-            { label:'ATB Flow State', steps:[{n:cleanRoot,min:false},{n:getN(9),min:true},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(11),type:'dim'},{n:getN(7),type:'dom7'},{n:getN(5),min:false},{n:cleanRoot,min:false}] },
-        ],
-
-        // ── MODAL EXPLORATION (12 presets) ───────────────────────────────────
-        modes: [
-            { label:'Ionian (Mayor)', steps:[{n:cleanRoot,min:false},{n:getN(2),min:true},{n:getN(4),min:true},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(11),type:'dim'},{n:cleanRoot,min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(4),min:true},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:getN(11),type:'dim'},{n:cleanRoot,min:false}] },
-            { label:'Dorian (Soulful)', steps:[{n:cleanRoot,min:true},{n:getN(2),min:true},{n:getN(3),min:false},{n:getN(5),min:false},{n:getN(7),min:true},{n:getN(9),type:'dim'},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(7),min:true},{n:getN(5),min:false},{n:getN(9),type:'dim'},{n:getN(10),min:false},{n:getN(3),min:false},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Phrygian (Dark)', steps:[{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(3),min:false},{n:getN(5),min:true},{n:getN(7),type:'dim'},{n:getN(8),min:false},{n:getN(10),min:true},{n:cleanRoot,min:true},{n:getN(1),min:false},{n:getN(8),min:false},{n:getN(10),min:true},{n:getN(3),min:false},{n:getN(1),min:false},{n:getN(7),type:'dim'},{n:getN(1),min:false},{n:cleanRoot,min:true}] },
-            { label:'Lydian (Etérico)', steps:[{n:cleanRoot,min:false},{n:getN(2),min:false},{n:getN(4),min:true},{n:getN(6),type:'dim'},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(11),min:true},{n:cleanRoot,min:false},{n:getN(6),type:'dim'},{n:getN(2),min:false},{n:getN(7),min:false},{n:getN(4),min:true},{n:getN(11),min:true},{n:getN(9),min:true},{n:getN(7),min:false},{n:cleanRoot,min:false}] },
-            { label:'Mixolydian (Blues)', steps:[{n:cleanRoot,min:false},{n:getN(2),min:true},{n:getN(4),type:'dim'},{n:getN(5),min:false},{n:getN(7),min:true},{n:getN(9),min:true},{n:getN(10),min:false},{n:cleanRoot,min:false},{n:getN(10),min:false},{n:getN(5),min:false},{n:getN(7),min:true},{n:getN(9),min:true},{n:getN(2),min:true},{n:getN(4),type:'dim'},{n:getN(10),min:false},{n:cleanRoot,min:false}] },
-            { label:'Aeolian (Menor)', steps:[{n:cleanRoot,min:true},{n:getN(2),type:'dim'},{n:getN(3),min:false},{n:getN(5),min:true},{n:getN(7),min:true},{n:getN(8),min:false},{n:getN(10),min:false},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(5),min:true},{n:getN(10),min:false},{n:getN(7),min:true},{n:getN(3),min:false},{n:getN(2),type:'dim'},{n:getN(7),min:true},{n:cleanRoot,min:true}] },
-            { label:'Locrian (Tenso)', steps:[{n:cleanRoot,type:'dim'},{n:getN(1),min:false},{n:getN(3),min:true},{n:getN(5),min:false},{n:getN(6),min:false},{n:getN(8),min:true},{n:getN(10),min:true},{n:cleanRoot,type:'dim'},{n:getN(6),min:false},{n:getN(1),min:false},{n:getN(10),min:true},{n:getN(8),min:true},{n:getN(5),min:false},{n:getN(3),min:true},{n:getN(1),min:false},{n:cleanRoot,type:'dim'}] },
-            { label:'Harmonic Minor', steps:[{n:cleanRoot,min:true},{n:getN(2),type:'dim'},{n:getN(3),min:false},{n:getN(5),min:true},{n:getN(7),type:'dom7'},{n:getN(8),min:false},{n:getN(11),type:'dim'},{n:cleanRoot,min:true},{n:getN(11),type:'dim'},{n:getN(8),min:false},{n:getN(7),type:'dom7'},{n:getN(5),min:true},{n:getN(3),min:false},{n:getN(2),type:'dim'},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Phrygian Dominant', steps:[{n:cleanRoot,min:false},{n:getN(1),min:false},{n:getN(4),type:'dim'},{n:getN(5),min:true},{n:getN(7),type:'dim'},{n:getN(8),min:false},{n:getN(10),min:true},{n:cleanRoot,min:false},{n:getN(1),min:false},{n:getN(4),type:'dim'},{n:getN(5),min:true},{n:getN(8),min:false},{n:getN(10),min:true},{n:getN(7),type:'dim'},{n:getN(1),min:false},{n:cleanRoot,min:false}] },
-            { label:'Melodic Minor', steps:[{n:cleanRoot,min:true},{n:getN(2),type:'dim'},{n:getN(3),min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(11),type:'half-dim'},{n:cleanRoot,min:true},{n:getN(11),type:'half-dim'},{n:getN(9),min:true},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(3),min:false},{n:getN(2),type:'dim'},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Double Harmonic', steps:[{n:cleanRoot,min:false},{n:getN(1),min:false},{n:getN(4),min:false},{n:getN(5),min:false},{n:getN(8),min:false},{n:getN(11),min:false},{n:getN(11),min:false},{n:cleanRoot,min:false},{n:getN(8),min:false},{n:getN(5),min:false},{n:getN(4),min:false},{n:getN(1),min:false},{n:getN(4),min:false},{n:getN(8),min:false},{n:getN(11),min:false},{n:cleanRoot,min:false}] },
-            { label:'Whole Tone Drift', steps:[{n:cleanRoot,type:'aug'},{n:getN(2),type:'aug'},{n:getN(4),type:'aug'},{n:getN(6),type:'aug'},{n:getN(8),type:'aug'},{n:getN(10),type:'aug'},{n:cleanRoot,type:'aug'},{n:getN(4),type:'aug'},{n:getN(8),type:'aug'},{n:getN(6),type:'aug'},{n:getN(10),type:'aug'},{n:getN(2),type:'aug'},{n:getN(4),type:'aug'},{n:getN(6),type:'aug'},{n:getN(8),type:'aug'},{n:cleanRoot,type:'aug'}] },
-        ],
-
-        // ── AMBIENT & CINEMATIC (13 presets) ─────────────────────────────────
-        ambient: [
-            { label:'Floating Pads', steps:[{n:cleanRoot,type:'maj7'},{n:cleanRoot,type:'maj7'},{n:cleanRoot,type:'maj7'},{n:cleanRoot,type:'maj7'},{n:getN(5),type:'maj7'},{n:getN(5),type:'maj7'},{n:getN(5),type:'maj7'},{n:getN(5),type:'maj7'},{n:getN(9),type:'min7'},{n:getN(9),type:'min7'},{n:getN(9),type:'min7'},{n:getN(9),type:'min7'},{n:getN(7),type:'dom7'},{n:getN(7),type:'dom7'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'maj7'}] },
-            { label:'Dream Sequence', steps:[{n:cleanRoot,type:'sus2'},{n:getN(7),type:'sus2'},{n:getN(5),type:'sus2'},{n:getN(9),type:'sus2'},{n:cleanRoot,type:'sus4'},{n:getN(7),type:'sus4'},{n:getN(5),type:'sus2'},{n:getN(2),type:'sus2'},{n:cleanRoot,type:'sus2'},{n:getN(4),type:'sus2'},{n:getN(9),type:'sus4'},{n:getN(7),type:'sus2'},{n:getN(5),type:'sus2'},{n:getN(2),type:'sus4'},{n:getN(7),type:'sus2'},{n:cleanRoot,type:'sus2'}] },
-            { label:'Cinematic Swell', steps:[{n:cleanRoot,min:false},{n:cleanRoot,type:'maj7'},{n:getN(5),min:false},{n:getN(5),type:'maj7'},{n:getN(9),min:true},{n:getN(9),type:'min7'},{n:getN(4),min:true},{n:getN(4),type:'min7'},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(9),min:true},{n:getN(11),type:'dim'},{n:getN(7),type:'dom7'},{n:getN(5),min:false},{n:cleanRoot,min:false}] },
-            { label:'Hans Zimmer Build', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(8),min:false},{n:getN(8),min:false},{n:getN(5),min:true},{n:getN(3),min:false},{n:getN(3),min:false},{n:getN(7),min:false},{n:getN(7),min:false},{n:getN(7),type:'dom7'},{n:getN(7),type:'dom7'},{n:getN(11),type:'dim'},{n:cleanRoot,min:true}] },
-            { label:'Space & Time', steps:[{n:cleanRoot,type:'add9'},{n:getN(7),type:'sus2'},{n:getN(5),type:'add9'},{n:getN(9),type:'sus4'},{n:cleanRoot,type:'add9'},{n:getN(4),type:'sus2'},{n:getN(7),type:'add9'},{n:getN(2),type:'sus2'},{n:cleanRoot,type:'add9'},{n:getN(7),type:'sus2'},{n:getN(5),type:'add9'},{n:getN(2),type:'sus4'},{n:getN(4),type:'sus2'},{n:getN(9),type:'sus2'},{n:getN(7),type:'sus4'},{n:cleanRoot,type:'add9'}] },
-            { label:'Dark Atmosphere', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(8),min:false},{n:getN(5),min:true},{n:getN(5),min:true},{n:getN(3),min:false},{n:getN(3),min:false},{n:cleanRoot,min:true},{n:getN(10),min:false},{n:getN(8),min:false},{n:getN(5),min:true},{n:getN(3),min:false},{n:getN(1),min:false},{n:getN(7),type:'dom7'},{n:cleanRoot,min:true}] },
-            { label:'Zen Garden', steps:[{n:cleanRoot,type:'sus2'},{n:cleanRoot,type:'sus2'},{n:getN(7),type:'sus2'},{n:getN(7),type:'sus2'},{n:getN(5),type:'sus2'},{n:getN(5),type:'sus2'},{n:getN(2),type:'sus2'},{n:getN(2),type:'sus2'},{n:cleanRoot,type:'sus4'},{n:cleanRoot,type:'sus4'},{n:getN(7),type:'sus4'},{n:getN(7),type:'sus4'},{n:getN(5),type:'sus4'},{n:getN(2),type:'sus2'},{n:getN(7),type:'sus2'},{n:cleanRoot,type:'sus2'}] },
-            { label:'Arrival (Villeneuve)', steps:[{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:cleanRoot,min:true},{n:getN(8),min:false},{n:getN(8),min:false},{n:getN(7),min:true},{n:getN(7),min:true},{n:getN(5),min:true},{n:getN(5),min:true},{n:getN(10),min:false},{n:getN(10),min:false},{n:getN(7),type:'dom7'},{n:getN(7),type:'dom7'},{n:getN(11),type:'dim'},{n:cleanRoot,min:true}] },
-            { label:'Neon Rain', steps:[{n:cleanRoot,type:'min7'},{n:getN(10),type:'maj7'},{n:getN(8),type:'maj7'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'min7'},{n:getN(3),type:'maj7'},{n:getN(8),type:'maj7'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'min7'},{n:getN(10),type:'maj7'},{n:getN(5),type:'min7'},{n:getN(7),type:'dom7'},{n:getN(3),type:'maj7'},{n:getN(8),type:'maj7'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'min7'}] },
-            { label:'Interstellar Drift', steps:[{n:cleanRoot,type:'sus2'},{n:getN(9),type:'sus2'},{n:getN(5),type:'sus4'},{n:getN(7),type:'sus2'},{n:cleanRoot,type:'sus4'},{n:getN(4),type:'sus2'},{n:getN(2),type:'sus2'},{n:getN(9),type:'sus4'},{n:cleanRoot,type:'sus2'},{n:getN(7),type:'sus2'},{n:getN(5),type:'sus4'},{n:getN(2),type:'sus2'},{n:getN(9),type:'sus2'},{n:getN(4),type:'sus4'},{n:getN(7),type:'sus2'},{n:cleanRoot,type:'sus2'}] },
-            { label:'Post-Rock Rise', steps:[{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(4),min:true},{n:getN(9),min:true},{n:cleanRoot,min:false},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(7),min:false},{n:getN(9),min:true},{n:getN(4),min:true},{n:getN(7),min:false},{n:getN(5),min:false},{n:getN(2),min:true},{n:getN(7),type:'dom7'},{n:getN(5),min:false},{n:cleanRoot,min:false}] },
-            { label:'Lo-Fi Chill', steps:[{n:cleanRoot,type:'maj7'},{n:getN(9),type:'min7'},{n:getN(5),type:'dom7'},{n:cleanRoot,type:'maj7'},{n:getN(2),type:'min7'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'maj7'},{n:getN(9),type:'min7'},{n:getN(4),type:'maj7'},{n:getN(9),type:'min7'},{n:getN(5),type:'dom7'},{n:getN(2),type:'min7'},{n:getN(7),type:'dom7'},{n:getN(4),type:'maj7'},{n:getN(5),type:'dom7'},{n:cleanRoot,type:'maj7'}] },
-            { label:'Midnight Voyager', steps:[{n:cleanRoot,type:'min7'},{n:getN(5),type:'min7'},{n:getN(8),type:'maj7'},{n:getN(3),type:'maj7'},{n:getN(10),type:'min7'},{n:getN(5),type:'dom7'},{n:cleanRoot,type:'min7'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'min7'},{n:getN(10),type:'maj7'},{n:getN(8),type:'maj7'},{n:getN(5),type:'dom7'},{n:getN(3),type:'maj7'},{n:getN(10),type:'min7'},{n:getN(7),type:'dom7'},{n:cleanRoot,type:'min7'}] },
-        ],
-
-        }; // end lists
+        const lists = buildAllPresets(cleanRoot, isMinor);
 
         lists.classic.forEach(p => renderProg(p, listSug));
-        lists.psy.forEach(p => renderProg(p, listPsy));
+        lists.psy.forEach(p    => renderProg(p, listPsy));
         lists.techno.forEach(p => renderProg(p, listTech));
         lists.trance.forEach(p => renderProg(p, listTrance));
-        lists.modes.forEach(p => renderProg(p, listModes));
-        lists.ambient.forEach(p => renderProg(p, listAmbient));
+        lists.modes.forEach(p  => renderProg(p, listModes));
+        lists.ambient.forEach(p=> renderProg(p, listAmbient));
     }
 
     // ─── MIDI EXPORT ──────────────────────────────────────────────────────────
@@ -1138,11 +1573,11 @@
                 let midiNote;
                 const mOct = n.match(/^([A-G]#?)([3-6])$/);
                 if(mOct) {
-                    const baseMidi = midiMap[mOct[1]] || 60; // C4=60
+                    const baseMidi = midiMap[mOct[1]] || 60;
                     const octDiff = parseInt(mOct[2]) - 4;
                     midiNote = baseMidi + octDiff * 12;
                 } else if(n.endsWith('2') && n.length<=3) {
-                    midiNote = (midiMap[n.slice(0,-1)] || 60) + 12; // legacy oct5
+                    midiNote = (midiMap[n.slice(0,-1)] || 60) + 12;
                 } else {
                     midiNote = midiMap[n] || 60;
                 }
@@ -1166,6 +1601,13 @@
         bytes=bytes.concat(trackData);
         const blob=new Blob([new Uint8Array(bytes)],{type:'audio/midi'});
         const link=document.createElement('a'); link.href=URL.createObjectURL(blob); link.download=filename; link.click();
+    }
+
+    // helper for dorian mode builder (not full modal system, used inline)
+    function makeScaleBuilder(cleanRoot, isMinor, forceMode) {
+        const rootIdx = notes.indexOf(cleanRoot) >= 0 ? notes.indexOf(cleanRoot) : 0;
+        const mode = forceMode || (isMinor ? 'minor' : 'major');
+        return (degree, overrideType) => scaleDeg(degree, rootIdx, mode, overrideType);
     }
 </script>
 </body>
